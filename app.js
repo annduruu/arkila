@@ -85,10 +85,55 @@ function renderTypes(){
 }
 function filtered(){
   const l=activeCars().filter(c=>(S.kind==='all'||(S.kind==='motor')===isMotor(c))&&(S.type==='All'||c.type===S.type)&&(S.service==='any'||c.service===S.service)&&c.seats>=S.seats);
-  return l.sort((a,b)=>S.moved?distOf(a)-distOf(b):a.price-b.price);
+  const ok=l.filter(c=>!unavailable(c));S.hidden=l.length-ok.length;
+  return ok.sort((a,b)=>S.moved?distOf(a)-distOf(b):a.price-b.price);
 }
 const dateNow=()=>{const a=$('#from').value,b=$('#to').value;return {a,b,d:(a&&b)?days(a,b):0}};
-const unavailable=c=>{const {a,b}=dateNow();if(!a||!b||days(a,b)<1)return false;return ST.requests.some(r=>r.carId===c.id&&r.status==='confirmed'&&a<r.to&&b>r.from)};
+/* ---------- availability calendar ---------- */
+const addD=(s,n)=>{const [y,m,d]=s.split('-').map(Number);return iso(new Date(y,m-1,d+n))};
+const todayIso=()=>iso(new Date());
+const busyRanges=id=>{const o=[];ST.requests.forEach(r=>{if(r.carId===id&&(r.status==='confirmed'||r.status==='completed'))o.push({from:r.from,to:r.to,k:'booked'})});((typeof BLOCKED!=='undefined'&&BLOCKED&&BLOCKED[id])||[]).forEach(x=>{if(x&&x[0]&&x[1])o.push({from:x[0],to:addD(x[1],1),k:'arkila'})});return o};
+const dayInfo=(id,s)=>{for(const r of busyRanges(id))if(s>=r.from&&s<r.to)return r.k;return (ST.blocks[id]||[]).includes(s)?'host':''};
+const rangeFree=(id,a,b)=>{for(let d=a,n=0;d<b&&n<400;d=addD(d,1),n++)if(dayInfo(id,d))return false;return true};
+const unavailable=c=>{const {a,b}=dateNow();if(!a||!b||days(a,b)<1)return false;return !rangeFree(c.id,a,b)};
+const CAL={};
+function calInner(key,id,mode){
+  const pick=mode==='pick',a=pick?$('#from').value:'',b=pick?$('#to').value:'',loc=LOCALE[PREF.lang]||'en-PH',tdy=todayIso();
+  if(!CAL[key]){const base=a?new Date(a+'T00:00:00'):new Date();CAL[key]={y:base.getFullYear(),m:base.getMonth()}}
+  const st=CAL[key];
+  let lim='';if(pick&&a&&!b){for(let d=a,n=0;n<400;d=addD(d,1),n++)if(dayInfo(id,d)){lim=d;break}}
+  const first=new Date(st.y,st.m,1),dim=new Date(st.y,st.m+1,0).getDate();
+  let cells='';for(let i=0;i<first.getDay();i++)cells+='<i></i>';
+  for(let d=1;d<=dim;d++){
+    const s=st.y+'-'+String(st.m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'),k=dayInfo(id,s);
+    let cls='cd',dis=false,lab=fmt(s);
+    if(s<tdy){cls+=' past';dis=true}
+    else if(pick){
+      if(k){cls+=' off';dis=true;lab+=', '+t('cal.off');if(a&&!b&&s===lim&&s>a){dis=false;lab+=', '+t('cal.ret')}}
+      else if(a&&!b&&s>a&&lim&&s>lim){cls+=' far';dis=true}
+    }else{
+      if(k==='booked'){cls+=' booked';dis=true;lab+=', '+t('cal.booked')}
+      else if(k==='arkila'){cls+=' arkila';dis=true;lab+=', '+t('cal.arkblock')}
+      else if(k==='host'){cls+=' host';lab+=', '+t('cal.hostblock')}
+    }
+    if(pick&&!dis||pick&&cls.includes('off')){if(s===a||s===b)cls+=' sel';else if(a&&b&&s>a&&s<b)cls+=' in'}
+    cells+=`<button type="button" class="${cls}" data-cal-day="${s}"${dis?' disabled':''} aria-label="${esc(lab)}">${d}</button>`;
+  }
+  const wk=[0,1,2,3,4,5,6].map(i=>`<span>${esc(new Date(2023,0,1+i).toLocaleDateString(loc,{weekday:'short'}))}</span>`).join('');
+  const leg=pick?`<span><i class="lf"></i>${esc(t('cal.free'))}</span><span><i class="lo"></i>${esc(t('cal.off'))}</span><span><i class="ls"></i>${esc(t('cal.sel'))}</span>`:`<span><i class="lf"></i>${esc(t('cal.free'))}</span><span><i class="lb"></i>${esc(t('cal.booked'))}</span><span><i class="lh"></i>${esc(t('cal.hostblock'))}</span><span><i class="la"></i>${esc(t('cal.arkblock'))}</span>`;
+  return `<div class="calh"><button type="button" data-cal-nav="-1" aria-label="${esc(t('cal.prev'))}">‹</button><b>${esc(first.toLocaleDateString(loc,{month:'long',year:'numeric'}))}</b><button type="button" data-cal-nav="1" aria-label="${esc(t('cal.next'))}">›</button></div><div class="calw">${wk}</div><div class="calg">${cells}</div><div class="calleg">${leg}${pick?`<button type="button" class="chip" data-cal-clear style="margin-left:auto;padding:2px 10px;font-size:12px">${esc(t('cal.clear'))}</button>`:''}</div>`;
+}
+function setDates(a,b){const f=$('#from'),r=$('#to');f.value=a;r.value=b;[f,r].forEach(x=>x.dispatchEvent(new Event('change',{bubbles:true})))}
+function calSum(){const el=$('#calsum');if(!el)return;const a=$('#from').value,b=$('#to').value;el.textContent=(a&&b&&days(a,b)>=1)?fmt(a)+' → '+fmt(b)+' · '+t(days(a,b)===1?'cal.d1':'cal.dn',{d:days(a,b)}):a?t('cal.pickret'):t('cal.pickstart')}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-cal-day],[data-cal-nav],[data-cal-clear]');if(!b)return;
+  const el=b.closest('.cal');if(!el)return;const key=el.dataset.key,id=el.dataset.car,mode=el.dataset.mode;
+  if(b.dataset.calNav){const d=new Date(CAL[key].y,CAL[key].m+ +b.dataset.calNav,1);CAL[key]={y:d.getFullYear(),m:d.getMonth()}}
+  else if(b.dataset.calClear!==undefined){setDates('','')}
+  else if(mode==='pick'){const s=b.dataset.calDay,a=$('#from').value,r=$('#to').value;if(!a||r||s<=a)setDates(s,'');else setDates(a,s)}
+  else if(typeof hostDay==='function')hostDay(id,b.dataset.calDay);
+  el.innerHTML=calInner(key,id,mode);if(mode==='pick')calSum();
+});
 function cardHtml(c){
   const {d}=dateNow(),rt=ratingOf(c),un=unavailable(c),fav=ST.favs.includes(c.id);
   return `<article class="card${S.sel===c.id?' sel':''}${un?' off':''}"><button type="button" class="cardbtn" data-open="${esc(c.id)}">
@@ -100,8 +145,8 @@ function cardHtml(c){
 }
 function renderGrid(){
   const list=filtered();
-  $('#count').textContent=t(list.length===1?'count.1':'count.n',{n:list.length})+t(S.moved?'nearest':'cheapest');
-  $('#grid').innerHTML=list.length?list.map(cardHtml).join(''):'<div class="empty">'+esc(t('empty'))+'</div>';
+  $('#count').textContent=t(list.length===1?'count.1':'count.n',{n:list.length})+t(S.moved?'nearest':'cheapest')+(S.hidden?t('count.hid',{n:S.hidden}):'');
+  $('#grid').innerHTML=list.length?list.map(cardHtml).join(''):'<div class="empty">'+esc(t(S.hidden?'empty.booked':'empty'))+'</div>';
   drawMarkers(list);quote();
 }
 $('#svc').addEventListener('change',e=>{S.service=e.target.value;renderGrid()});
@@ -111,7 +156,7 @@ $('#seats').addEventListener('change',e=>{S.seats=+e.target.value;renderGrid()})
 const dlg=$('#dlg');
 function openDetail(id){
   const c=allCars().find(x=>x.id===id);if(!c)return;S.gid=id;S.gi=0;
-  const sp=c.specs||{},mo=isMotor(c),rows=(mo?[['sp.year',sp.year],['sp.trans',sp.transmission],['sp.cc',sp.cc?sp.cc+' cc':''],['sp.fuel',sp.fuel],['sp.riders',c.seats],['sp.helmets',sp.helmets],['sp.mileage',sp.mileage],['sp.secdep',sp.deposit?money(sp.deposit):''],['sp.service',svcT(c.service)],['sp.area',c.area]]:[['sp.year',sp.year],['sp.trans',sp.transmission],['sp.fuel',sp.fuel],['sp.seats',c.seats],['sp.lug',sp.bags!=null?t('bags',{n:sp.bags}):''],['sp.aircon',sp.aircon],['sp.service',svcT(c.service)],['sp.area',c.area]]).filter(r=>r[1]!==''&&r[1]!=null);
+  delete CAL.d;const sp=c.specs||{},mo=isMotor(c),rows=(mo?[['sp.year',sp.year],['sp.trans',sp.transmission],['sp.cc',sp.cc?sp.cc+' cc':''],['sp.fuel',sp.fuel],['sp.riders',c.seats],['sp.helmets',sp.helmets],['sp.mileage',sp.mileage],['sp.secdep',sp.deposit?money(sp.deposit):''],['sp.service',svcT(c.service)],['sp.area',c.area]]:[['sp.year',sp.year],['sp.trans',sp.transmission],['sp.fuel',sp.fuel],['sp.seats',c.seats],['sp.lug',sp.bags!=null?t('bags',{n:sp.bags}):''],['sp.aircon',sp.aircon],['sp.service',svcT(c.service)],['sp.area',c.area]]).filter(r=>r[1]!==''&&r[1]!=null);
   $('#dbody').innerHTML=`<div class="dgal"><div class="gal"><div class="stage" id="stage"></div><button type="button" class="nav prev" data-g="-1" aria-label="${esc(t('g.prev'))}">‹</button><button type="button" class="nav next" data-g="1" aria-label="${esc(t('g.next'))}">›</button></div>
   <div class="thumbs" id="thumbs"></div>
   <p class="note" id="galnote" style="margin-top:6px"></p></div>
@@ -121,8 +166,8 @@ function openDetail(id){
   ${(c.features&&c.features.length)?`<h3 class="h3">${esc(t('d.features'))}</h3><div class="feat">${c.features.map(f=>`<span class="pill">${esc(f)}</span>`).join('')}</div>`:''}
   <h3 class="h3">${esc(t('d.reviews'))}</h3>${reviewBlock(c)}
   <h3 class="h3">${esc(t('d.good'))}</h3><ul class="rules"><li>${esc(t('r.deposit',{pct:Math.round(SETTINGS.depositRate*100)}))}</li>${mo?`<li>${esc(t('r.mlicense'))}</li><li>${esc(t('r.helmet'))}</li>${sp.deposit?`<li>${esc(t('r.secdep',{amt:money(sp.deposit)}))}</li>`:''}`:`<li>${esc(t(c.service==='Self-drive'?'r.license':'r.driver'))}</li>`}<li>${esc(t('r.fuel'))}</li><li>${esc(SETTINGS.cancellation)}</li></ul>
-  ${c.status!=='approved'?'<p class="note">'+esc(t('d.preview'))+'</p>':unavailable(c)?'<p class="err">'+esc(t('d.booked'))+'</p>':`<div class="stack"><button type="button" class="btn" data-choose="${esc(c.id)}">${esc(t('d.choose'))}</button></div>`}</div>`;
-  renderGallery();if(!dlg.open)dlg.showModal();
+  ${c.status==='approved'?`<h3 class="h3">${esc(t('cal.title'))}</h3><div class="cal" id="cal-d" data-key="d" data-car="${esc(c.id)}" data-mode="pick">${calInner('d',c.id,'pick')}</div><p class="note" id="calsum"></p>`:''}${c.status!=='approved'?'<p class="note">'+esc(t('d.preview'))+'</p>':unavailable(c)?'<p class="err">'+esc(t('d.booked'))+'</p>':`<div class="stack"><button type="button" class="btn" data-choose="${esc(c.id)}">${esc(t('d.choose'))}</button></div>`}</div>`;
+  renderGallery();calSum();if(!dlg.open)dlg.showModal();
 }
 function renderGallery(){
   const c=allCars().find(x=>x.id===S.gid),im=imgsOf(c);S.gi=(S.gi+im.length)%im.length;

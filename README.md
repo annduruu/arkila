@@ -37,3 +37,14 @@ The pickup pin uses OpenStreetMap through Leaflet. Area coordinates in `config.j
 Motorbikes live in the same list as cars. In `config.js` the sample bikes are added with `CARS.push(...)` and have `kind:'motor'`.
 `seats` means riders, and `specs` holds `cc`, `helmets`, `mileage` and `deposit` (the refundable cash security deposit paid to the owner at pickup, separate from the 20% booking deposit).
 Hosts choose "Motorbike or scooter" in the Add a vehicle form. Types: Scooter, Underbone, Mid-size, Big bike. The sample bikes and prices are for testing only.
+
+## Availability calendar
+
+Each vehicle page has a calendar. Booked and blocked days are greyed out and cannot be picked, and a rental cannot run across a blocked day.
+
+- **Confirmed bookings** block their dates automatically (when the Arkila screen marks the deposit as received).
+- **Hosts** open Host dashboard, press Calendar on a vehicle, and tap free days to block or unblock them. In this demo that is saved on the same device only.
+- **Real blocks:** until the backend exists, when a host asks for dates to be blocked, add them to the `BLOCKED` list at the bottom of `config.js` (both days are included). Example: `'m-click':[['2026-11-12','2026-11-15']]`. The two sample ranges there can be deleted.
+
+
+Note: when pickup and return dates are set, vehicles already booked or blocked for those dates are hidden from the list, and the count shows how many were hidden.

@@ -106,3 +106,9 @@ CARS.push(
    specs:{year:2022,transmission:'Manual',cc:411,fuel:'Gasoline',helmets:2,mileage:'Unlimited',deposit:5000},
    features:['Adventure touring','2 helmets included','Luggage rack','Long-distance comfort'],images:[]}
 );
+
+/* Dates a vehicle is not available (both days included). The Arkila team edits this list when a host asks to block dates.
+   Greyed out on the website for everyone. The two ranges below are samples: delete them any time. */
+const BLOCKED={
+  'm-click':[['2026-11-12','2026-11-15'],['2026-11-24','2026-11-26']]
+};

@@ -2,9 +2,10 @@
 const mem={};
 const lsg=(k,d)=>{const fb=()=>k in mem?mem[k]:d;try{const v=localStorage.getItem('arkila2-'+k);if(!v)return fb();const j=JSON.parse(v);if(Array.isArray(d)&&!Array.isArray(j))return fb();return j}catch(e){return fb()}};
 const lss=(k,v)=>{mem[k]=v;try{localStorage.setItem('arkila2-'+k,JSON.stringify(v));return true}catch(e){return false}};
-const ST={users:lsg('users',[]),listings:lsg('listings',[]),requests:lsg('requests',[]),sid:lsg('sid',null),favs:lsg('favs',[]),reviews:lsg('reviews',[]),
-  save(){return [lss('users',this.users),lss('listings',this.listings),lss('requests',this.requests),lss('sid',this.sid),lss('favs',this.favs),lss('reviews',this.reviews)].every(Boolean)},
+const ST={users:lsg('users',[]),listings:lsg('listings',[]),requests:lsg('requests',[]),sid:lsg('sid',null),favs:lsg('favs',[]),reviews:lsg('reviews',[]),blocks:lsg('blocks',{}),
+  save(){return [lss('users',this.users),lss('listings',this.listings),lss('requests',this.requests),lss('sid',this.sid),lss('favs',this.favs),lss('reviews',this.reviews),lss('blocks',this.blocks)].every(Boolean)},
   me(){return this.users.find(u=>u.id===this.sid)||null}};
+if(!ST.blocks||typeof ST.blocks!=='object'||Array.isArray(ST.blocks))ST.blocks={};
 const allCars=()=>[...CARS.map(c=>Object.assign({ownerId:'sample',ownerName:'Arkila sample',status:'approved'},c)),...ST.listings];
 const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,30);
 const reviewsOf=c=>ST.reviews.filter(r=>r.carId===c.id);
