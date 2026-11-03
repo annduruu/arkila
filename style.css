@@ -216,3 +216,15 @@ dialog::backdrop{background:rgba(5,10,18,.6)}
 .ck input,.form .ck input{width:20px;min-width:20px;height:20px;padding:0;margin:1px 0 0;flex:none;accent-color:var(--brand,#0b5)}
 #ndlg ol{margin:8px 0 10px;padding-left:20px;display:grid;gap:6px}
 #ndlg h2{margin:0 0 6px;padding-right:40px}
+
+mark.ph{background:color-mix(in srgb,var(--sun,#FFC72C) 38%,transparent);color:inherit;border-radius:4px;padding:0 2px}
+.nl li{margin-bottom:2px}.nl{list-style:decimal}
+ul.lg,ol.lg{margin:6px 0 10px;padding-left:22px;display:grid;gap:7px}
+.legal p{margin:6px 0 10px}.legal h2{margin-bottom:8px}
+.toc{margin:0;padding-left:20px;display:grid;gap:4px}
+.h3{margin:14px 0 6px}
+#ndlg{width:min(820px,calc(100% - 24px))}
+.toc{list-style:none;padding-left:0}
+.soca.off{opacity:.7;cursor:default}.soca.off:hover{background:none}
+.soca svg{flex:none}
+.foot a:not(.soca){color:inherit}

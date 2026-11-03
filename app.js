@@ -235,10 +235,10 @@ function reviewBlock(c){
 
 /* ---------- notices (renter notice, host declaration) ---------- */
 const ndlg=$('#ndlg');
-function openNotice(kind){
-  const h=kind==='host',n=h?5:6,k=h?'nt.h':'nt.r';
-  $('#nbody').innerHTML=`<h2 id="ntitle">${esc(t(h?'nt.htitle':'nt.rtitle'))}</h2><p style="margin:0">${esc(t(h?'nt.hintro':'nt.rintro'))}</p><ol>${Array.from({length:n},(_,i)=>`<li>${esc(t(k+(i+1)))}</li>`).join('')}</ol><p>${esc(t('nt.both'))}</p><p class="note">${esc(t(h?'nt.hnote':'nt.rnote'))}</p><div class="stack"><button type="button" class="btn" data-nclose>${esc(t('close'))}</button></div>`;
+function openNotice(kind,ctx){
+  $('#nbody').innerHTML=noticeHtml(kind,ctx);
   if(!ndlg.open)ndlg.showModal();
+  ndlg.scrollTop=0;
 }
-document.addEventListener('click',e=>{const b=e.target.closest('[data-notice]');if(b){e.preventDefault();openNotice(b.dataset.notice)}});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-notice]');if(b){e.preventDefault();let ctx=null;if(b.dataset.notice==='renter'&&b.closest('#f')){const q=quote();if(q)ctx={c:q.c,total:q.total,dep:q.dep}}openNotice(b.dataset.notice,ctx)}});
 ndlg.addEventListener('click',e=>{if(e.target===ndlg||e.target.closest('[data-nclose]'))ndlg.close()});

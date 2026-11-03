@@ -1,5 +1,5 @@
 /* Login, host, trips and admin screens. Demo only: no real Facebook or Google yet. */
-const ROUTES=['home','saved','host','trips','admin'];
+const ROUTES=['home','saved','host','trips','admin','terms','privacy'];
 const STATUS={new:['Requested','w'],confirmed:['Paid and confirmed','b'],completed:['Completed','g'],cancelled:['Cancelled','r'],pending:['Waiting for approval','w'],approved:['Live','g'],rejected:['Not approved','r'],paused:['Paused','']};
 const pill=k=>{const s=STATUS[k]||[k,''];return `<span class="pill ${s[1]}">${esc(t('st.'+k)===('st.'+k)?s[0]:t('st.'+k))}</span>`};
 const has=(u,r)=>!!(u&&u.roles.includes(r));
@@ -83,7 +83,7 @@ function renderHost(){
     <label><span class="lab">Photos (up to 4)</span><input id="hph" type="file" accept="image/*" multiple></label>
     <p class="muted" style="margin:4px 0 0;font-size:12px">Only upload photos you took or have permission to use.</p>
     <div class="thumbs" id="hthumbs"></div>
-    <label class="ck"><input type="checkbox" id="hack"><span>I have read and agree to the <button type="button" class="lnk" data-notice="host">host declaration</button>, and I understand Arkila holds the booking money and pays me after the handover.</span></label>
+    <label class="ck"><input type="checkbox" id="hack"><span>I have read and agree to the <button type="button" class="lnk" data-notice="host">host declaration</button> and the <a href="#terms" target="_blank" rel="noopener">Terms of Service</a>, and I understand Arkila holds the booking money and pays me after the handover.</span></label>
     <p class="err" id="herr" role="alert"></p><button class="btn" type="submit">Submit for approval</button></form></section>
   <section class="step"><h2>Requests for your vehicles</h2>${reqs.length?reqs.map(r=>`<div class="lrow"><div class="lmain"><b>${esc(r.carName)}</b> ${pill(r.status)}<p class="sub">${fmt(r.from)} to ${fmt(r.to)} · ${r.days} day${r.days>1?'s':''} · ${php(r.total)} · ${esc(r.id)}</p><p class="sub">Guest: ${esc(first(r.guestName))}${(r.status==='confirmed'||r.status==='completed')?` · ${esc(r.guestPhone)}`:' · contact shared once the deposit is received'}</p></div></div>`).join(''):'<div class="empty">No requests yet.</div>'}</section>`;
   renderHthumbs();
@@ -174,10 +174,10 @@ document.addEventListener('click',e=>{
 });
 function route(){
   const h=location.hash.slice(1),v=ROUTES.includes(h)?h:'home',me=ST.me();
-  if(v!=='home'&&v!=='saved'&&!me){history.replaceState(null,'','#home');openLogin(t('l.need'));return route()}
+  if(v!=='home'&&v!=='saved'&&v!=='terms'&&v!=='privacy'&&!me){history.replaceState(null,'','#home');openLogin(t('l.need'));return route()}
   if(v==='admin'&&!has(me,'admin')){location.hash='home';return}
   ROUTES.forEach(r=>{$('#v-'+r).hidden=r!==v});
-  if(v==='home')refreshHome();else if(v==='saved')renderSaved();else if(v==='host')renderHost();else if(v==='trips')renderTrips();else renderAdmin();
+  if(v==='home')refreshHome();else if(v==='saved')renderSaved();else if(v==='host')renderHost();else if(v==='trips')renderTrips();else if(v==='terms'||v==='privacy')renderLegal(v);else renderAdmin();
   renderNav();window.scrollTo(0,0);
 }
 addEventListener('hashchange',route);
@@ -227,11 +227,11 @@ function renderBrand(){
   const nm=document.querySelector('.hwrap .top span');if(nm)nm.innerHTML=`${esc(BRAND.name)} <small>${esc(BRAND.tagline)}</small>`;
   $('#fname').textContent=BRAND.name;$('#ftag').textContent=BRAND.tagline;
   const L=[];
-  if(BRAND.fb)L.push(['https://facebook.com/'+encodeURIComponent(BRAND.fb),ICON.fb,'Facebook']);
-  if(BRAND.ig)L.push(['https://instagram.com/'+encodeURIComponent(BRAND.ig),ICON.ig,'Instagram']);
+  L.push([BRAND.fb?'https://facebook.com/'+encodeURIComponent(BRAND.fb):'',ICON.fb,'Facebook']);
+  L.push([BRAND.ig?'https://instagram.com/'+encodeURIComponent(BRAND.ig):'',ICON.ig,'Instagram']);
   if(BRAND.whatsapp)L.push(['https://wa.me/'+String(BRAND.whatsapp).replace(/\D/g,''),ICON.wa,'WhatsApp']);
   if(BRAND.email)L.push(['mailto:'+BRAND.email,ICON.mail,BRAND.email]);
-  $('#soc').innerHTML=L.length?L.map(x=>`<a class="soca" href="${esc(x[0])}" target="_blank" rel="noopener" aria-label="${esc(x[2])}">${x[1]}<span>${esc(x[2])}</span></a>`).join(''):'<span class="note">Add your links in config.js</span>';
+  $('#soc').innerHTML=L.map(x=>x[0]?`<a class="soca" href="${esc(x[0])}" target="_blank" rel="noopener" aria-label="${esc(x[2])}">${x[1]}<span>${esc(x[2])}</span></a>`:`<span class="soca off" role="img" aria-label="${esc(x[2])} (link not set yet)" title="Add the link in config.js">${x[1]}<span>${esc(x[2])}</span></span>`).join('');
   const fab=$('#fab');if(BRAND.fb){fab.href='https://m.me/'+encodeURIComponent(BRAND.fb);fab.hidden=false}
 }
 function refreshAll(){

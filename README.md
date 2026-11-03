@@ -56,3 +56,10 @@ Note: when pickup and return dates are set, vehicles already booked or blocked f
 - Default deposits are in `config.js` (`SETTINGS.deposit`). Hosts can set their own on a listing. These are placeholders, decide before launch.
 - The renter notice is ticked when a request is sent, and the host declaration when a vehicle is submitted. Both are stored on the request or listing as `ack`. The full wording lives in `i18n.js` under `nt.*` and must match the Terms of Service draft.
 - The cancellation text in `SETTINGS.cancellation` is a placeholder that matches the Terms draft.
+
+## Public legal pages
+
+- `legal.js` holds the Terms of Service, Privacy Notice, renter notice and host declaration. They open at `#terms` and `#privacy` without logging in, and from the footer and the tick boxes.
+- Items in [square brackets] show highlighted. Fill them, and update the matching Claude Docs, before real payments. A Philippine lawyer should review everything first.
+- `SETTINGS.damageCap` in `config.js` is a placeholder (₱50,000 cars, ₱30,000 motorbikes). Decide the real amounts.
+- The Filipino view shows a short summary above the full English notice, which is the version people agree to. A full Filipino version is still to be written.
