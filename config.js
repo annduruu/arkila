@@ -1,12 +1,27 @@
-/* ---- settings the Arkila team edits ---- */
+/* ---- brand and contact: the footer, the Messenger button and the logo read from here ---- */
+const BRAND={
+  name:'Arkila',
+  tagline:'Puerto Princesa',
+  logo:'',       // path to a square logo image, e.g. 'logo.png' (upload it to the repo). Leave '' for the default car mark.
+  fb:'',         // Facebook page username, e.g. 'arkilapuertoprincesa' (links to facebook.com/<name> and m.me/<name>)
+  ig:'',         // Instagram username, e.g. 'arkila.pp'
+  whatsapp:'',   // WhatsApp number with country code, digits only, e.g. '639171234567'
+  email:'',      // contact email
+  phone:''       // optional contact mobile, e.g. '0917 123 4567'
+};
 const SETTINGS={
-  fbPage:'',        // your Facebook page username, e.g. 'arkilapuertoprincesa' (opens m.me/<name>)
-  contact:'',       // optional mobile number shown to guests, e.g. '0917 123 4567'
   depositRate:0.20, // share of the total paid as deposit
-  cancellation:'Free cancellation up to 48 hours before pickup. After that the deposit is not refunded.', // edit to your real policy
   commission:0.12,  // Arkila share of each trip total (shown on the admin screen)
+  cancellation:'Free cancellation up to 48 hours before pickup. After that the deposit is not refunded.', // edit to your real policy
   isSample:true     // set to false once real vehicles are listed, to hide the sample banner
 };
+
+/* ---- languages and currencies shown in the language menu ---- */
+const LANGS=[['en','English'],['fil','Filipino']];
+const CURRENCIES=[['PHP','Philippine peso'],['USD','US dollar'],['AUD','Australian dollar'],['EUR','Euro'],['GBP','British pound'],['KRW','South Korean won'],['JPY','Japanese yen'],['CNY','Chinese yuan'],['SGD','Singapore dollar'],['CAD','Canadian dollar']];
+/* Units per 1 Philippine peso on 2 Nov 2026. The live site refreshes these automatically when it can. */
+const RATES={PHP:1,USD:0.015698,AUD:0.02233,EUR:0.014068,GBP:0.011725,KRW:20.916605,JPY:2.474329,CNY:0.1047,SGD:0.020069,CAD:0.021939};
+const RATEINFO={date:'2026-11-02'};
 
 /* ---- map: centre of Puerto Princesa and the pickup areas (approximate, edit freely) ---- */
 const CENTER=[9.7392,118.7353];

@@ -10,8 +10,7 @@ Static request site. No server, no login, nothing is stored. A guest picks a veh
 
 ## Edit without coding
 Open `config.js` on GitHub (pencil icon) and change:
-- `fbPage`: your Facebook page username. This turns on the Open Messenger button.
-- `contact`: a mobile number to show guests.
+- `BRAND`: your name, logo, Facebook page, Instagram, WhatsApp, email and phone. Filled-in links appear in the footer, and a Facebook page also turns on the floating Chat button and the Open Messenger button.
 - `isSample`: set to `false` once real vehicles are listed.
 - `CARS`: one line per vehicle. Copy a line, change the name, price, area, seats, type and service. Use `active:false` to hide one. Each `id` must be unique.
 
@@ -25,3 +24,10 @@ The guest copies the message and sends it to your page on Messenger. The last li
 
 ## Map
 The pickup pin uses OpenStreetMap through Leaflet. Area coordinates in `config.js` are approximate. Adjust them if a pickup area is off.
+
+## Languages and currencies
+- The site ships in English and Filipino. The language menu (globe button, top right) also switches the currency.
+- Currencies: PHP, USD, AUD, EUR, GBP, KRW, JPY, CNY, SGD, CAD. Prices in other currencies are a guide. Payments are in Philippine pesos.
+- Exchange rates refresh automatically about every 12 hours from a free public service. If that fails, the rates in `config.js` are used.
+- To add a language: open `i18n.js`, copy the whole `en:{...}` block, translate the values on the right, name it with a short code (for example `ko`), and add it to `LANGS` in `config.js`.
+- Vehicle names, descriptions and features are written by hosts in one language and are not translated.
