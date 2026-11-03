@@ -63,6 +63,8 @@ fil:{
 'sv.t':'Mga naka-save na sasakyan','sv.lead':'Ang mga sasakyang na-heart mo. Naka-save sa device na ito.','sv.empty':'Wala pang naka-save. I-tap ang puso sa kahit anong sasakyan.',
 'st.new':'Hiniling','st.confirmed':'Natanggap ang deposito','st.completed':'Tapos na','st.cancelled':'Kinansela','st.pending':'Naghihintay ng approval','st.approved':'Live','st.rejected':'Hindi inaprubahan','st.paused':'Naka-pause'
 }};
+Object.assign(DICT.en,{'k.all':'All','k.car':'Cars & vans','k.motor':'Motorbikes','card.riders':'{n} riders','sp.cc':'Engine','sp.riders':'Riders','sp.helmets':'Helmets included','sp.mileage':'Daily distance','sp.secdep':'Security deposit','r.mlicense':'Bring a valid motorcycle licence. A car licence alone is not enough.','r.helmet':'Helmets are required by law and are included.','r.secdep':'A refundable cash security deposit of {amt} is paid to the owner at pickup.','q.sec':'Security deposit (cash, refundable)'});
+Object.assign(DICT.fil,{'k.all':'Lahat','k.car':'Kotse at van','k.motor':'Motor','card.riders':'{n} sakay','sp.cc':'Makina','sp.riders':'Sakay','sp.helmets':'Kasama ang helmet','sp.mileage':'Layo bawat araw','sp.secdep':'Security deposit','r.mlicense':'Magdala ng valid na lisensya sa motorsiklo. Hindi sapat ang lisensya sa kotse lang.','r.helmet':'Kailangan ng helmet ayon sa batas at kasama ito.','r.secdep':'May refundable na cash security deposit na {amt} na babayaran sa may-ari sa pickup.','q.sec':'Security deposit (cash, ibabalik)'});
 const PREF={lang:lsg('lang','en'),cur:lsg('cur','PHP')};
 if(!DICT[PREF.lang])PREF.lang='en';if(!(PREF.cur in RATES))PREF.cur='PHP';
 const t=(k,v)=>{let s=(DICT[PREF.lang]&&DICT[PREF.lang][k])??DICT.en[k]??k;if(v)for(const x in v)s=s.split('{'+x+'}').join(v[x]);return s};

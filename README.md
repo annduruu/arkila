@@ -31,3 +31,9 @@ The pickup pin uses OpenStreetMap through Leaflet. Area coordinates in `config.j
 - Exchange rates refresh automatically about every 12 hours from a free public service. If that fails, the rates in `config.js` are used.
 - To add a language: open `i18n.js`, copy the whole `en:{...}` block, translate the values on the right, name it with a short code (for example `ko`), and add it to `LANGS` in `config.js`.
 - Vehicle names, descriptions and features are written by hosts in one language and are not translated.
+
+## Motorbikes
+
+Motorbikes live in the same list as cars. In `config.js` the sample bikes are added with `CARS.push(...)` and have `kind:'motor'`.
+`seats` means riders, and `specs` holds `cc`, `helmets`, `mileage` and `deposit` (the refundable cash security deposit paid to the owner at pickup, separate from the 20% booking deposit).
+Hosts choose "Motorbike or scooter" in the Add a vehicle form. Types: Scooter, Underbone, Mid-size, Big bike. The sample bikes and prices are for testing only.

@@ -56,20 +56,25 @@ function renderHost(){
   if(!has(me,'host')){el.innerHTML=`<h1>Earn from your vehicle</h1><p class="lead">List a car or van. Arkila finds the renter, collects the deposit and sends you the guest contact once the deposit is in. You are paid by the guest at pickup.</p><button class="btn" data-becomehost>Become a host</button>`;return}
   const mine=ST.listings.filter(l=>l.ownerId===me.id),reqs=ST.requests.filter(r=>r.hostId===me.id);
   el.innerHTML=`<h1>Host dashboard</h1><p class="lead">New vehicles are checked by the Arkila team before guests can see them.</p>
-  <section class="step"><h2>Your vehicles</h2>${mine.length?mine.map(l=>{const k=l.status==='approved'&&l.active===false?'paused':l.status;return `<div class="lrow"><div class="lthumb">${imgsOf(l)[0]}</div><div class="lmain"><b>${esc(l.name)}</b> ${pill(k)}<p class="sub">${esc(l.type)} · ${l.seats} seats · ${esc(l.service)} · ${esc(l.area)} · ${php(l.price)}/day</p></div><div class="row2" style="gap:6px"><button class="chip" data-open="${esc(l.id)}">View</button>${l.status==='approved'?`<button class="chip" data-hpause="${esc(l.id)}">${l.active===false?'Resume':'Pause'}</button>`:''}<button class="chip" data-hdel="${esc(l.id)}">Delete</button></div></div>`}).join(''):'<div class="empty">No vehicles yet. Add your first one below.</div>'}</section>
+  <section class="step"><h2>Your vehicles</h2>${mine.length?mine.map(l=>{const k=l.status==='approved'&&l.active===false?'paused':l.status;return `<div class="lrow"><div class="lthumb">${imgsOf(l)[0]}</div><div class="lmain"><b>${esc(l.name)}</b> ${pill(k)}<p class="sub">${esc(l.type)} · ${l.seats} ${l.kind==='motor'?'riders':'seats'} · ${esc(l.service)} · ${esc(l.area)} · ${php(l.price)}/day</p></div><div class="row2" style="gap:6px"><button class="chip" data-open="${esc(l.id)}">View</button>${l.status==='approved'?`<button class="chip" data-hpause="${esc(l.id)}">${l.active===false?'Resume':'Pause'}</button>`:''}<button class="chip" data-hdel="${esc(l.id)}">Delete</button></div></div>`}).join(''):'<div class="empty">No vehicles yet. Add your first one below.</div>'}</section>
   <section class="step"><h2>Add a vehicle</h2><form class="form" id="hf" novalidate>
+    <label><span class="lab">Category</span><select id="hk"><option value="car">Car, van or pickup</option><option value="motor">Motorbike or scooter</option></select></label>
     <label><span class="lab">Vehicle name</span><input id="hn" placeholder="Toyota Vios 2021"></label>
     <div class="f2"><label><span class="lab">Type</span><select id="ht">${['Sedan','Hatchback','SUV','Van','Pickup'].map(t=>`<option>${t}</option>`).join('')}</select></label>
-    <label><span class="lab">Seats</span><input id="hs" type="number" min="1" max="20" value="5"></label></div>
+    <label><span class="lab" id="hsl">Seats</span><input id="hs" type="number" min="1" max="20" value="5"></label></div>
     <div class="f2"><label><span class="lab">Service</span><select id="hv"><option>Self-drive</option><option>With driver</option></select></label>
     <label><span class="lab">Pickup area</span><select id="ha">${Object.keys(AREAS).map(a=>`<option>${esc(a)}</option>`).join('')}</select></label></div>
     <div class="f2"><label><span class="lab">Price per day (PHP)</span><input id="hp" type="number" min="300" step="50" placeholder="1800"></label>
     <label><span class="lab">Color</span><select id="hc">${COLORS.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join('')}</select></label></div>
     <label><span class="lab">Short description</span><input id="hd" maxlength="200" placeholder="One or two sentences guests will read"></label>
     <div class="f2"><label><span class="lab">Year</span><input id="hy" type="number" min="1995" max="2030" value="2021"></label>
-    <label><span class="lab">Luggage (bags)</span><input id="hb" type="number" min="0" max="20" value="3"></label></div>
+    <label class="ca"><span class="lab">Luggage (bags)</span><input id="hb" type="number" min="0" max="20" value="3"></label>
+    <label class="mo" hidden><span class="lab">Engine size (cc)</span><input id="hcc" type="number" min="50" max="2000" value="125"></label></div>
     <div class="f2"><label><span class="lab">Transmission</span><select id="hm"><option>Automatic</option><option>Manual</option></select></label>
     <label><span class="lab">Fuel</span><select id="hfu"><option>Gasoline</option><option>Diesel</option><option>Hybrid</option><option>Electric</option></select></label></div>
+    <div class="f2 mo" hidden><label><span class="lab">Helmets included</span><input id="hhel" type="number" min="0" max="2" value="2"></label>
+    <label><span class="lab">Cash security deposit (PHP)</span><input id="hsd" type="number" min="0" step="500" value="2000"></label></div>
+    <label class="mo" hidden><span class="lab">Daily distance limit</span><input id="hmi" placeholder="150 km/day, or Unlimited"></label>
     <label><span class="lab">Features (separate with commas)</span><input id="hft" placeholder="Air conditioning, Bluetooth audio, USB charging"></label>
     <label><span class="lab">Photos (up to 4)</span><input id="hph" type="file" accept="image/*" multiple></label>
     <div class="thumbs" id="hthumbs"></div>
@@ -78,14 +83,23 @@ function renderHost(){
   renderHthumbs();
 }
 function renderHthumbs(){const t=$('#hthumbs');if(t)t.innerHTML=HF.photos.map((p,i)=>`<div class="th on" style="position:relative"><img src="${p}" alt="Photo ${i+1}"><button type="button" class="chip" data-hrm="${i}" style="position:absolute;right:2px;top:2px;padding:0 7px">×</button></div>`).join('')}
+const KIND_OPTS={car:{types:['Sedan','Hatchback','SUV','Van','Pickup'],trans:['Automatic','Manual'],seats:[5,20,'Seats'],ph:'Toyota Vios 2021'},motor:{types:['Scooter','Underbone','Mid-size','Big bike'],trans:['Automatic','Semi-automatic','Manual'],seats:[2,2,'Riders'],ph:'Honda Click 125i'}};
+function hostKind(){
+  const k=$('#hk').value,o=KIND_OPTS[k];
+  $('#ht').innerHTML=o.types.map(t=>`<option>${t}</option>`).join('');$('#hm').innerHTML=o.trans.map(t=>`<option>${t}</option>`).join('');
+  $('#hs').max=o.seats[1];$('#hs').value=o.seats[0];$('#hsl').textContent=o.seats[2];$('#hn').placeholder=o.ph;
+  document.querySelectorAll('#hf .mo').forEach(e=>e.hidden=k!=='motor');document.querySelectorAll('#hf .ca').forEach(e=>e.hidden=k==='motor');
+  $('#hp').placeholder=k==='motor'?'600':'1800';
+}
 async function addHostListing(){
   const me=ST.me(),v=id=>$('#'+id).value.trim(),err=$('#herr');err.textContent='';
   const name=v('hn'),price=+v('hp'),seats=+v('hs');
   if(name.length<3){err.textContent='Add the vehicle name.';return}
   if(!(price>=300)){err.textContent='Enter a price per day, at least ₱300.';return}
-  if(!(seats>=1)){err.textContent='Enter the number of seats.';return}
-  const l={id:'u-'+Date.now().toString(36),name,type:v('ht'),seats,service:v('hv'),area:v('ha'),price,color:v('hc'),active:true,description:v('hd'),
-    specs:{year:+v('hy')||'',transmission:v('hm'),fuel:v('hfu'),bags:+v('hb')||0,aircon:'Yes'},features:v('hft').split(',').map(s=>s.trim()).filter(Boolean),images:HF.photos.slice(),
+  const mo=v('hk')==='motor';
+  if(!(seats>=1)||(mo&&seats>2)){err.textContent=mo?'Riders must be 1 or 2.':'Enter the number of seats.';return}
+  const l={id:'u-'+Date.now().toString(36),kind:mo?'motor':'car',name,type:v('ht'),seats,service:v('hv'),area:v('ha'),price,color:v('hc'),active:true,description:v('hd'),
+    specs:mo?{year:+v('hy')||'',transmission:v('hm'),cc:+v('hcc')||'',fuel:v('hfu'),helmets:Math.max(0,Math.min(2,+v('hhel')||0)),mileage:v('hmi')||'',deposit:Math.max(0,+v('hsd')||0)}:{year:+v('hy')||'',transmission:v('hm'),fuel:v('hfu'),bags:+v('hb')||0,aircon:'Yes'},features:v('hft').split(',').map(s=>s.trim()).filter(Boolean),images:HF.photos.slice(),
     ownerId:me.id,ownerName:me.name,status:'pending',createdAt:Date.now()};
   ST.listings.unshift(l);
   if(!ST.save()){ST.listings.shift();err.textContent='This device is out of storage for photos. Remove a photo or two and try again.';return}
@@ -100,6 +114,7 @@ $('#v-host').addEventListener('click',e=>{
 });
 $('#v-host').addEventListener('submit',e=>{if(e.target.id==='hf'){e.preventDefault();addHostListing()}});
 $('#v-host').addEventListener('change',async e=>{
+  if(e.target.id==='hk'){hostKind();return}
   if(e.target.id!=='hph')return;const files=[...e.target.files].slice(0,4-HF.photos.length);
   for(const f of files){try{HF.photos.push(await readImg(f))}catch(x){toast('Could not read that photo.')}}
   e.target.value='';renderHthumbs();
@@ -125,7 +140,7 @@ function renderAdmin(){
   const val=booked.reduce((s,r)=>s+r.total,0);
   $('#v-admin').innerHTML=`<h1>Arkila team</h1><p class="lead">Approve vehicles and move requests along. Demo screen: anyone can open it in this version.</p>
   <div class="stats"><div class="stat"><span>Waiting approval</span><b>${pend.length}</b></div><div class="stat"><span>Requests</span><b>${rs.length}</b></div><div class="stat"><span>Deposits received</span><b>${booked.length}</b></div><div class="stat"><span>Commission (${Math.round(SETTINGS.commission*100)}%)</span><b>${php(val*SETTINGS.commission)}</b></div></div>
-  <section class="step"><h2>Vehicles waiting for approval</h2>${pend.length?pend.map(l=>`<div class="lrow"><div class="lthumb">${imgsOf(l)[0]}</div><div class="lmain"><b>${esc(l.name)}</b><p class="sub">${esc(l.type)} · ${l.seats} seats · ${esc(l.area)} · ${php(l.price)}/day · host ${esc(l.ownerName)}</p></div><div class="row2" style="gap:6px"><button class="chip" data-open="${esc(l.id)}">View</button><button class="chip on" data-lapp="${esc(l.id)}">Approve</button><button class="chip" data-lrej="${esc(l.id)}">Reject</button></div></div>`).join(''):'<div class="empty">Nothing waiting.</div>'}</section>
+  <section class="step"><h2>Vehicles waiting for approval</h2>${pend.length?pend.map(l=>`<div class="lrow"><div class="lthumb">${imgsOf(l)[0]}</div><div class="lmain"><b>${esc(l.name)}</b><p class="sub">${esc(l.type)} · ${l.seats} ${l.kind==='motor'?'riders':'seats'} · ${esc(l.area)} · ${php(l.price)}/day · host ${esc(l.ownerName)}</p></div><div class="row2" style="gap:6px"><button class="chip" data-open="${esc(l.id)}">View</button><button class="chip on" data-lapp="${esc(l.id)}">Approve</button><button class="chip" data-lrej="${esc(l.id)}">Reject</button></div></div>`).join(''):'<div class="empty">Nothing waiting.</div>'}</section>
   <section class="step"><h2>All requests</h2>${rs.length?rs.map(r=>`<div class="lrow"><div class="lmain"><b>${esc(r.carName)}</b> ${pill(r.status)}<p class="sub">${esc(r.id)} · ${fmt(r.from)} to ${fmt(r.to)} · ${php(r.total)} · deposit ${php(r.deposit)}</p><p class="sub">Guest ${esc(r.guestName)} ${esc(r.guestPhone)} · host ${esc(r.hostName)}${r.spot&&r.spot!=='not set'?' · pickup '+esc(r.spot.split(',')[0]):''}</p></div><div class="row2" style="gap:6px">${r.status==='new'?`<button class="chip on" data-rset="${esc(r.id)}|confirmed">Deposit received</button>`:''}${r.status==='confirmed'?`<button class="chip on" data-rset="${esc(r.id)}|completed">Mark completed</button>`:''}${(r.status==='new'||r.status==='confirmed')?`<button class="chip" data-rset="${esc(r.id)}|cancelled">Cancel</button>`:''}</div></div>`).join(''):'<div class="empty">No requests yet.</div>'}</section>`;
 }
 $('#v-admin').addEventListener('click',e=>{

@@ -178,3 +178,6 @@ dialog::backdrop{background:rgba(5,10,18,.6)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.7)}}
 :root[data-theme="dark"] .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.7)}
 .leaflet-container{background:var(--tile1)}
+
+[hidden]{display:none!important}
+#kinds{margin-bottom:6px}

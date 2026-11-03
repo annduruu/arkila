@@ -74,3 +74,35 @@ const CARS=[
    specs:{year:2019,transmission:'Manual',fuel:'Diesel',bags:10,aircon:'Yes'},
    features:['Driver included','Seats 12','Air conditioning','Airport pickup'],images:[]}
 ];
+
+/* Sample motorbikes (kind:'motor'). seats = riders. specs.deposit = refundable cash security deposit paid to the owner at pickup. Replace with real listings. */
+CARS.push(
+  {id:'m-click',kind:'motor',name:'Honda Click 125i',type:'Scooter',seats:2,service:'Self-drive',area:'City Proper',price:600,color:'#C0392B',active:true,
+   description:'Light automatic scooter, easy for first-time riders. Good for the city, Baywalk and short beach runs.',
+   specs:{year:2023,transmission:'Automatic',cc:125,fuel:'Gasoline',helmets:2,mileage:'150 km/day',deposit:2000},
+   features:['Automatic','2 helmets included','Under-seat storage','Fuel efficient'],images:[]},
+  {id:'m-mio',kind:'motor',name:'Yamaha Mio 125',type:'Scooter',seats:2,service:'Self-drive',area:'Airport',price:500,color:'#2E86DE',active:true,
+   description:'Budget-friendly scooter with airport pickup. A simple way to get around town for a few days.',
+   specs:{year:2022,transmission:'Automatic',cc:125,fuel:'Gasoline',helmets:2,mileage:'150 km/day',deposit:2000},
+   features:['Automatic','2 helmets included','Airport pickup','Phone holder'],images:[]},
+  {id:'m-nmax',kind:'motor',name:'Yamaha NMAX 155',type:'Scooter',seats:2,service:'Self-drive',area:'Baywalk',price:900,color:'#1F2933',active:true,
+   description:'Bigger, more stable scooter for longer rides and two people with bags.',
+   specs:{year:2023,transmission:'Automatic',cc:155,fuel:'Gasoline',helmets:2,mileage:'200 km/day',deposit:3000},
+   features:['Automatic','Comfortable for two','Large under-seat storage','2 helmets included'],images:[]},
+  {id:'m-adv',kind:'motor',name:'Honda ADV 150',type:'Scooter',seats:2,service:'Self-drive',area:'Sabang',price:1000,color:'#3E6B4E',active:true,
+   description:'Adventure-style scooter with higher ground clearance, based near Sabang for the north road.',
+   specs:{year:2022,transmission:'Automatic',cc:150,fuel:'Gasoline',helmets:2,mileage:'200 km/day',deposit:3000},
+   features:['Automatic','Higher ground clearance','2 helmets included','Good for rougher roads'],images:[]},
+  {id:'m-sniper',kind:'motor',name:'Yamaha Sniper 150',type:'Underbone',seats:2,service:'Self-drive',area:'Irawan',price:700,color:'#A9B3C0',active:true,
+   description:'Sporty underbone with manual-style gears. For riders who are comfortable shifting.',
+   specs:{year:2021,transmission:'Semi-automatic',cc:150,fuel:'Gasoline',helmets:2,mileage:'150 km/day',deposit:2500},
+   features:['Foot-shift gears','2 helmets included','Lightweight','Quick on city roads'],images:[]},
+  {id:'m-loncin',kind:'motor',name:'Loncin RC Classic 250',type:'Mid-size',seats:2,service:'Self-drive',area:'City Proper',price:1400,color:'#7D8794',active:true,
+   description:'Retro-style 250cc manual bike for longer rides. Experienced riders only.',
+   specs:{year:2024,transmission:'Manual',cc:250,fuel:'Gasoline',helmets:2,mileage:'250 km/day',deposit:5000},
+   features:['5-speed manual','2 helmets included','Side bags','Crash bars'],images:[]},
+  {id:'m-himalayan',kind:'motor',name:'Royal Enfield Himalayan',type:'Big bike',seats:2,service:'Self-drive',area:'Airport',price:2500,color:'#D6DBE2',active:true,
+   description:'Adventure tourer for long distances and rough roads. Experienced riders with a motorcycle licence only.',
+   specs:{year:2022,transmission:'Manual',cc:411,fuel:'Gasoline',helmets:2,mileage:'Unlimited',deposit:5000},
+   features:['Adventure touring','2 helmets included','Luggage rack','Long-distance comfort'],images:[]}
+);

@@ -6,6 +6,8 @@ const fmt=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).to
 const fmtEn=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('en-PH',{day:'numeric',month:'short',year:'numeric'})};
 const days=(a,b)=>{const [y1,m1,d1]=a.split('-').map(Number),[y2,m2,d2]=b.split('-').map(Number);return Math.round((new Date(y2,m2-1,d2)-new Date(y1,m1-1,d1))/864e5)};
 const toast=m=>{const d=document.createElement('div');d.className='toast';d.textContent=m;d.setAttribute('role','status');document.body.appendChild(d);setTimeout(()=>d.remove(),2600)};
+const isMotor=c=>c&&c.kind==='motor';
+const seatsLabel=c=>t(isMotor(c)?'card.riders':'card.seats',{n:c.seats});
 function carSVG(c){
   const P={sedan:['M24 118 L44 98 Q62 80 104 78 L186 78 Q222 80 242 100 L288 108 Q298 112 298 126 L298 138 L24 138Z','M72 98 Q84 86 108 85 L140 85 L140 99 L72 99Z M148 85 L186 85 Q206 87 220 99 L148 99Z'],hatch:['M26 122 L42 98 Q56 80 92 78 L206 78 Q230 82 240 102 L284 110 Q296 114 296 126 L296 138 L26 138Z','M64 98 Q74 87 96 86 L136 86 L136 99 L64 99Z M144 86 L202 86 Q216 88 226 99 L144 99Z'],suv:['M22 120 L34 84 Q40 70 66 68 L214 68 Q240 70 252 92 L290 104 Q300 108 300 124 L300 138 L22 138Z','M52 92 L62 78 L120 78 L120 98 L52 98Z M128 78 L212 78 Q228 80 238 98 L128 98Z'],van:['M20 134 L20 70 Q20 58 34 58 L236 58 Q252 58 260 74 L298 108 Q302 114 302 124 L302 138 L20 138Z','M36 72 L100 72 L100 96 L36 96Z M108 72 L172 72 L172 96 L108 96Z M180 72 L236 72 Q244 74 250 90 L250 96 L180 96Z'],pickup:['M22 124 L22 108 L120 108 L132 80 Q138 70 156 70 L224 70 Q244 72 254 94 L292 104 Q300 108 300 124 L300 138 L22 138Z','M142 82 L222 82 Q236 84 242 98 L142 98Z']};
   const k=c.type==='Hatchback'?'hatch':String(c.type).toLowerCase(),p=P[k]||P.sedan;
@@ -14,10 +16,21 @@ function carSVG(c){
 
 function frontSVG(c){return `<svg viewBox="0 0 320 170" role="img" aria-label="${esc(c.name)} front, illustration"><ellipse cx="160" cy="156" rx="112" ry="8" fill="#000" opacity=".16"/><rect x="52" y="124" width="22" height="26" rx="5" fill="#171C24"/><rect x="246" y="124" width="22" height="26" rx="5" fill="#171C24"/><path d="M58 134 L58 96 Q60 66 100 58 L220 58 Q260 66 262 96 L262 134Z" fill="${esc(c.color||'#7D8794')}"/><path d="M92 66 L228 66 L244 98 L76 98Z" fill="var(--win)"/><circle cx="84" cy="114" r="11" fill="#FFE9A6"/><circle cx="236" cy="114" r="11" fill="#FFE9A6"/><rect x="124" y="108" width="72" height="16" rx="4" fill="#171C24" opacity=".85"/><rect x="136" y="128" width="48" height="8" rx="2" fill="#fff" opacity=".85"/></svg>`}
 function interiorSVG(c){return `<svg viewBox="0 0 320 170" role="img" aria-label="${esc(c.name)} interior, illustration"><rect width="320" height="170" fill="var(--win)"/><path d="M0 96 Q160 70 320 96 L320 170 L0 170Z" fill="#2A323D"/><rect x="176" y="100" width="62" height="34" rx="5" fill="#0E141B"/><rect x="182" y="106" width="50" height="22" rx="3" fill="#2F6DB5" opacity=".7"/><circle cx="96" cy="116" r="34" fill="none" stroke="#11161D" stroke-width="9"/><circle cx="96" cy="116" r="8" fill="#11161D"/><rect x="40" y="148" width="240" height="22" rx="6" fill="#1B222B"/></svg>`}
-const imgsOf=c=>(c.images&&c.images.length)?c.images.map((u,i)=>`<img src="${esc(u)}" alt="${esc(c.name)} photo ${i+1}" loading="lazy">`):[carSVG(c),frontSVG(c),interiorSVG(c)];
+
+function motorSVG(c){
+  const col=esc(c.color||'#7D8794'),ty=c.type,big=(ty==='Big bike'||ty==='Mid-size'),ub=ty==='Underbone';
+  let body;
+  const ol=' stroke="#9AA4B2" stroke-opacity=".55" stroke-width="1.5"';
+  if(ty==='Scooter'){body=`<path d="M56 112 Q56 86 92 82 L146 84 Q160 86 164 100 L164 124 L88 126 Q56 126 56 112Z" fill="${col}"${ol}/><rect x="148" y="112" width="58" height="9" rx="4" fill="#171C24"/><path d="M196 118 L210 74 Q214 64 226 62 L238 64 L228 120Z" fill="${col}"${ol}/><path d="M60 84 Q90 70 152 80 L152 91 L64 93Z" fill="#171C24"/><path d="M230 50 L244 136" stroke="#9AA4B2" stroke-width="5" stroke-linecap="round" fill="none"/><path d="M216 54 L244 46" stroke="#171C24" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M228 120 Q250 108 262 126" stroke="${col}" stroke-width="6" stroke-linecap="round" fill="none"/><circle cx="238" cy="72" r="6" fill="#FFE9A6"/>`}
+  else{body=`<path d="M112 84 L184 78 Q196 80 198 94 L190 104 L116 104Z" fill="${col}"/>${big?'<rect x="120" y="102" width="60" height="26" rx="6" fill="#171C24"/><path d="M96 128 L70 134 L58 134" stroke="#9AA4B2" stroke-width="6" fill="none" stroke-linecap="round"/>':'<path d="M120 104 L180 104 L166 126 L130 126Z" fill="#2A323D"/>'}<path d="M62 92 Q70 82 112 84 L116 94 L66 98Z" fill="#171C24"/><path d="M60 96 Q56 106 62 118" stroke="${col}" stroke-width="8" stroke-linecap="round" fill="none"/><path d="M208 108 L222 62 M222 62 L236 56" stroke="#171C24" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M200 40 L230 40" stroke="#171C24" stroke-width="5" stroke-linecap="round"/><path d="M222 62 L214 44" stroke="#171C24" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="234" cy="${big?72:76}" r="${big?9:7}" fill="#FFE9A6"/>${big?'<path d="M196 56 Q214 50 230 58 L226 72 L202 70Z" fill="var(--win)"/>':''}`}
+  return `<svg viewBox="0 0 320 170" role="img" aria-label="${esc(c.name)}"><ellipse cx="160" cy="160" rx="132" ry="8" fill="#000" opacity=".16"/>${body}<circle cx="84" cy="136" r="24" fill="#171C24"/><circle cx="84" cy="136" r="10" fill="#CBD3DD"/><circle cx="244" cy="136" r="24" fill="#171C24"/><circle cx="244" cy="136" r="10" fill="#CBD3DD"/>${ty==='Scooter'?'':'<path d="M244 136 L222 62" stroke="#9AA4B2" stroke-width="4" fill="none" stroke-linecap="round"/>'}</svg>`;
+}
+function motorFront(c){const col=esc(c.color||'#7D8794');return `<svg viewBox="0 0 320 170" role="img" aria-label="${esc(c.name)} front, illustration"><ellipse cx="160" cy="158" rx="70" ry="7" fill="#000" opacity=".16"/><rect x="150" y="112" width="20" height="44" rx="8" fill="#171C24"/><path d="M146 112 L150 66 L170 66 L174 112Z" fill="#9AA4B2"/><path d="M122 46 L198 46" stroke="#171C24" stroke-width="7" stroke-linecap="round"/><path d="M118 46 L112 38 M202 46 L208 38" stroke="#171C24" stroke-width="7" stroke-linecap="round"/><path d="M128 76 Q160 40 192 76 L186 100 L134 100Z" fill="${col}"/><circle cx="160" cy="82" r="13" fill="#FFE9A6"/><circle cx="160" cy="82" r="6" fill="#FFF6D6"/></svg>`}
+function helmetSVG(c){const h=(x,col)=>`<g><path d="M${x} 112 Q${x} 56 ${x+42} 56 Q${x+84} 56 ${x+84} 112 L${x+84} 124 L${x} 124Z" fill="${col}"/><path d="M${x+30} 84 L${x+84} 84 L${x+84} 108 L${x+34} 108Z" fill="var(--win)"/></g>`;return `<svg viewBox="0 0 320 170" role="img" aria-label="${esc(c.name)} helmets, illustration"><rect width="320" height="170" fill="var(--win)"/><ellipse cx="160" cy="146" rx="120" ry="8" fill="#000" opacity=".14"/>${h(52,esc(c.color||'#7D8794'))}${h(184,'#171C24')}</svg>`}
+const imgsOf=c=>(c.images&&c.images.length)?c.images.map((u,i)=>`<img src="${esc(u)}" alt="${esc(c.name)} photo ${i+1}" loading="lazy">`):(isMotor(c)?[motorSVG(c),motorFront(c),helmetSVG(c)]:[carSVG(c),frontSVG(c),interiorSVG(c)]);
 const hasPhotos=c=>c.images&&c.images.length;
 
-const S={type:'All',service:'any',seats:0,sel:null,pin:CENTER.slice(),moved:false,gi:0,gid:null};
+const S={kind:'all',type:'All',service:'any',seats:0,sel:null,pin:CENTER.slice(),moved:false,gi:0,gid:null};
 const rad=x=>x*Math.PI/180;
 const km=(a,b)=>{const R=6371,dLa=rad(b[0]-a[0]),dLo=rad(b[1]-a[1]),h=Math.sin(dLa/2)**2+Math.cos(rad(a[0]))*Math.cos(rad(b[0]))*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
 const nearestArea=p=>Object.keys(AREAS).reduce((best,k)=>km(p,AREAS[k])<km(p,AREAS[best])?k:best,'City Proper');
@@ -62,11 +75,16 @@ $('#locate').addEventListener('click',()=>{
 
 /* ---------- vehicles ---------- */
 function renderTypes(){
-  const types=['All',...new Set(activeCars().map(c=>c.type))];
+  const all=activeCars(),hasM=all.some(isMotor),hasC=all.some(c=>!isMotor(c));
+  const kb=$('#kinds');
+  if(kb){kb.hidden=!(hasM&&hasC);kb.innerHTML=[['all','k.all'],['car','k.car'],['motor','k.motor']].map(k=>`<button type="button" class="chip" data-kind="${k[0]}" aria-pressed="${k[0]===S.kind}">${esc(t(k[1]))}</button>`).join('')}
+  const pool=all.filter(c=>S.kind==='all'||(S.kind==='motor')===isMotor(c));
+  const types=['All',...new Set(pool.map(c=>c.type))];
+  if(!types.includes(S.type))S.type='All';
   $('#types').innerHTML=types.map(x=>`<button type="button" class="chip" data-type="${esc(x)}" aria-pressed="${x===S.type}">${esc(x==='All'?t('all'):x)}</button>`).join('');
 }
 function filtered(){
-  const l=activeCars().filter(c=>(S.type==='All'||c.type===S.type)&&(S.service==='any'||c.service===S.service)&&c.seats>=S.seats);
+  const l=activeCars().filter(c=>(S.kind==='all'||(S.kind==='motor')===isMotor(c))&&(S.type==='All'||c.type===S.type)&&(S.service==='any'||c.service===S.service)&&c.seats>=S.seats);
   return l.sort((a,b)=>S.moved?distOf(a)-distOf(b):a.price-b.price);
 }
 const dateNow=()=>{const a=$('#from').value,b=$('#to').value;return {a,b,d:(a&&b)?days(a,b):0}};
@@ -76,7 +94,7 @@ function cardHtml(c){
   return `<article class="card${S.sel===c.id?' sel':''}${un?' off':''}"><button type="button" class="cardbtn" data-open="${esc(c.id)}">
     <div class="tile">${imgsOf(c)[0]}<span class="area">${esc(c.area)}</span><span class="svc">${esc(svcT(c.service))}</span>${S.sel===c.id?'<span class="chosen">'+esc(t('card.chosen'))+'</span>':''}${un?'<span class="chosen" style="background:var(--ink);color:var(--bg)">'+esc(t('card.booked'))+'</span>':''}</div>
     <div class="cb"><div class="row2" style="align-items:baseline"><h3>${esc(c.name)}</h3><span class="rt">${rt?'★ '+rt.avg.toFixed(1)+' <small>('+rt.n+')</small>':'<small>'+esc(t('card.new'))+'</small>'}</span></div>
-    <p class="sub">${esc(c.type)} · ${esc(t('card.seats',{n:c.seats}))}${S.moved?' · '+esc(t('card.km',{k:distOf(c).toFixed(1)})):''}</p>
+    <p class="sub">${esc(c.type)} · ${esc(seatsLabel(c))}${S.moved?' · '+esc(t('card.km',{k:distOf(c).toFixed(1)})):''}</p>
     <p class="pr">${d>=1?`<b>${esc(money(c.price*d))}</b><span>${esc(t(d===1?'card.for1':'card.forN',{d,p:money(c.price)}))}</span>`:`<b>${esc(money(c.price))}</b><span>${esc(t('card.perday'))}</span>`}</p></div></button>
     <button type="button" class="heart${fav?' on':''}" data-fav="${esc(c.id)}" aria-pressed="${fav}" aria-label="${esc(t(fav?'card.unsave':'card.save'))} ${esc(c.name)}">${fav?'♥':'♡'}</button></article>`;
 }
@@ -93,16 +111,16 @@ $('#seats').addEventListener('change',e=>{S.seats=+e.target.value;renderGrid()})
 const dlg=$('#dlg');
 function openDetail(id){
   const c=allCars().find(x=>x.id===id);if(!c)return;S.gid=id;S.gi=0;
-  const sp=c.specs||{},rows=[['sp.year',sp.year],['sp.trans',sp.transmission],['sp.fuel',sp.fuel],['sp.seats',c.seats],['sp.lug',sp.bags!=null?t('bags',{n:sp.bags}):''],['sp.aircon',sp.aircon],['sp.service',svcT(c.service)],['sp.area',c.area]].filter(r=>r[1]!==''&&r[1]!=null);
+  const sp=c.specs||{},mo=isMotor(c),rows=(mo?[['sp.year',sp.year],['sp.trans',sp.transmission],['sp.cc',sp.cc?sp.cc+' cc':''],['sp.fuel',sp.fuel],['sp.riders',c.seats],['sp.helmets',sp.helmets],['sp.mileage',sp.mileage],['sp.secdep',sp.deposit?money(sp.deposit):''],['sp.service',svcT(c.service)],['sp.area',c.area]]:[['sp.year',sp.year],['sp.trans',sp.transmission],['sp.fuel',sp.fuel],['sp.seats',c.seats],['sp.lug',sp.bags!=null?t('bags',{n:sp.bags}):''],['sp.aircon',sp.aircon],['sp.service',svcT(c.service)],['sp.area',c.area]]).filter(r=>r[1]!==''&&r[1]!=null);
   $('#dbody').innerHTML=`<div class="dgal"><div class="gal"><div class="stage" id="stage"></div><button type="button" class="nav prev" data-g="-1" aria-label="${esc(t('g.prev'))}">‹</button><button type="button" class="nav next" data-g="1" aria-label="${esc(t('g.next'))}">›</button></div>
   <div class="thumbs" id="thumbs"></div>
   <p class="note" id="galnote" style="margin-top:6px"></p></div>
-  <div class="dinfo">${c.ownerName?`<p class="note" style="margin:8px 0 0">${esc(t('d.hosted',{name:c.ownerName}))}</p>`:''}<div class="dhead"><div><h2 id="dtitle">${esc(c.name)}</h2><p class="sub">${esc(c.type)} · ${esc(t('card.seats',{n:c.seats}))} · ${esc(svcT(c.service))}${S.moved?' · '+esc(t('kmpin',{k:distOf(c).toFixed(1)})):''}</p></div><div><p class="pr big"><b>${esc(money(c.price))}</b><span>${esc(t('card.perday'))}</span></p><button type="button" class="chip" data-fav="${esc(c.id)}" style="margin-top:6px">${esc(t(ST.favs.includes(c.id)?'d.saved':'d.save'))}</button></div></div>
+  <div class="dinfo">${c.ownerName?`<p class="note" style="margin:8px 0 0">${esc(t('d.hosted',{name:c.ownerName}))}</p>`:''}<div class="dhead"><div><h2 id="dtitle">${esc(c.name)}</h2><p class="sub">${esc(c.type)} · ${esc(seatsLabel(c))} · ${esc(svcT(c.service))}${S.moved?' · '+esc(t('kmpin',{k:distOf(c).toFixed(1)})):''}</p></div><div><p class="pr big"><b>${esc(money(c.price))}</b><span>${esc(t('card.perday'))}</span></p><button type="button" class="chip" data-fav="${esc(c.id)}" style="margin-top:6px">${esc(t(ST.favs.includes(c.id)?'d.saved':'d.save'))}</button></div></div>
   <p class="desc">${esc(c.description||'')}</p>
   <h3 class="h3">${esc(t('d.details'))}</h3><dl class="specs">${rows.map(r=>`<div><dt>${esc(t(r[0]))}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>
   ${(c.features&&c.features.length)?`<h3 class="h3">${esc(t('d.features'))}</h3><div class="feat">${c.features.map(f=>`<span class="pill">${esc(f)}</span>`).join('')}</div>`:''}
   <h3 class="h3">${esc(t('d.reviews'))}</h3>${reviewBlock(c)}
-  <h3 class="h3">${esc(t('d.good'))}</h3><ul class="rules"><li>${esc(t('r.deposit',{pct:Math.round(SETTINGS.depositRate*100)}))}</li><li>${esc(t(c.service==='Self-drive'?'r.license':'r.driver'))}</li><li>${esc(t('r.fuel'))}</li><li>${esc(SETTINGS.cancellation)}</li></ul>
+  <h3 class="h3">${esc(t('d.good'))}</h3><ul class="rules"><li>${esc(t('r.deposit',{pct:Math.round(SETTINGS.depositRate*100)}))}</li>${mo?`<li>${esc(t('r.mlicense'))}</li><li>${esc(t('r.helmet'))}</li>${sp.deposit?`<li>${esc(t('r.secdep',{amt:money(sp.deposit)}))}</li>`:''}`:`<li>${esc(t(c.service==='Self-drive'?'r.license':'r.driver'))}</li>`}<li>${esc(t('r.fuel'))}</li><li>${esc(SETTINGS.cancellation)}</li></ul>
   ${c.status!=='approved'?'<p class="note">'+esc(t('d.preview'))+'</p>':unavailable(c)?'<p class="err">'+esc(t('d.booked'))+'</p>':`<div class="stack"><button type="button" class="btn" data-choose="${esc(c.id)}">${esc(t('d.choose'))}</button></div>`}</div>`;
   renderGallery();if(!dlg.open)dlg.showModal();
 }
@@ -125,6 +143,8 @@ dlg.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'){S.gi--;renderGallery(
 /* ---------- filters, request ---------- */
 document.addEventListener('click',e=>{
   const x=e.target.closest('[data-type]'),o=e.target.closest('[data-open]');
+  const kd=e.target.closest('[data-kind]');
+  if(kd){S.kind=kd.dataset.kind;S.type='All';renderTypes();renderGrid();return}
   if(x){S.type=x.dataset.type;renderTypes();renderGrid()}else if(o)openDetail(o.dataset.open);
 });
 function quote(){
@@ -133,7 +153,7 @@ function quote(){
   $('#chosen').innerHTML=c?`<span class="lab">${esc(t('chosenlab'))}</span><div class="row2"><b>${esc(c.name)}</b><button type="button" class="chip" data-open="${esc(c.id)}">${esc(t('viewd'))}</button></div>`:'<span class="note">'+esc(t('pickfirst'))+'</span>';
   if(!c||!a||!b||days(a,b)<1){$('#quote').innerHTML=c?'<span class="note">'+esc(t('retbefore'))+'</span>':'';return null}
   const d=days(a,b),total=c.price*d,dep=Math.round(total*SETTINGS.depositRate);
-  $('#quote').innerHTML=`<div><span>${esc(t('q.line',{p:money(c.price),d}))}</span><span>${esc(money(total))}</span></div><div><span>${esc(t('q.dep'))}</span><span>${esc(money(dep))}</span></div><div><span>${esc(t('q.bal'))}</span><span>${esc(money(total-dep))}</span></div><div class="t"><span>${esc(t('q.tot'))}</span><span>${esc(money(total))}</span></div>`;
+  $('#quote').innerHTML=`<div><span>${esc(t('q.line',{p:money(c.price),d}))}</span><span>${esc(money(total))}</span></div><div><span>${esc(t('q.dep'))}</span><span>${esc(money(dep))}</span></div><div><span>${esc(t('q.bal'))}</span><span>${esc(money(total-dep))}</span></div><div class="t"><span>${esc(t('q.tot'))}</span><span>${esc(money(total))}</span></div>${(isMotor(c)&&c.specs&&c.specs.deposit)?`<div><span>${esc(t('q.sec'))}</span><span>${esc(money(c.specs.deposit))}</span></div>`:''}`;
   return {c,a,b,d,total,dep};
 }
 ['from','to'].forEach(id=>$('#'+id).addEventListener('change',()=>{const a=$('#from').value;if(a)$('#to').min=a;renderGrid()}));
@@ -147,7 +167,7 @@ $('#f').addEventListener('submit',e=>{
   if(!name){err.textContent=t('e.name');return}
   if(!/^\+?\d{8,15}$/.test(phone)){err.textContent=t('e.phone');return}
   const area=nearestArea(S.pin),spot=S.moved?`near ${area}, https://www.google.com/maps?q=${S.pin[0].toFixed(5)},${S.pin[1].toFixed(5)}`:'not set';
-  MSG=`Hi ${BRAND.name}, I would like to request a vehicle.\n\nVehicle: ${q.c.name} (${q.c.service}, ${q.c.area})\nDates: ${fmtEn(q.a)} to ${fmtEn(q.b)} (${q.d} day${q.d>1?'s':''})\nPickup spot: ${spot}\nEstimated total: ${php(q.total)}, deposit ${php(q.dep)}\nName: ${name}\nMobile: ${phone}${code?'\nReferral code: '+code:''}${notes?'\nNotes: '+notes:''}\n\nRequest ref: ${q.c.id}|${q.a}|${q.b}|${phone}${code?'|'+code:''}`;
+  MSG=`Hi ${BRAND.name}, I would like to request a vehicle.\n\nVehicle: ${q.c.name} (${q.c.service}, ${q.c.area})\nDates: ${fmtEn(q.a)} to ${fmtEn(q.b)} (${q.d} day${q.d>1?'s':''})\nPickup spot: ${spot}\nEstimated total: ${php(q.total)}, deposit ${php(q.dep)}${(isMotor(q.c)&&q.c.specs&&q.c.specs.deposit)?'\nSecurity deposit (cash at pickup, refundable): '+php(q.c.specs.deposit):''}\nName: ${name}\nMobile: ${phone}${code?'\nReferral code: '+code:''}${notes?'\nNotes: '+notes:''}\n\nRequest ref: ${q.c.id}|${q.a}|${q.b}|${phone}${code?'|'+code:''}`;
   const rq=saveRequest(q,name,phone,notes,spot,MSG);
   $('#msg').textContent=MSG;$('#out').hidden=false;$('#reqnote').textContent=t('reqnote',{id:rq.id});$('#out').scrollIntoView({behavior:'smooth',block:'start'});
   const fb=$('#fb');
