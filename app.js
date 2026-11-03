@@ -88,6 +88,7 @@ function filtered(){
   const ok=l.filter(c=>!unavailable(c));S.hidden=l.length-ok.length;
   return ok.sort((a,b)=>S.moved?distOf(a)-distOf(b):a.price-b.price);
 }
+const depositOf=c=>{const d=c&&c.specs&&c.specs.deposit;return (d!=null&&d!=='')?+d:SETTINGS.deposit[isMotor(c)?'motor':'car']};
 const dateNow=()=>{const a=$('#from').value,b=$('#to').value;return {a,b,d:(a&&b)?days(a,b):0}};
 /* ---------- availability calendar ---------- */
 const addD=(s,n)=>{const [y,m,d]=s.split('-').map(Number);return iso(new Date(y,m-1,d+n))};
@@ -165,7 +166,7 @@ function openDetail(id){
   <h3 class="h3">${esc(t('d.details'))}</h3><dl class="specs">${rows.map(r=>`<div><dt>${esc(t(r[0]))}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>
   ${(c.features&&c.features.length)?`<h3 class="h3">${esc(t('d.features'))}</h3><div class="feat">${c.features.map(f=>`<span class="pill">${esc(f)}</span>`).join('')}</div>`:''}
   <h3 class="h3">${esc(t('d.reviews'))}</h3>${reviewBlock(c)}
-  <h3 class="h3">${esc(t('d.good'))}</h3><ul class="rules"><li>${esc(t('r.deposit',{pct:Math.round(SETTINGS.depositRate*100)}))}</li>${mo?`<li>${esc(t('r.mlicense'))}</li><li>${esc(t('r.helmet'))}</li>${sp.deposit?`<li>${esc(t('r.secdep',{amt:money(sp.deposit)}))}</li>`:''}`:`<li>${esc(t(c.service==='Self-drive'?'r.license':'r.driver'))}</li>`}<li>${esc(t('r.fuel'))}</li><li>${esc(SETTINGS.cancellation)}</li></ul>
+  <h3 class="h3">${esc(t('d.good'))}</h3><ul class="rules"><li>${esc(t('r.deposit'))}</li><li>${esc(t('r.secdep',{amt:money(depositOf(c))}))}</li>${mo?`<li>${esc(t('r.mlicense'))}</li><li>${esc(t('r.helmet'))}</li>`:`<li>${esc(t(c.service==='Self-drive'?'r.license':'r.driver'))}</li>`}<li>${esc(t('r.fuel'))}</li><li>${esc(SETTINGS.cancellation)}</li></ul>
   ${c.status==='approved'?`<h3 class="h3">${esc(t('cal.title'))}</h3><div class="cal" id="cal-d" data-key="d" data-car="${esc(c.id)}" data-mode="pick">${calInner('d',c.id,'pick')}</div><p class="note" id="calsum"></p>`:''}${c.status!=='approved'?'<p class="note">'+esc(t('d.preview'))+'</p>':unavailable(c)?'<p class="err">'+esc(t('d.booked'))+'</p>':`<div class="stack"><button type="button" class="btn" data-choose="${esc(c.id)}">${esc(t('d.choose'))}</button></div>`}</div>`;
   renderGallery();calSum();if(!dlg.open)dlg.showModal();
 }
@@ -197,8 +198,8 @@ function quote(){
   $('#datesum').textContent=(a&&b&&days(a,b)>=1)?t('datesum',{a:fmt(a),b:fmt(b),d:days(a,b)}):t('datesum.none');
   $('#chosen').innerHTML=c?`<span class="lab">${esc(t('chosenlab'))}</span><div class="row2"><b>${esc(c.name)}</b><button type="button" class="chip" data-open="${esc(c.id)}">${esc(t('viewd'))}</button></div>`:'<span class="note">'+esc(t('pickfirst'))+'</span>';
   if(!c||!a||!b||days(a,b)<1){$('#quote').innerHTML=c?'<span class="note">'+esc(t('retbefore'))+'</span>':'';return null}
-  const d=days(a,b),total=c.price*d,dep=Math.round(total*SETTINGS.depositRate);
-  $('#quote').innerHTML=`<div><span>${esc(t('q.line',{p:money(c.price),d}))}</span><span>${esc(money(total))}</span></div><div><span>${esc(t('q.dep'))}</span><span>${esc(money(dep))}</span></div><div><span>${esc(t('q.bal'))}</span><span>${esc(money(total-dep))}</span></div><div class="t"><span>${esc(t('q.tot'))}</span><span>${esc(money(total))}</span></div>${(isMotor(c)&&c.specs&&c.specs.deposit)?`<div><span>${esc(t('q.sec'))}</span><span>${esc(money(c.specs.deposit))}</span></div>`:''}`;
+  const d=days(a,b),total=c.price*d,dep=depositOf(c);
+  $('#quote').innerHTML=`<div><span>${esc(t('q.line',{p:money(c.price),d}))}</span><span>${esc(money(total))}</span></div><div><span>${esc(t('q.dep'))}</span><span>${esc(money(dep))}</span></div><div class="t"><span>${esc(t('q.tot'))}</span><span>${esc(money(total+dep))}</span></div><p class="note" style="margin:6px 0 0">${esc(t('q.note'))}</p>`;
   return {c,a,b,d,total,dep};
 }
 ['from','to'].forEach(id=>$('#'+id).addEventListener('change',()=>{const a=$('#from').value;if(a)$('#to').min=a;renderGrid()}));
@@ -211,8 +212,9 @@ $('#f').addEventListener('submit',e=>{
   if(unavailable(q.c)){err.textContent=t('e.unavail');return}
   if(!name){err.textContent=t('e.name');return}
   if(!/^\+?\d{8,15}$/.test(phone)){err.textContent=t('e.phone');return}
+  if(!$('#ack').checked){err.textContent=t('e.ack');return}
   const area=nearestArea(S.pin),spot=S.moved?`near ${area}, https://www.google.com/maps?q=${S.pin[0].toFixed(5)},${S.pin[1].toFixed(5)}`:'not set';
-  MSG=`Hi ${BRAND.name}, I would like to request a vehicle.\n\nVehicle: ${q.c.name} (${q.c.service}, ${q.c.area})\nDates: ${fmtEn(q.a)} to ${fmtEn(q.b)} (${q.d} day${q.d>1?'s':''})\nPickup spot: ${spot}\nEstimated total: ${php(q.total)}, deposit ${php(q.dep)}${(isMotor(q.c)&&q.c.specs&&q.c.specs.deposit)?'\nSecurity deposit (cash at pickup, refundable): '+php(q.c.specs.deposit):''}\nName: ${name}\nMobile: ${phone}${code?'\nReferral code: '+code:''}${notes?'\nNotes: '+notes:''}\n\nRequest ref: ${q.c.id}|${q.a}|${q.b}|${phone}${code?'|'+code:''}`;
+  MSG=`Hi ${BRAND.name}, I would like to request a vehicle.\n\nVehicle: ${q.c.name} (${q.c.service}, ${q.c.area})\nDates: ${fmtEn(q.a)} to ${fmtEn(q.b)} (${q.d} day${q.d>1?'s':''})\nPickup spot: ${spot}\nRental fee: ${php(q.total)}\nRefundable security deposit: ${php(q.dep)}\nTotal to pay online after the owner confirms: ${php(q.total+q.dep)}\nName: ${name}\nMobile: ${phone}${code?'\nReferral code: '+code:''}${notes?'\nNotes: '+notes:''}\nI have read and agree to the renter notice.\n\nRequest ref: ${q.c.id}|${q.a}|${q.b}|${phone}${code?'|'+code:''}`;
   const rq=saveRequest(q,name,phone,notes,spot,MSG);
   $('#msg').textContent=MSG;$('#out').hidden=false;$('#reqnote').textContent=t('reqnote',{id:rq.id});$('#out').scrollIntoView({behavior:'smooth',block:'start'});
   const fb=$('#fb');
@@ -230,3 +232,13 @@ function reviewBlock(c){
   if(!rs.length)return '<p class="note" style="margin:0">'+esc(t('rv.none'))+'</p>';
   return `<p style="margin:0 0 8px"><b>★ ${rt.avg.toFixed(1)}</b> · ${esc(t(rt.n===1?'rv.sum1':'rv.sum',{n:rt.n}))}</p>`+rs.slice(0,5).map(r=>`<div class="rv"><div class="row2"><b>${esc(first(r.guestName))}</b><span class="rt">${stars(r.rating)}</span></div><p style="margin:2px 0 0">${esc(r.text)}</p></div>`).join('');
 }
+
+/* ---------- notices (renter notice, host declaration) ---------- */
+const ndlg=$('#ndlg');
+function openNotice(kind){
+  const h=kind==='host',n=h?5:6,k=h?'nt.h':'nt.r';
+  $('#nbody').innerHTML=`<h2 id="ntitle">${esc(t(h?'nt.htitle':'nt.rtitle'))}</h2><p style="margin:0">${esc(t(h?'nt.hintro':'nt.rintro'))}</p><ol>${Array.from({length:n},(_,i)=>`<li>${esc(t(k+(i+1)))}</li>`).join('')}</ol><p>${esc(t('nt.both'))}</p><p class="note">${esc(t(h?'nt.hnote':'nt.rnote'))}</p><div class="stack"><button type="button" class="btn" data-nclose>${esc(t('close'))}</button></div>`;
+  if(!ndlg.open)ndlg.showModal();
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-notice]');if(b){e.preventDefault();openNotice(b.dataset.notice)}});
+ndlg.addEventListener('click',e=>{if(e.target===ndlg||e.target.closest('[data-nclose]'))ndlg.close()});

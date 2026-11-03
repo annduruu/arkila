@@ -42,9 +42,17 @@ Hosts choose "Motorbike or scooter" in the Add a vehicle form. Types: Scooter, U
 
 Each vehicle page has a calendar. Booked and blocked days are greyed out and cannot be picked, and a rental cannot run across a blocked day.
 
-- **Confirmed bookings** block their dates automatically (when the Arkila screen marks the deposit as received).
+- **Confirmed bookings** block their dates automatically (when the Arkila screen marks the payment as received).
 - **Hosts** open Host dashboard, press Calendar on a vehicle, and tap free days to block or unblock them. In this demo that is saved on the same device only.
 - **Real blocks:** until the backend exists, when a host asks for dates to be blocked, add them to the `BLOCKED` list at the bottom of `config.js` (both days are included). Example: `'m-click':[['2026-11-12','2026-11-15']]`. The two sample ranges there can be deleted.
 
 
 Note: when pickup and return dates are set, vehicles already booked or blocked for those dates are hidden from the list, and the count shows how many were hidden.
+
+
+## Money and notices (Terms draft)
+
+- Renters pay the rental fee and a refundable security deposit online to Arkila after the owner confirms the dates. There is no pay-later and no cash at pickup.
+- Default deposits are in `config.js` (`SETTINGS.deposit`). Hosts can set their own on a listing. These are placeholders, decide before launch.
+- The renter notice is ticked when a request is sent, and the host declaration when a vehicle is submitted. Both are stored on the request or listing as `ack`. The full wording lives in `i18n.js` under `nt.*` and must match the Terms of Service draft.
+- The cancellation text in `SETTINGS.cancellation` is a placeholder that matches the Terms draft.

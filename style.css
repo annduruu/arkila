@@ -209,3 +209,10 @@ dialog::backdrop{background:rgba(5,10,18,.6)}
 .calleg .lh{background:var(--sun)}
 .calleg .la{background:repeating-linear-gradient(135deg,var(--tile2) 0 3px,var(--line) 3px 4px)}
 .calwrap{margin:-4px 0 12px;padding:0 4px}
+
+/* notices and tick boxes */
+.lnk{background:none;border:0;padding:0;margin:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer}
+.ck,.form label.ck{display:flex;flex-direction:row;gap:10px;align-items:flex-start;font-size:14px;line-height:1.4;margin:6px 0}
+.ck input,.form .ck input{width:20px;min-width:20px;height:20px;padding:0;margin:1px 0 0;flex:none;accent-color:var(--brand,#0b5)}
+#ndlg ol{margin:8px 0 10px;padding-left:20px;display:grid;gap:6px}
+#ndlg h2{margin:0 0 6px;padding-right:40px}

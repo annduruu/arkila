@@ -10,9 +10,9 @@ const BRAND={
   phone:''       // optional contact mobile, e.g. '0917 123 4567'
 };
 const SETTINGS={
-  depositRate:0.20, // share of the total paid as deposit
+  deposit:{car:5000,motor:2000}, // refundable security deposit, paid online to Arkila and held until the return check (placeholder amounts: decide)
   commission:0.12,  // Arkila share of each trip total (shown on the admin screen)
-  cancellation:'Free cancellation up to 48 hours before pickup. After that the deposit is not refunded.', // edit to your real policy
+  cancellation:"Free cancellation up to 7 days before pickup. After that the host may keep up to one day's rental and the rest is refunded. Your security deposit is always refunded.", // placeholder, matches the Terms draft. Edit to your real policy
   isSample:true     // set to false once real vehicles are listed, to hide the sample banner
 };
 
