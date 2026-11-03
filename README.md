@@ -17,3 +17,11 @@ Open `config.js` on GitHub (pencil icon) and change:
 
 ## How a request reaches you
 The guest copies the message and sends it to your page on Messenger. The last line (`Request ref: ...`) holds the vehicle, dates and phone, so the Arkila back office can turn a pasted message into a booking.
+
+## Adding real photos
+1. In the repository, click Add file, then Create new file. Type `photos/vios-1.jpg` in the name box is not possible for images, so use Add file, then Upload files, and upload the photos into a folder called `photos`.
+2. In `config.js`, set the vehicle's `images` list, for example `images:['photos/vios-1.jpg','photos/vios-2.jpg']`.
+3. Photos should be JPG, under 500 KB each, landscape.
+
+## Map
+The pickup pin uses OpenStreetMap through Leaflet. Area coordinates in `config.js` are approximate. Adjust them if a pickup area is off.

@@ -10,22 +10,38 @@
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="wrap">
-  <div class="top"><i><svg width="20" height="14" viewBox="0 0 24 16" aria-hidden="true"><path d="M2 11 L5 6 Q7 3 11 3 L15 3 Q19 3 21 7 L22 11 Z" fill="#fff"/><circle cx="7" cy="12" r="2.6" fill="#FFC72C"/><circle cx="17" cy="12" r="2.6" fill="#FFC72C"/></svg></i><span>Arkila <small>Puerto Princesa</small></span></div>
+<header class="hdr"><div class="hwrap"><a class="top" href="#home"><i><svg width="20" height="14" viewBox="0 0 24 16" aria-hidden="true"><path d="M2 11 L5 6 Q7 3 11 3 L15 3 Q19 3 21 7 L22 11 Z" fill="#fff"/><circle cx="7" cy="12" r="2.6" fill="#FFC72C"/><circle cx="17" cy="12" r="2.6" fill="#FFC72C"/></svg></i><span>Arkila <small>Puerto Princesa</small></span></a><nav id="nav" aria-label="Main"></nav></div></header>
+<div class="demo">Demo mode: accounts, vehicles and requests are saved on this device only.</div>
+<div class="wrap" id="v-home">
+  
   <h1>Rent a vehicle from a local owner</h1>
   <p class="lead">Choose a vehicle and your dates, then send us the request on Facebook. We confirm it with the owner and text you the payment details.</p>
   <div id="sampleBanner" class="banner" hidden>These vehicles and prices are samples for testing. Do not rely on them yet.</div>
 
-  <section class="step" aria-labelledby="s1"><h2 id="s1">1. Pick a vehicle</h2>
-    <div class="chips" id="areas" role="group" aria-label="Pickup area"></div>
-    <div class="grid" id="grid"></div>
+  <section class="step" aria-labelledby="s1"><h2 id="s1">1. Set your pickup spot</h2>
+    <p class="note" style="margin:0 0 8px" id="pininfo"></p>
+    <div id="map" class="map" aria-label="Map of Puerto Princesa. Drag the pin to your pickup spot."></div>
+    <div class="f2" style="margin-top:10px"><button type="button" class="btn ghost" id="locate">Use my location</button>
+      <label class="inl"><span class="lab">Or choose an area</span><select id="areaSel"></select></label></div>
   </section>
 
-  <section class="step" aria-labelledby="s2"><h2 id="s2">2. Your dates and contact</h2>
+  <section class="step" aria-labelledby="s2"><h2 id="s2">2. Pick a vehicle</h2>
+    <div class="chips" id="types" role="group" aria-label="Vehicle type"></div>
+    <div class="f2" style="margin-bottom:10px">
+      <label class="inl"><span class="lab">Service</span><select id="svc"><option value="any">Any</option><option>Self-drive</option><option>With driver</option></select></label>
+      <label class="inl"><span class="lab">Seats</span><select id="seats"><option value="0">Any</option><option value="4">4 or more</option><option value="7">7 or more</option><option value="10">10 or more</option></select></label></div>
+    <p class="note" id="count" style="margin:0 0 10px"></p>
+    <div class="grid" id="grid"></div>
+    <p class="note">Tap a vehicle to see photos, details and features.</p>
+  </section>
+
+  <section class="step" aria-labelledby="s3"><h2 id="s3">3. Your dates and contact</h2>
     <form class="form" id="f" novalidate>
+      <div id="chosen"></div>
       <div class="f2">
         <label><span class="lab">Pickup date</span><input type="date" id="from"></label>
         <label><span class="lab">Return date</span><input type="date" id="to"></label>
@@ -33,13 +49,14 @@
       <label><span class="lab">Your name</span><input id="name" autocomplete="name" placeholder="Juan Dela Cruz"></label>
       <label><span class="lab">Mobile number</span><input id="phone" inputmode="tel" autocomplete="tel" placeholder="09XX XXX XXXX"></label>
       <label><span class="lab">Referral code (optional)</span><input id="code" autocapitalize="characters" placeholder="e.g. MARIA"></label>
+      <label><span class="lab">Notes for the owner (optional)</span><input id="notes" maxlength="140" placeholder="Flight time, number of guests, child seat"></label>
       <div class="q" id="quote" aria-live="polite"></div>
       <p class="err" id="err" role="alert"></p>
       <button class="btn" type="submit">Make my request</button>
     </form>
   </section>
 
-  <section class="step" id="out" aria-labelledby="s3" hidden><h2 id="s3">3. Send it to us</h2>
+  <section class="step" id="out" aria-labelledby="s4" hidden><h2 id="s4">4. Send it to us</h2>
     <p class="note" style="margin:0 0 8px">Send this message on the Arkila Facebook page. We reply there and by text.</p>
     <div class="msgbox" id="msg"></div>
     <div class="stack">
@@ -47,6 +64,7 @@
       <a class="btn ghost" id="fb" href="#" target="_blank" rel="noopener" aria-disabled="true">Open Messenger</a>
     </div>
     <p class="note" id="fbnote"></p>
+    <p class="note" id="reqnote"></p>
   </section>
 
   <section class="step"><h2>How it works</h2>
@@ -60,7 +78,15 @@
 </div>
 
 
+<div class="wrap" id="v-host" hidden></div>
+<div class="wrap" id="v-trips" hidden></div>
+<div class="wrap" id="v-admin" hidden></div>
+<dialog id="ldlg" aria-labelledby="ltitle"><button type="button" class="x" data-lclose aria-label="Close">×</button><div id="lbody" style="padding:18px"></div></dialog>
+<dialog id="dlg" aria-labelledby="dtitle"><button type="button" class="x" data-close aria-label="Close">×</button><div id="dbody"></div></dialog>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script src="config.js"></script>
+<script src="store.js"></script>
 <script src="app.js"></script>
+<script src="views.js"></script>
 </body>
 </html>
