@@ -3,6 +3,7 @@ const SETTINGS={
   fbPage:'',        // your Facebook page username, e.g. 'arkilapuertoprincesa' (opens m.me/<name>)
   contact:'',       // optional mobile number shown to guests, e.g. '0917 123 4567'
   depositRate:0.20, // share of the total paid as deposit
+  cancellation:'Free cancellation up to 48 hours before pickup. After that the deposit is not refunded.', // edit to your real policy
   commission:0.12,  // Arkila share of each trip total (shown on the admin screen)
   isSample:true     // set to false once real vehicles are listed, to hide the sample banner
 };

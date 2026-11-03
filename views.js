@@ -1,5 +1,5 @@
 /* Login, host, trips and admin screens. Demo only: no real Facebook or Google yet. */
-const ROUTES=['home','host','trips','admin'];
+const ROUTES=['home','saved','host','trips','admin'];
 const STATUS={new:['Requested','w'],confirmed:['Deposit received','b'],completed:['Completed','g'],cancelled:['Cancelled','r'],pending:['Waiting for approval','w'],approved:['Live','g'],rejected:['Not approved','r'],paused:['Paused','']};
 const pill=k=>{const s=STATUS[k]||[k,''];return `<span class="pill ${s[1]}">${esc(s[0])}</span>`};
 const has=(u,r)=>!!(u&&u.roles.includes(r));
@@ -17,7 +17,7 @@ const setReq=(id,status)=>{const r=ST.requests.find(x=>x.id===id);if(r){r.status
 function renderNav(){
   const me=ST.me(),h=location.hash.slice(1)||'home',on=k=>h===k?' class="on"':'';
   const myTrips=me?ST.requests.filter(r=>r.guestId===me.id).length:0;
-  $('#nav').innerHTML=`<a href="#home"${on('home')}>Rent</a>`+(me?`<a href="#trips"${on('trips')}>My trips${myTrips?`<b>${myTrips}</b>`:''}</a><a href="#host"${on('host')}>${has(me,'host')?'Host':'Become a host'}</a>`:'')+(has(me,'admin')?`<a href="#admin"${on('admin')}>Admin</a>`:'')+(me?`<button type="button" class="chip" data-logout title="Log out">${esc(first(me.name))} · Log out</button>`:'<button type="button" class="chip on" data-login>Log in</button>');
+  $('#nav').innerHTML=`<a href="#home"${on('home')}>Rent</a><a href="#saved"${on('saved')}>Saved${ST.favs.length?`<b>${ST.favs.length}</b>`:''}</a>`+(me?`<a href="#trips"${on('trips')}>My trips${myTrips?`<b>${myTrips}</b>`:''}</a><a href="#host"${on('host')}>${has(me,'host')?'Host':'Become a host'}</a>`:'')+(has(me,'admin')?`<a href="#admin"${on('admin')}>Admin</a>`:'')+(me?`<button type="button" class="chip" data-logout title="Log out">${esc(first(me.name))} · Log out</button>`:'<button type="button" class="chip on" data-login>Log in</button>');
 }
 
 /* ---- login ---- */
@@ -110,8 +110,11 @@ function renderTrips(){
   $('#v-trips').innerHTML=`<h1>My trips</h1><p class="lead">Your requests and where each one stands.</p>`+(mine.length?mine.map(r=>`<section class="step"><div class="row2"><h2>${esc(r.carName)}</h2>${pill(r.status)}</div><p class="sub" style="margin:0">${fmt(r.from)} to ${fmt(r.to)} · ${r.days} day${r.days>1?'s':''} · ${esc(r.id)}</p>
     <div class="q"><div><span>Trip total</span><span>${php(r.total)}</span></div><div><span>Deposit to confirm</span><span>${php(r.deposit)}</span></div><div class="t"><span>Pay the owner at pickup</span><span>${php(r.total-r.deposit)}</span></div></div>
     ${r.status==='new'?'<p class="note">Send the request message to the Arkila Facebook page. We reply with the deposit details.</p><div class="stack"><button class="btn ghost" data-copyreq="'+esc(r.id)+'">Copy request message</button></div>':''}
+    ${r.status==='completed'?(ST.reviews.some(x=>x.reqId===r.id)?'<p class="note">Thanks for your review.</p>':`<form class="form" data-rvf="${esc(r.id)}"><span class="lab">How was your trip?</span><select name="rating" aria-label="Rating"><option value="5">★★★★★ Excellent</option><option value="4">★★★★☆ Good</option><option value="3">★★★☆☆ OK</option><option value="2">★★☆☆☆ Poor</option><option value="1">★☆☆☆☆ Bad</option></select><input name="text" maxlength="200" placeholder="One or two sentences for the next guest"><button class="btn" type="submit">Post review</button></form>`):''}
     ${r.status==='confirmed'?'<div class="ok" style="background:color-mix(in srgb,var(--good) 12%,var(--surface));border:1px solid var(--good);border-radius:12px;padding:10px 14px">Deposit received. The owner will contact you at '+esc(r.guestPhone)+'.</div>':''}</section>`).join(''):'<div class="empty">No trips yet. Find a vehicle on the Rent page.</div>');
 }
+$('#v-trips').addEventListener('submit',e=>{const f=e.target.closest('[data-rvf]');if(!f)return;e.preventDefault();const r=ST.requests.find(x=>x.id===f.dataset.rvf),me=ST.me();if(!r||!me||r.guestId!==me.id||r.status!=='completed')return;const text=f.elements.text.value.trim();if(text.length<3){toast('Add a short comment.');return}
+  ST.reviews.push({id:'rv-'+Date.now().toString(36),carId:r.carId,reqId:r.id,guestId:me.id,guestName:me.name,rating:+f.elements.rating.value,text,createdAt:Date.now()});ST.save();toast('Review posted');renderTrips()});
 $('#v-trips').addEventListener('click',e=>{const b=e.target.closest('[data-copyreq]');if(!b)return;const r=ST.requests.find(x=>x.id===b.dataset.copyreq);if(!r)return;
   (navigator.clipboard?navigator.clipboard.writeText(r.msg):Promise.reject()).then(()=>toast('Message copied')).catch(()=>toast('Copy is not available here.'))});
 
@@ -131,17 +134,26 @@ $('#v-admin').addEventListener('click',e=>{
   renderAdmin();refreshHome();
 });
 
+/* ---- saved ---- */
+function renderSaved(){
+  const list=allCars().filter(c=>ST.favs.includes(c.id)&&c.status==='approved'&&c.active!==false);
+  $('#v-saved').innerHTML=`<h1>Saved vehicles</h1><p class="lead">Vehicles you hearted. Saved on this device.</p>`+(list.length?`<div class="grid">${list.map(cardHtml).join('')}</div>`:'<div class="empty">Nothing saved yet. Tap the heart on any vehicle.</div>');
+}
+function toggleFav(id){const i=ST.favs.indexOf(id);if(i>=0)ST.favs.splice(i,1);else ST.favs.push(id);ST.save();renderNav();const h=location.hash.slice(1);if(h==='saved')renderSaved();else refreshHome();if(dlg.open&&S.gid===id)openDetail(id)}
+
 /* ---- shared ---- */
 document.addEventListener('click',e=>{
+  const fv=e.target.closest('[data-fav]');
+  if(fv){toggleFav(fv.dataset.fav);return}
   if(e.target.closest('[data-login]'))openLogin();
   else if(e.target.closest('[data-logout]')){ST.sid=null;ST.save();$('#name').value='';$('#phone').value='';renderNav();toast('Logged out');if(location.hash.slice(1)!=='home')location.hash='home';else route()}
 });
 function route(){
   const h=location.hash.slice(1),v=ROUTES.includes(h)?h:'home',me=ST.me();
-  if(v!=='home'&&!me){history.replaceState(null,'','#home');openLogin('Log in to continue.');return route()}
+  if(v!=='home'&&v!=='saved'&&!me){history.replaceState(null,'','#home');openLogin('Log in to continue.');return route()}
   if(v==='admin'&&!has(me,'admin')){location.hash='home';return}
   ROUTES.forEach(r=>{$('#v-'+r).hidden=r!==v});
-  if(v==='home')refreshHome();else if(v==='host')renderHost();else if(v==='trips')renderTrips();else renderAdmin();
+  if(v==='home')refreshHome();else if(v==='saved')renderSaved();else if(v==='host')renderHost();else if(v==='trips')renderTrips();else renderAdmin();
   renderNav();window.scrollTo(0,0);
 }
 addEventListener('hashchange',route);

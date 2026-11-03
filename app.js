@@ -66,12 +66,21 @@ function filtered(){
   const l=activeCars().filter(c=>(S.type==='All'||c.type===S.type)&&(S.service==='any'||c.service===S.service)&&c.seats>=S.seats);
   return l.sort((a,b)=>S.moved?distOf(a)-distOf(b):a.price-b.price);
 }
+const dateNow=()=>{const a=$('#from').value,b=$('#to').value;return {a,b,d:(a&&b)?days(a,b):0}};
+const unavailable=c=>{const {a,b}=dateNow();if(!a||!b||days(a,b)<1)return false;return ST.requests.some(r=>r.carId===c.id&&r.status==='confirmed'&&a<r.to&&b>r.from)};
+function cardHtml(c){
+  const {d}=dateNow(),rt=ratingOf(c),un=unavailable(c),fav=ST.favs.includes(c.id);
+  return `<article class="card${S.sel===c.id?' sel':''}${un?' off':''}"><button type="button" class="cardbtn" data-open="${esc(c.id)}">
+    <div class="tile">${imgsOf(c)[0]}<span class="area">${esc(c.area)}</span><span class="svc">${esc(c.service)}</span>${S.sel===c.id?'<span class="chosen">Chosen</span>':''}${un?'<span class="chosen" style="background:var(--ink);color:var(--bg)">Booked for these dates</span>':''}</div>
+    <div class="cb"><div class="row2" style="align-items:baseline"><h3>${esc(c.name)}</h3><span class="rt">${rt?'★ '+rt.avg.toFixed(1)+' <small>('+rt.n+')</small>':'<small>New</small>'}</span></div>
+    <p class="sub">${esc(c.type)} · ${c.seats} seats${S.moved?' · '+distOf(c).toFixed(1)+' km away':''}</p>
+    <p class="pr">${d>=1?`<b>${php(c.price*d)}</b><span>for ${d} day${d>1?'s':''} · ${php(c.price)}/day</span>`:`<b>${php(c.price)}</b><span>per day</span>`}</p></div></button>
+    <button type="button" class="heart${fav?' on':''}" data-fav="${esc(c.id)}" aria-pressed="${fav}" aria-label="${fav?'Remove from saved':'Save'} ${esc(c.name)}">${fav?'♥':'♡'}</button></article>`;
+}
 function renderGrid(){
   const list=filtered();
   $('#count').textContent=`${list.length} vehicle${list.length===1?'':'s'}${S.moved?' · nearest first':' · lowest price first'}`;
-  $('#grid').innerHTML=list.length?list.map(c=>`<button type="button" class="card${S.sel===c.id?' sel':''}" data-open="${esc(c.id)}">
-    <div class="tile">${imgsOf(c)[0]}<span class="area">${esc(c.area)}</span><span class="svc">${esc(c.service)}</span>${S.sel===c.id?'<span class="chosen">Chosen</span>':''}</div>
-    <div class="cb"><h3>${esc(c.name)}</h3><p class="sub">${esc(c.type)} · ${c.seats} seats${S.moved?' · '+distOf(c).toFixed(1)+' km away':''}</p><p class="pr"><b>${php(c.price)}</b><span>per day</span></p></div></button>`).join(''):'<div class="empty">No vehicles match. Try another type or fewer seats.</div>';
+  $('#grid').innerHTML=list.length?list.map(cardHtml).join(''):'<div class="empty">No vehicles match. Try another type or fewer seats.</div>';
   drawMarkers(list);quote();
 }
 $('#svc').addEventListener('change',e=>{S.service=e.target.value;renderGrid()});
@@ -85,12 +94,13 @@ function openDetail(id){
   $('#dbody').innerHTML=`<div class="gal"><div class="stage" id="stage"></div><button type="button" class="nav prev" data-g="-1" aria-label="Previous photo">‹</button><button type="button" class="nav next" data-g="1" aria-label="Next photo">›</button></div>
   <div class="thumbs" id="thumbs"></div>
   <p class="note" id="galnote" style="margin-top:6px"></p>
-  ${c.ownerName?`<p class="note" style="margin:8px 0 0">Hosted by ${esc(c.ownerName)}</p>`:''}<div class="dhead"><div><h2 id="dtitle">${esc(c.name)}</h2><p class="sub">${esc(c.type)} · ${c.seats} seats · ${esc(c.service)}${S.moved?' · '+distOf(c).toFixed(1)+' km from your pin':''}</p></div><p class="pr big"><b>${php(c.price)}</b><span>per day</span></p></div>
+  ${c.ownerName?`<p class="note" style="margin:8px 0 0">Hosted by ${esc(c.ownerName)}</p>`:''}<div class="dhead"><div><h2 id="dtitle">${esc(c.name)}</h2><p class="sub">${esc(c.type)} · ${c.seats} seats · ${esc(c.service)}${S.moved?' · '+distOf(c).toFixed(1)+' km from your pin':''}</p></div><div><p class="pr big"><b>${php(c.price)}</b><span>per day</span></p><button type="button" class="chip" data-fav="${esc(c.id)}" style="margin-top:6px">${ST.favs.includes(c.id)?'♥ Saved':'♡ Save'}</button></div></div>
   <p class="desc">${esc(c.description||'')}</p>
   <h3 class="h3">Details</h3><dl class="specs">${rows.map(r=>`<div><dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>
   ${(c.features&&c.features.length)?`<h3 class="h3">Features</h3><div class="feat">${c.features.map(f=>`<span class="pill">${esc(f)}</span>`).join('')}</div>`:''}
-  <h3 class="h3">Good to know</h3><ul class="rules"><li>A ${Math.round(SETTINGS.depositRate*100)}% deposit confirms the booking. You pay the rest to the owner at pickup.</li>${c.service==='Self-drive'?'<li>Bring a valid driver\'s license. The owner checks it at pickup.</li>':'<li>A driver is included. Confirm the route and hours with the owner.</li>'}<li>Return with the same fuel level unless the owner says otherwise.</li></ul>
-  ${c.status==='approved'?`<div class="stack"><button type="button" class="btn" data-choose="${esc(c.id)}">Choose this vehicle</button></div>`:'<p class="note">Preview only. This vehicle is not live yet.</p>'}`;
+  <h3 class="h3">Reviews</h3>${reviewBlock(c)}
+  <h3 class="h3">Good to know</h3><ul class="rules"><li>A ${Math.round(SETTINGS.depositRate*100)}% deposit confirms the booking. You pay the rest to the owner at pickup.</li>${c.service==='Self-drive'?'<li>Bring a valid driver\'s license. The owner checks it at pickup.</li>':'<li>A driver is included. Confirm the route and hours with the owner.</li>'}<li>Return with the same fuel level unless the owner says otherwise.</li><li>${esc(SETTINGS.cancellation)}</li></ul>
+  ${c.status!=='approved'?'<p class="note">Preview only. This vehicle is not live yet.</p>':unavailable(c)?'<p class="err">Booked for your dates. Change the dates in the search bar, or pick another vehicle.</p>':`<div class="stack"><button type="button" class="btn" data-choose="${esc(c.id)}">Choose this vehicle</button></div>`}`;
   renderGallery();if(!dlg.open)dlg.showModal();
 }
 function renderGallery(){
@@ -116,21 +126,23 @@ document.addEventListener('click',e=>{
 });
 function quote(){
   const c=allCars().find(x=>x.id===S.sel),a=$('#from').value,b=$('#to').value;
+  $('#datesum').textContent=(a&&b&&days(a,b)>=1)?`Pickup ${fmt(a)} · Return ${fmt(b)} · ${days(a,b)} day${days(a,b)>1?'s':''}. Change dates in the search bar at the top.`:'Set your pickup and return dates in the search bar at the top.';
   $('#chosen').innerHTML=c?`<span class="lab">Chosen vehicle</span><div class="row2"><b>${esc(c.name)}</b><button type="button" class="chip" data-open="${esc(c.id)}">View details</button></div>`:'<span class="note">Pick a vehicle above to see the price.</span>';
   if(!c||!a||!b||days(a,b)<1){$('#quote').innerHTML=c?'<span class="note">Return date must be after pickup date.</span>':'';return null}
   const d=days(a,b),total=c.price*d,dep=Math.round(total*SETTINGS.depositRate);
   $('#quote').innerHTML=`<div><span>${php(c.price)} × ${d} day${d>1?'s':''}</span><span>${php(total)}</span></div><div><span>Deposit to confirm</span><span>${php(dep)}</span></div><div><span>Balance at pickup</span><span>${php(total-dep)}</span></div><div class="t"><span>Total</span><span>${php(total)}</span></div>`;
   return {c,a,b,d,total,dep};
 }
-['from','to'].forEach(id=>$('#'+id).addEventListener('change',()=>{const a=$('#from').value;if(a)$('#to').min=a;quote()}));
+['from','to'].forEach(id=>$('#'+id).addEventListener('change',()=>{const a=$('#from').value;if(a)$('#to').min=a;renderGrid()}));
 let MSG='';
 $('#f').addEventListener('submit',e=>{
   e.preventDefault();const err=$('#err');err.textContent='';
   if(!ST.me()){openLogin('Log in to send your request.');return}
   const q=quote(),name=$('#name').value.trim(),phone=$('#phone').value.trim().replace(/[^\d+]/g,''),code=$('#code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,''),notes=$('#notes').value.trim();
   if(!q){err.textContent='Choose a vehicle and make sure the return date is after the pickup date.';return}
+  if(unavailable(q.c)){err.textContent='This vehicle is already booked for those dates. Try other dates or another vehicle.';return}
   if(!name){err.textContent='Add your name.';return}
-  if(!/^(\+?63|0)9\d{9}$/.test(phone)){err.textContent='Enter a Philippine mobile number, like 09171234567.';return}
+  if(!/^\+?\d{8,15}$/.test(phone)){err.textContent='Enter a mobile number. Outside the Philippines, start with your country code, like +61400000000.';return}
   const area=nearestArea(S.pin),spot=S.moved?`near ${area}, https://www.google.com/maps?q=${S.pin[0].toFixed(5)},${S.pin[1].toFixed(5)}`:'not set';
   MSG=`Hi Arkila, I would like to request a vehicle.\n\nVehicle: ${q.c.name} (${q.c.service}, ${q.c.area})\nDates: ${fmt(q.a)} to ${fmt(q.b)} (${q.d} day${q.d>1?'s':''})\nPickup spot: ${spot}\nEstimated total: ${php(q.total)}, deposit ${php(q.dep)}\nName: ${name}\nMobile: ${phone}${code?'\nReferral code: '+code:''}${notes?'\nNotes: '+notes:''}\n\nRequest ref: ${q.c.id}|${q.a}|${q.b}|${phone}${code?'|'+code:''}`;
   const rq=saveRequest(q,name,phone,notes,spot,MSG);
@@ -144,3 +156,9 @@ $('#copy').addEventListener('click',()=>{
 });
 initMap();renderTypes();setPin(CENTER.slice(),false);
 function refreshHome(){renderTypes();renderGrid();const me=ST.me();if(me&&!$('#name').value)$('#name').value=me.name}
+
+function reviewBlock(c){
+  const rs=reviewsOf(c).slice().reverse(),rt=ratingOf(c);
+  if(!rs.length)return '<p class="note" style="margin:0">No reviews yet. Reviews come from guests who completed a trip.</p>';
+  return `<p style="margin:0 0 8px"><b>★ ${rt.avg.toFixed(1)}</b> · ${rt.n} review${rt.n>1?'s':''}</p>`+rs.slice(0,5).map(r=>`<div class="rv"><div class="row2"><b>${esc(first(r.guestName))}</b><span class="rt">${stars(r.rating)}</span></div><p style="margin:2px 0 0">${esc(r.text)}</p></div>`).join('');
+}
