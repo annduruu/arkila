@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Arkila Puerto Princesa</title>
+<meta name="description" content="Rent a car or van from a local owner in Puerto Princesa. Pick a vehicle and dates, then send the request on Facebook.">
+<meta property="og:title" content="Arkila Puerto Princesa">
+<meta property="og:description" content="Rent a car or van from a local owner in Puerto Princesa. Request in two minutes.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><i><svg width="20" height="14" viewBox="0 0 24 16" aria-hidden="true"><path d="M2 11 L5 6 Q7 3 11 3 L15 3 Q19 3 21 7 L22 11 Z" fill="#fff"/><circle cx="7" cy="12" r="2.6" fill="#FFC72C"/><circle cx="17" cy="12" r="2.6" fill="#FFC72C"/></svg></i><span>Arkila <small>Puerto Princesa</small></span></div>
+  <h1>Rent a vehicle from a local owner</h1>
+  <p class="lead">Choose a vehicle and your dates, then send us the request on Facebook. We confirm it with the owner and text you the payment details.</p>
+  <div id="sampleBanner" class="banner" hidden>These vehicles and prices are samples for testing. Do not rely on them yet.</div>
+
+  <section class="step" aria-labelledby="s1"><h2 id="s1">1. Pick a vehicle</h2>
+    <div class="chips" id="areas" role="group" aria-label="Pickup area"></div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section class="step" aria-labelledby="s2"><h2 id="s2">2. Your dates and contact</h2>
+    <form class="form" id="f" novalidate>
+      <div class="f2">
+        <label><span class="lab">Pickup date</span><input type="date" id="from"></label>
+        <label><span class="lab">Return date</span><input type="date" id="to"></label>
+      </div>
+      <label><span class="lab">Your name</span><input id="name" autocomplete="name" placeholder="Juan Dela Cruz"></label>
+      <label><span class="lab">Mobile number</span><input id="phone" inputmode="tel" autocomplete="tel" placeholder="09XX XXX XXXX"></label>
+      <label><span class="lab">Referral code (optional)</span><input id="code" autocapitalize="characters" placeholder="e.g. MARIA"></label>
+      <div class="q" id="quote" aria-live="polite"></div>
+      <p class="err" id="err" role="alert"></p>
+      <button class="btn" type="submit">Make my request</button>
+    </form>
+  </section>
+
+  <section class="step" id="out" aria-labelledby="s3" hidden><h2 id="s3">3. Send it to us</h2>
+    <p class="note" style="margin:0 0 8px">Send this message on the Arkila Facebook page. We reply there and by text.</p>
+    <div class="msgbox" id="msg"></div>
+    <div class="stack">
+      <button class="btn" type="button" id="copy">Copy message</button>
+      <a class="btn ghost" id="fb" href="#" target="_blank" rel="noopener" aria-disabled="true">Open Messenger</a>
+    </div>
+    <p class="note" id="fbnote"></p>
+  </section>
+
+  <section class="step"><h2>How it works</h2>
+    <ol class="rules">
+      <li>You send the request. Nothing is charged yet.</li>
+      <li>We check the dates with the owner and send you the deposit details by GCash or Maya.</li>
+      <li>Your booking is confirmed once the deposit is received. The owner's number is sent then.</li>
+      <li>You pay the balance to the owner at pickup. Bring a valid driver's license for self-drive.</li>
+    </ol>
+  </section>
+</div>
+
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
