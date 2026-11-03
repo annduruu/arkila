@@ -219,5 +219,4 @@ function refreshAll(){
   try{const c=lsg('rates',null);if(c&&Date.now()-c.t<432e5&&c.r){Object.assign(RATES,c.r);RATEINFO.date=c.d;return}}catch(e){}
   try{fetch('https://open.er-api.com/v6/latest/PHP').then(r=>r.json()).then(j=>{if(j&&j.result==='success'&&j.rates){const r={};CURRENCIES.forEach(c=>{if(j.rates[c[0]])r[c[0]]=j.rates[c[0]]});Object.assign(RATES,r);RATEINFO.date=String(j.time_last_update_utc||'').slice(5,16)||RATEINFO.date;lss('rates',{t:Date.now(),r,d:RATEINFO.date});renderGrid();quote()}}).catch(()=>{})}catch(e){}
 })();
-renderBrand();applyStatic();applyTheme();
-route();
+[renderBrand,applyStatic,applyTheme,route].forEach(f=>{try{f()}catch(e){console.error('Arkila init',f.name,e)}});
