@@ -1,6 +1,6 @@
 # Arkila Puerto Princesa
 
-Static request site. No server, no login, nothing is stored. A guest picks a vehicle and dates, and the site builds a message to send to your Facebook page.
+Static demo site. No server: accounts, listings and requests are saved in each visitor's own browser (localStorage), so nothing is shared between devices yet. A renter picks a vehicle, dates and passengers, and the site builds a request message to send to your Facebook page. Owners list vehicles, and the Arkila team approves them.
 
 ## Put it online with GitHub Pages
 1. Create a new repository on GitHub (public).
@@ -35,7 +35,7 @@ The pickup pin uses OpenStreetMap through Leaflet. Area coordinates in `config.j
 ## Motorbikes
 
 Motorbikes live in the same list as cars. In `config.js` the sample bikes are added with `CARS.push(...)` and have `kind:'motor'`.
-`seats` means riders, and `specs` holds `cc`, `helmets`, `mileage` and `deposit` (the refundable cash security deposit paid to the owner at pickup, separate from the 20% booking deposit).
+`seats` means riders, and `specs` holds `cc`, `helmets`, `mileage` and `deposit` (the refundable security deposit, paid online to Arkila with the rental fee).
 Owners choose "Motorbike or scooter" in the Add a vehicle form. Types: Scooter, Underbone, Mid-size, Big bike. The sample bikes and prices are for testing only.
 
 ## Availability calendar
@@ -63,3 +63,13 @@ Note: when pickup and return dates are set, vehicles already booked or blocked f
 - Items in [square brackets] show highlighted. Fill them, and update the matching Claude Docs, before real payments. A Philippine lawyer should review everything first.
 - `SETTINGS.damageCap` in `config.js` is a placeholder (₱50,000 cars, ₱30,000 motorbikes). Decide the real amounts.
 - The Filipino view shows a short summary above the full English notice, which is the version people agree to. A full Filipino version is still to be written.
+
+
+## Search, places and accounts
+- The Where box searches the built-in places in `config.js` (`PLACES`, `AREAS`) and, as you type, any place in Palawan through the free Photon service (needs internet). Owners use the same search to set a vehicle's pickup location, and the vehicle then shows at that spot on the map.
+- Logged-in users get an Account page (menu, Account) to edit personal details, download their data or delete the account. This is demo data on the device only.
+- Dates in the past cannot be requested, and the same vehicle and dates cannot be requested twice by one renter.
+
+## Pickup time and admin
+- Rentals are 24-hour days from the pickup time the renter picks (Time tab in the search bar, the availability panel and the request form). Return is the same time on the last day.
+- The admin screen has tabs: Overview, Vehicles, Bookings, Users, Payouts, Settings. Log in with "Admin demo login" to open it.

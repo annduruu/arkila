@@ -28,7 +28,7 @@ function motorSVG(c){
 }
 function motorFront(c){const col=esc(c.color||'#7D8794');return `<svg viewBox="0 0 320 170" role="img" aria-label="${esc(c.name)} front, illustration"><ellipse cx="160" cy="158" rx="70" ry="7" fill="#000" opacity=".16"/><rect x="150" y="112" width="20" height="44" rx="8" fill="#171C24"/><path d="M146 112 L150 66 L170 66 L174 112Z" fill="#9AA4B2"/><path d="M122 46 L198 46" stroke="#171C24" stroke-width="7" stroke-linecap="round"/><path d="M118 46 L112 38 M202 46 L208 38" stroke="#171C24" stroke-width="7" stroke-linecap="round"/><path d="M128 76 Q160 40 192 76 L186 100 L134 100Z" fill="${col}"/><circle cx="160" cy="82" r="13" fill="#FFE9A6"/><circle cx="160" cy="82" r="6" fill="#FFF6D6"/></svg>`}
 function helmetSVG(c){const h=(x,col)=>`<g><path d="M${x} 112 Q${x} 56 ${x+42} 56 Q${x+84} 56 ${x+84} 112 L${x+84} 124 L${x} 124Z" fill="${col}"/><path d="M${x+30} 84 L${x+84} 84 L${x+84} 108 L${x+34} 108Z" fill="var(--win)"/></g>`;return `<svg viewBox="0 0 320 170" role="img" aria-label="${esc(c.name)} helmets, illustration"><rect width="320" height="170" fill="var(--win)"/><ellipse cx="160" cy="146" rx="120" ry="8" fill="#000" opacity=".14"/>${h(52,esc(c.color||'#7D8794'))}${h(184,'#171C24')}</svg>`}
-const imgsOf=c=>(c.images&&c.images.length)?c.images.map((u,i)=>`<img src="${esc(u)}" alt="${esc(c.name)} photo ${i+1}" loading="lazy">`):(isMotor(c)?[motorSVG(c),motorFront(c),helmetSVG(c)]:[carSVG(c),frontSVG(c),interiorSVG(c)]);
+const imgsOf=c=>(c.images&&c.images.length)?c.images.map((u,i)=>`<img src="${esc(u)}" alt="${esc(c.name)} photo ${i+1}" loading="lazy" decoding="async">`):(isMotor(c)?[motorSVG(c),motorFront(c),helmetSVG(c)]:[carSVG(c),frontSVG(c),interiorSVG(c)]);
 const hasPhotos=c=>c.images&&c.images.length;
 
 var PARTY={a:0,c:0,i:0,p:0},PMAX={a:12,c:12,i:5,p:5};
@@ -37,7 +37,7 @@ const S={place:null,kind:'all',type:'All',service:'any',seats:0,sel:null,pin:CEN
 const rad=x=>x*Math.PI/180;
 const km=(a,b)=>{const R=6371,dLa=rad(b[0]-a[0]),dLo=rad(b[1]-a[1]),h=Math.sin(dLa/2)**2+Math.cos(rad(a[0]))*Math.cos(rad(b[0]))*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
 const nearestArea=p=>Object.keys(AREAS).reduce((best,k)=>km(p,AREAS[k])<km(p,AREAS[best])?k:best,'City Proper');
-const carPos=c=>{const a=AREAS[c.area]||CENTER,h=[...c.id].reduce((x,ch)=>(x*31+ch.charCodeAt(0))>>>0,7);return [a[0]+((h%100)/100-.5)*0.006,a[1]+(((h>>7)%100)/100-.5)*0.006]};
+const carPos=c=>{const a=(c.pos&&c.pos.length===2?c.pos:null)||AREAS[c.area]||CENTER,h=[...c.id].reduce((x,ch)=>(x*31+ch.charCodeAt(0))>>>0,7);return [a[0]+((h%100)/100-.5)*0.006,a[1]+(((h>>7)%100)/100-.5)*0.006]};
 const distOf=c=>km(S.pin,carPos(c));
 const activeCars=()=>allCars().filter(c=>c.status==='approved'&&c.active!==false);
 
@@ -53,9 +53,9 @@ function fillAreas(){const sel=$('#areaSel'),cur=sel.value;sel.innerHTML='<optio
 function initMap(){
   fillAreas();
   if(typeof L==='undefined'){$('#map').innerHTML='<div class="empty" style="margin:12px">'+esc(t('map.fail'))+'</div>';return}
-  map=L.map('map',{scrollWheelZoom:false}).setView(CENTER,12);
+  map=L.map('map',{scrollWheelZoom:false}).setView(S.moved?S.pin:CENTER,S.moved?13:12);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
-  pinMk=L.marker(CENTER,{draggable:true,keyboard:true,title:t('map.drag'),icon:L.divIcon({className:'pin',html:'<span></span>',iconSize:[28,28],iconAnchor:[14,28]})}).addTo(map);
+  pinMk=L.marker(S.moved?S.pin:CENTER,{draggable:true,keyboard:true,title:t('map.drag'),icon:L.divIcon({className:'pin',html:'<span></span>',iconSize:[28,28],iconAnchor:[14,28]})}).addTo(map);
   pinMk.on('dragend',()=>{const p=pinMk.getLatLng();setPin([p.lat,p.lng],true)});
   map.on('click',e=>{pinMk.setLatLng(e.latlng);setPin([e.latlng.lat,e.latlng.lng],true)});
   carLayer=L.layerGroup().addTo(map);
@@ -96,6 +96,20 @@ function filtered(){
   return ok.sort((a,b)=>S.moved?distOf(a)-distOf(b):a.price-b.price);
 }
 const depositOf=c=>{const d=c&&c.specs&&c.specs.deposit;return (d!=null&&d!=='')?+d:SETTINGS.deposit[isMotor(c)?'motor':'car']};
+let TIME='',PTL='';
+const tl=v=>{if(!v)return '';const [h,m]=v.split(':').map(Number);return ((h%12)||12)+':'+String(m).padStart(2,'0')+' '+(h<12?'AM':'PM')};
+const TSLOTS=(()=>{const o=[];for(let h=0;h<24;h++)for(const m of [0,30])o.push(String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'));return o})();
+const GAP=(SETTINGS.turnaroundHours||3)*60,mins=v=>{const [h,m]=v.split(':').map(Number);return h*60+m};
+/* a vehicle needs a break between two rentals: pickup at least GAP after the last return, return at least GAP before the next pickup */
+function gapIssue(id,a,b,time){
+  if(!id||!a||!b||!time)return null;const m=mins(time);
+  for(const r of ST.requests){if(r.carId!==id||!r.time||!(r.status==='confirmed'||r.status==='completed'))continue;
+    if(r.to===a){const e=mins(r.time)+GAP;if(m<e)return e>=1440?{k:'none'}:{k:'early',t:tl(String(Math.floor(e/60)).padStart(2,'0')+':'+String(e%60).padStart(2,'0'))}}
+    if(r.from===b){const l=mins(r.time)-GAP;if(m>l)return l<0?{k:'none'}:{k:'late',t:tl(String(Math.floor(l/60)).padStart(2,'0')+':'+String(l%60).padStart(2,'0'))}}}
+  return null}
+const gapMsg=g=>g?t('gap.'+g.k,{t:g.t||'',h:SETTINGS.turnaroundHours||3}):'';
+const timeOpts=id=>{const a=$('#from').value,b=$('#to').value;return '<option value="">'+esc(t('time.sel'))+'</option>'+TSLOTS.map(v=>`<option value="${v}"${v===TIME?' selected':''}${gapIssue(id,a,b,v)?' disabled':''}>${tl(v)}</option>`).join('')};
+function setTime(v){TIME=v||'';const f=$('#ptime');if(f)f.value=TIME;const d=$('#dtime');if(d)d.value=TIME;syncBar();if(typeof calSum==='function')calSum();renderGrid();if(!$('#pop-time').hidden)renderTimePop()}
 const dateNow=()=>{const a=$('#from').value,b=$('#to').value;return {a,b,d:(a&&b)?days(a,b):0}};
 /* ---------- availability calendar ---------- */
 const addD=(s,n)=>{const [y,m,d]=s.split('-').map(Number);return iso(new Date(y,m-1,d+n))};
@@ -103,7 +117,7 @@ const todayIso=()=>iso(new Date());
 const busyRanges=id=>{const o=[];ST.requests.forEach(r=>{if(r.carId===id&&(r.status==='confirmed'||r.status==='completed'))o.push({from:r.from,to:r.to,k:'booked'})});((typeof BLOCKED!=='undefined'&&BLOCKED&&BLOCKED[id])||[]).forEach(x=>{if(x&&x[0]&&x[1])o.push({from:x[0],to:addD(x[1],1),k:'arkila'})});return o};
 const dayInfo=(id,s)=>{for(const r of busyRanges(id))if(s>=r.from&&s<r.to)return r.k;return (ST.blocks[id]||[]).includes(s)?'host':''};
 const rangeFree=(id,a,b)=>{for(let d=a,n=0;d<b&&n<400;d=addD(d,1),n++)if(dayInfo(id,d))return false;return true};
-const unavailable=c=>{const {a,b}=dateNow();if(!a||!b||days(a,b)<1)return false;return !rangeFree(c.id,a,b)};
+const unavailable=c=>{const {a,b}=dateNow();if(!a||!b||days(a,b)<1)return false;return !rangeFree(c.id,a,b)||!!gapIssue(c.id,a,b,TIME)};
 const CAL={};
 function calInner(key,id,mode,nm){
   const pick=mode==='pick',a=pick?$('#from').value:'',b=pick?$('#to').value:'',loc=LOCALE[PREF.lang]||'en-PH',tdy=todayIso();
@@ -137,7 +151,7 @@ function calInner(key,id,mode,nm){
   return `<div class="calh"><button type="button" data-cal-nav="-1" aria-label="${esc(t('cal.prev'))}">‹</button><b>${esc(first.toLocaleDateString(loc,{month:'long',year:'numeric'}))}</b><button type="button" data-cal-nav="1" aria-label="${esc(t('cal.next'))}">›</button></div><div class="calw">${wk}</div><div class="calg">${cells}</div><div class="calleg">${leg}${pick?`<button type="button" class="chip" data-cal-clear style="margin-left:auto;padding:2px 10px;font-size:12px">${esc(t('cal.clear'))}</button>`:''}</div>`;
 }
 function setDates(a,b){const f=$('#from'),r=$('#to');f.value=a;r.value=b;[f,r].forEach(x=>x.dispatchEvent(new Event('change',{bubbles:true})))}
-function calSum(){const el=$('#calsum');if(!el)return;const a=$('#from').value,b=$('#to').value;el.textContent=(a&&b&&days(a,b)>=1)?fmt(a)+' → '+fmt(b)+' · '+t(days(a,b)===1?'cal.d1':'cal.dn',{d:days(a,b)}):a?t('cal.pickret'):t('cal.pickstart')}
+function calSum(){const el=$('#calsum');if(!el)return;const a=$('#from').value,b=$('#to').value;el.textContent=(a&&b&&days(a,b)>=1)?fmt(a)+' → '+fmt(b)+' · '+t(days(a,b)===1?'cal.d1':'cal.dn',{d:days(a,b)})+(TIME?' · '+tl(TIME):''):a?t('cal.pickret'):t('cal.pickstart')}
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-cal-day],[data-cal-nav],[data-cal-clear]');if(!b)return;
   const el=b.closest('.cal');if(!el)return;const key=el.dataset.key,id=el.dataset.car,mode=el.dataset.mode;
@@ -166,20 +180,23 @@ $('#svc').addEventListener('change',e=>{S.service=e.target.value;renderGrid()});
 $('#seats').addEventListener('change',e=>{S.seats=+e.target.value;renderGrid()});
 
 /* ---------- detail dialog ---------- */
-const dlg=$('#dlg');
+const dlg=$('#dlg');let AVOPEN=false;
 function openDetail(id){
+  if(!dlg.open)AVOPEN=false;
   const c=allCars().find(x=>x.id===id);if(!c)return;S.gid=id;S.gi=0;
   delete CAL.d;const sp=c.specs||{},mo=isMotor(c),rows=(mo?[['sp.year',sp.year],['sp.trans',sp.transmission],['sp.cc',sp.cc?sp.cc+' cc':''],['sp.fuel',sp.fuel],['sp.riders',c.seats],['sp.helmets',sp.helmets],['sp.mileage',sp.mileage],['sp.secdep',sp.deposit?money(sp.deposit):''],['sp.service',svcT(c.service)],['sp.area',c.area]]:[['sp.year',sp.year],['sp.trans',sp.transmission],['sp.fuel',sp.fuel],['sp.seats',c.seats],['sp.lug',sp.bags!=null?t('bags',{n:sp.bags}):''],['sp.aircon',sp.aircon],['sp.service',svcT(c.service)],['sp.area',c.area]]).filter(r=>r[1]!==''&&r[1]!=null);
-  $('#dbody').innerHTML=`<div class="dgal"><div class="gal"><div class="stage" id="stage"></div><button type="button" class="nav prev" data-g="-1" aria-label="${esc(t('g.prev'))}">‹</button><button type="button" class="nav next" data-g="1" aria-label="${esc(t('g.next'))}">›</button></div>
-  <div class="thumbs" id="thumbs"></div>
-  <p class="note" id="galnote" style="margin-top:6px"></p></div>
-  <div class="dinfo">${c.ownerName?`<p class="note" style="margin:8px 0 0">${esc(t('d.hosted',{name:c.ownerName}))}</p>`:''}<div class="dhead"><div><h2 id="dtitle">${esc(c.name)}</h2><p class="sub">${esc(c.type)} · ${esc(seatsLabel(c))} · ${esc(svcT(c.service))}${S.moved?' · '+esc(t('kmpin',{k:distOf(c).toFixed(1)})):''}</p></div><div><p class="pr big"><b>${esc(money(c.price))}</b><span>${esc(t('card.perday'))}</span></p><button type="button" class="chip" data-fav="${esc(c.id)}" style="margin-top:6px">${esc(t(ST.favs.includes(c.id)?'d.saved':'d.save'))}</button></div></div>
-  <p class="desc">${esc(c.description||'')}</p>
+  const good=`<h3 class="h3">${esc(t('d.good'))}</h3><ul class="rules"><li>${esc(t('r.hours'))}</li><li>${esc(t('r.gap',{h:SETTINGS.turnaroundHours||3}))}</li><li>${esc(t('r.deposit'))}</li><li>${esc(t('r.secdep',{amt:money(depositOf(c))}))}</li>${mo?`<li>${esc(t('r.mlicense'))}</li><li>${esc(t('r.helmet'))}</li>`:`<li>${esc(t(c.service==='Self-drive'?'r.license':'r.driver'))}</li>`}<li>${esc(t('r.fuel'))}</li><li>${esc(SETTINGS.cancellation)}</li></ul>`;
+  const avail=c.status==='approved'?`<details class="more avd" id="avd"${AVOPEN?' open':''}><summary><span>${esc(t('cal.title'))}</span><small id="calsum"></small></summary><div class="cal" id="cal-d" data-key="d" data-car="${esc(c.id)}" data-mode="pick">${calInner('d',c.id,'pick')}</div><label class="tsel"><span class="lab">${esc(t('f.time'))}</span><select id="dtime">${timeOpts(c.id)}</select></label><p class="note" style="margin:6px 0 0">${esc(t('time.rule'))}</p></details>`:'';
+  const cta=c.status!=='approved'?'<p class="note">'+esc(t('d.preview'))+'</p>':unavailable(c)?'<p class="err">'+esc(gapMsg(gapIssue(c.id,$('#from').value,$('#to').value,TIME))||t('d.booked'))+'</p>':`<div class="stack"><button type="button" class="btn" data-choose="${esc(c.id)}">${esc(t('d.choose'))}</button></div>`;
+  $('#dbody').innerHTML=`<div class="dhero"><div class="gal"><div class="stage" id="stage"></div><button type="button" class="nav prev" data-g="-1" aria-label="${esc(t('g.prev'))}">‹</button><button type="button" class="nav next" data-g="1" aria-label="${esc(t('g.next'))}">›</button></div>
+  <div class="thumbs" id="thumbs"></div><p class="gnote" id="galnote"></p></div>
+  <div class="dmain">${c.ownerName?`<p class="note" style="margin:0">${esc(t('d.hosted',{name:c.ownerName}))}</p>`:''}<div class="dhead"><div><h2 id="dtitle">${esc(c.name)}</h2><p class="sub">${esc(c.type)} · ${esc(seatsLabel(c))} · ${esc(svcT(c.service))}${S.moved?' · '+esc(t('kmpin',{k:distOf(c).toFixed(1)})):''}</p></div><div><p class="pr big"><b>${esc(money(c.price))}</b><span>${esc(t('card.perday'))}</span></p><button type="button" class="chip" data-fav="${esc(c.id)}" style="margin-top:6px">${esc(t(ST.favs.includes(c.id)?'d.saved':'d.save'))}</button></div></div>
+  <div class="dcols"><div class="dleft">
+  ${c.description?`<h3 class="h3">${esc(t('d.desc'))}</h3><p class="desc">${esc(c.description)}</p>`:''}
   <h3 class="h3">${esc(t('d.details'))}</h3><dl class="specs">${rows.map(r=>`<div><dt>${esc(t(r[0]))}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>
   ${(c.features&&c.features.length)?`<h3 class="h3">${esc(t('d.features'))}</h3><div class="feat">${c.features.map(f=>`<span class="pill">${esc(f)}</span>`).join('')}</div>`:''}
-  <h3 class="h3">${esc(t('d.reviews'))}</h3>${reviewBlock(c)}
-  <h3 class="h3">${esc(t('d.good'))}</h3><ul class="rules"><li>${esc(t('r.deposit'))}</li><li>${esc(t('r.secdep',{amt:money(depositOf(c))}))}</li>${mo?`<li>${esc(t('r.mlicense'))}</li><li>${esc(t('r.helmet'))}</li>`:`<li>${esc(t(c.service==='Self-drive'?'r.license':'r.driver'))}</li>`}<li>${esc(t('r.fuel'))}</li><li>${esc(SETTINGS.cancellation)}</li></ul>
-  ${c.status==='approved'?`<h3 class="h3">${esc(t('cal.title'))}</h3><div class="cal" id="cal-d" data-key="d" data-car="${esc(c.id)}" data-mode="pick">${calInner('d',c.id,'pick')}</div><p class="note" id="calsum"></p>`:''}${c.status!=='approved'?'<p class="note">'+esc(t('d.preview'))+'</p>':unavailable(c)?'<p class="err">'+esc(t('d.booked'))+'</p>':`<div class="stack"><button type="button" class="btn" data-choose="${esc(c.id)}">${esc(t('d.choose'))}</button></div>`}</div>`;
+  <h3 class="h3">${esc(t('d.reviews'))}</h3>${reviewBlock(c)}</div>
+  <div class="dright">${avail}${good}${cta}</div></div></div>`;
   renderGallery();calSum();if(!dlg.open)dlg.showModal();
 }
 function renderGallery(){
@@ -196,6 +213,8 @@ dlg.addEventListener('click',e=>{
   else if(th){S.gi=+th.dataset.gi;renderGallery()}
   else if(ch){S.sel=ch.dataset.choose;dlg.close();renderGrid();$('#s3').scrollIntoView({behavior:'smooth',block:'start'})}
 });
+dlg.addEventListener('change',e=>{if(e.target.id==='dtime')setTime(e.target.value)});
+dlg.addEventListener('toggle',e=>{if(e.target.id==='avd')AVOPEN=e.target.open},true);
 dlg.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'){S.gi--;renderGallery()}else if(e.key==='ArrowRight'){S.gi++;renderGallery()}});
 
 /* ---------- filters, request ---------- */
@@ -206,14 +225,17 @@ document.addEventListener('click',e=>{
   if(x){S.type=x.dataset.type;renderTypes();renderGrid()}else if(o)openDetail(o.dataset.open);
 });
 let LASTQ=null;
+let GAPMSG='';
 function quote(){
+  GAPMSG='';
   const c=allCars().find(x=>x.id===S.sel),a=$('#from').value,b=$('#to').value;
-  $('#datesum').textContent=(a&&b&&days(a,b)>=1)?t('datesum',{a:fmt(a),b:fmt(b),d:days(a,b)}):t('datesum.none');
+  $('#datesum').textContent=(a&&b&&days(a,b)>=1)?t('datesum',{a:fmt(a),b:fmt(b),d:days(a,b)})+(TIME?' · '+t('time.at',{t:tl(TIME)}):''):t('datesum.none');
   $('#chosen').innerHTML=c?`<span class="lab">${esc(t('chosenlab'))}</span><div class="row2"><b>${esc(c.name)}</b><button type="button" class="chip" data-open="${esc(c.id)}">${esc(t('viewd'))}</button></div>`:'<span class="note">'+esc(t('pickfirst'))+'</span>';
-  if(!c||!a||!b||days(a,b)<1){$('#quote').innerHTML=c?'<span class="note">'+esc(t('retbefore'))+'</span>':'';LASTQ=null;setTimeout(updateBar,0);return null}
+  if(!c||!a||!b||days(a,b)<1||a<iso(new Date())){$('#quote').innerHTML=c?'<span class="note">'+esc(t(a&&a<iso(new Date())?'retpast':'retbefore'))+'</span>':'';LASTQ=null;setTimeout(updateBar,0);return null}
+  const gi=gapIssue(c.id,a,b,TIME);if(gi){GAPMSG=gapMsg(gi);$('#quote').innerHTML='<span class="note">'+esc(GAPMSG)+'</span>';LASTQ=null;setTimeout(updateBar,0);return null}
   const d=days(a,b),total=c.price*d,dep=depositOf(c);
-  $('#quote').innerHTML=`<div><span>${esc(t('q.line',{p:money(c.price),d}))}</span><span>${esc(money(total))}</span></div><div><span>${esc(t('q.dep'))}</span><span>${esc(money(dep))}</span></div><div class="t"><span>${esc(t('q.tot'))}</span><span>${esc(money(total+dep))}</span></div><p class="note" style="margin:6px 0 0">${esc(t('q.note'))}</p>`;
-  LASTQ={c,a,b,d,total,dep};setTimeout(updateBar,0);return LASTQ;
+  $('#quote').innerHTML=`<div><span>${esc(t('q.line',{p:money(c.price),d}))}</span><span>${esc(money(total))}</span></div>${TIME?`<div><span>${esc(t('q.time'))}</span><span>${esc(tl(TIME))}</span></div>`:''}<div><span>${esc(t('q.dep'))}</span><span>${esc(money(dep))}</span></div><div class="t"><span>${esc(t('q.tot'))}</span><span>${esc(money(total+dep))}</span></div><p class="note" style="margin:6px 0 0">${esc(t('q.note'))}</p>`;
+  LASTQ={c,a,b,d,total,dep,time:TIME};setTimeout(updateBar,0);return LASTQ;
 }
 ['from','to'].forEach(id=>$('#'+id).addEventListener('change',()=>{const a=$('#from').value;if(a)$('#to').min=a;renderGrid()}));
 let MSG='';
@@ -221,14 +243,16 @@ $('#f').addEventListener('submit',e=>{
   e.preventDefault();const err=$('#err');err.textContent='';
   if(!ST.me()){openLogin(t('l.needreq'));return}
   const q=quote(),name=$('#name').value.trim(),phone=fullPhone(),email=$('#email').value.trim(),code=$('#code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,''),notes=$('#notes').value.trim();
-  if(!q){err.textContent=t('e.pick');return}
+  if(!q){err.textContent=GAPMSG||t('e.pick');return}
+  if(!TIME){err.textContent=t('e.time');$('#ptime').focus();return}
   if(unavailable(q.c)){err.textContent=t('e.unavail');return}
-  if(!name){err.textContent=t('e.name');return}
+  if(name.length<2){err.textContent=t('e.name');return}
+  if(ST.requests.some(r=>r.guestId===ST.me().id&&r.carId===q.c.id&&r.from===q.a&&r.to===q.b&&(r.status==='new'||r.status==='confirmed'))){err.textContent=t('e.dup');return}
   if(!/^\+?\d{8,15}$/.test(phone)){err.textContent=t('e.phone');return}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){err.textContent=t('e.email');return}
   if(!$('#ack').checked){err.textContent=t('e.ack');return}
   const area=placeName(),spot=S.moved?`near ${area}, https://www.google.com/maps?q=${S.pin[0].toFixed(5)},${S.pin[1].toFixed(5)}`:'to be agreed on chat';
-  MSG=`Hi ${BRAND.name}, I would like to request a vehicle.\n\nVehicle: ${q.c.name} (${q.c.service}, ${q.c.area})\nDates: ${fmtEn(q.a)} to ${fmtEn(q.b)} (${q.d} day${q.d>1?'s':''})\nPickup spot: ${spot}\nRental fee: ${php(q.total)}\nRefundable security deposit: ${php(q.dep)}\nTotal to pay online after the owner confirms: ${php(q.total+q.dep)}${partyText()?'\nGuests: '+partyText():''}\nName: ${name}\nMobile: ${phone}\nEmail (for the invoice and booking confirmation): ${email}${code?'\nReferral code: '+code:''}${notes?'\nNotes: '+notes:''}\nI have read and agree to the renter notice.\n\nRequest ref: ${q.c.id}|${q.a}|${q.b}|${phone}${code?'|'+code:''}`;
+  MSG=`Hi ${BRAND.name}, I would like to request a vehicle.\n\nVehicle: ${q.c.name} (${q.c.service}, ${q.c.area})\nPickup: ${fmtEn(q.a)}, ${tl(TIME)}\nReturn: ${fmtEn(q.b)}, ${tl(TIME)} (${q.d} day${q.d>1?'s':''} of 24 hours)\nPickup spot: ${spot}\nRental fee: ${php(q.total)}\nRefundable security deposit: ${php(q.dep)}\nTotal to pay online after the owner confirms: ${php(q.total+q.dep)}${partyText()?'\nGuests: '+partyText():''}\nName: ${name}\nMobile: ${phone}\nEmail (for the invoice and booking confirmation): ${email}${code?'\nReferral code: '+code:''}${notes?'\nNotes: '+notes:''}\nI have read and agree to the renter notice.\n\nRequest ref: ${q.c.id}|${q.a}|${q.b}|${phone}${code?'|'+code:''}`;
   const rq=saveRequest(q,name,phone,notes,spot,MSG,email);
   lss('contact',{name,phone,email});
   $('#msg').textContent=MSG;$('#out').hidden=false;$('#reqnote').textContent=t('reqnote',{id:rq.id});$('#out').scrollIntoView({behavior:'smooth',block:'start'});
@@ -241,7 +265,14 @@ $('#f').addEventListener('submit',e=>{
 $('#copy').addEventListener('click',()=>{
   (navigator.clipboard?navigator.clipboard.writeText(MSG):Promise.reject()).then(()=>toast(t('copied'))).catch(()=>{const r=document.createRange();r.selectNodeContents($('#msg'));const s=getSelection();s.removeAllRanges();s.addRange(r);toast(t('copyfail'))});
 });
-initMap();renderTypes();setPin(CENTER.slice(),false);
+/* the map library loads after the page is showing, so first paint is fast */
+function loadLeaflet(cb){if(window.L)return cb();let n=2;const done=()=>{if(--n===0)cb()};
+  const l=document.createElement('link');l.rel='stylesheet';l.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css';l.onload=l.onerror=done;document.head.appendChild(l);
+  const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';s.onload=done;s.onerror=()=>{const m=$('#map');if(m)m.innerHTML='<div class="empty" style="margin:12px">'+esc(t('map.fail'))+'</div>'};document.head.appendChild(s)}
+let MAPREQ=false;
+function ensureMap(){if(map||MAPREQ)return;MAPREQ=true;loadLeaflet(()=>{initMap();if(map){setPin(S.pin.slice(),S.moved,S.place?{name:S.place.name}:undefined);drawMarkers(filtered())}})}
+fillAreas();renderTypes();setPin(CENTER.slice(),false);
+(window.requestIdleCallback||(f=>setTimeout(f,400)))(()=>{if(innerWidth>=1000||window.L)ensureMap()},{timeout:1500});
 function refreshHome(){renderTypes();renderGrid();prefill();setSubmitLabel();updateBar()}
 function fullPhone(){const d=$('#phone').value.trim().replace(/[^\d+]/g,'');if(d.startsWith('+'))return d;return ($('#cc').value||'+')+d.replace(/^0+/,'')}
 function splitPhone(p){const cc=[...$('#cc').options].map(o=>o.value).filter(Boolean).sort((a,b)=>b.length-a.length).find(c=>p.startsWith(c));return cc?[cc,p.slice(cc.length)]:['',p]}
@@ -249,7 +280,7 @@ function splitPhone(p){const cc=[...$('#cc').options].map(o=>o.value).filter(Boo
 (function(){const sel=$('#cc');[...sel.options].forEach(o=>{o.dataset.long=o.textContent;o.dataset.short=o.value?o.textContent.split(' ').slice(0,2).join(' '):'+ …'});
   const short=()=>[...sel.options].forEach(o=>o.textContent=o.dataset.short),long=()=>[...sel.options].forEach(o=>o.textContent=o.dataset.long);
   short();sel.addEventListener('mousedown',long);sel.addEventListener('focus',long);sel.addEventListener('change',()=>{short();$('#phone').focus()});sel.addEventListener('blur',short);})();
-function prefill(){const me=ST.me(),c=lsg('contact',{});if(c&&typeof c==='object'&&!Array.isArray(c)){if(!$('#name').value)$('#name').value=c.name||'';if(!$('#phone').value&&c.phone){const [cc,n]=splitPhone(c.phone);$('#cc').value=cc;$('#phone').value=n}if(!$('#email').value)$('#email').value=c.email||''}if(me&&!$('#name').value)$('#name').value=me.name}
+function prefill(){const me=ST.me(),c=lsg('contact',{});if(c&&typeof c==='object'&&!Array.isArray(c)){if(!$('#name').value)$('#name').value=c.name||'';if(!$('#phone').value&&c.phone){const [cc,n]=splitPhone(c.phone);$('#cc').value=cc;$('#phone').value=n}if(!$('#email').value)$('#email').value=c.email||''}if(me&&!$('#name').value)$('#name').value=me.name;if(me&&me.email&&!$('#email').value)$('#email').value=me.email;if(me&&me.phone&&!$('#phone').value){const [cc,n]=splitPhone(me.phone);$('#cc').value=cc;$('#phone').value=n}}
 function setSubmitLabel(){const b=$('#subbtn');if(b)b.textContent=t(BRAND.fb?'f.submit.fb':'f.submit')}
 /* sticky bottom bar on small screens: total and a jump to the form */
 let formSeen=false;
@@ -260,7 +291,7 @@ function updateBar(){const bar=$('#sbarb');if(!bar)return;const q=LASTQ;
 try{new IntersectionObserver(es=>{formSeen=es[0].isIntersecting;updateBar()}).observe($('#f'))}catch(x){}
 $('#sbgo').addEventListener('click',()=>$('#f').scrollIntoView({behavior:'smooth',block:'start'}));
 ['name','phone','email'].forEach(i=>$('#'+i).addEventListener('input',()=>{}));
-document.addEventListener('toggle',e=>{if(e.target&&e.target.id==='spotd'&&e.target.open&&map){setTimeout(()=>map.invalidateSize(),50)}},true);
+document.addEventListener('toggle',e=>{if(e.target&&e.target.id==='spotd'&&e.target.open){if(map)setTimeout(()=>map.invalidateSize(),50);else ensureMap()}},true);
 window.addEventListener('hashchange',updateBar);
 
 function reviewBlock(c){
@@ -289,10 +320,16 @@ function openSeg(k){
   if(k==='where')renderWherePop();
   if(k==='when')renderWhenCal()
   if(k==='who')renderWhoPop();
+  if(k==='time')renderTimePop();
 }
 function closeSeg(){openSeg('')}
+function renderTimePop(){
+  const a=$('#from').value,b=$('#to').value,ex=(a&&b&&days(a,b)>=1)?t('time.ex',{a:fmtS(a),b:fmtS(b),t:TIME?tl(TIME):'9:00 AM'}):t('time.rule');
+  $('#pop-time').innerHTML=`<p class="note" style="margin:0 0 10px">${esc(ex)}</p><div class="tgrid" role="listbox">${TSLOTS.map(v=>`<button type="button" class="tb${v===TIME?' on':''}"${S.sel&&gapIssue(S.sel,a,b,v)?' disabled':''} role="option" aria-selected="${v===TIME}" data-time="${v}">${tl(v)}</button>`).join('')}</div>`;
+  const on=$('#pop-time .tb.on')||$('#pop-time [data-time="08:00"]');if(on)setTimeout(()=>{const g=$('#pop-time .tgrid');if(g&&on)g.scrollTop=Math.max(0,on.offsetTop-60)},0)
+}
 function renderWhenCal(){const two=innerWidth>=900,el=$('#cal-s');el.dataset.n=two?2:1;$('#pop-when').classList.toggle('two',two);el.innerHTML=calInner('s','','pick',two?2:1);whenSum()}
-function whenSum(){const a=$('#from').value,b=$('#to').value;$('#whenSum').textContent=(a&&b&&days(a,b)>=1)?fmt(a)+' → '+fmt(b)+' · '+t(days(a,b)===1?'cal.d1':'cal.dn',{d:days(a,b)}):a?t('cal.pickret'):t('cal.pickstart')}
+function whenSum(){const a=$('#from').value,b=$('#to').value;$('#whenSum').textContent=(a&&b&&days(a,b)>=1)?fmt(a)+' → '+fmt(b)+' · '+t(days(a,b)===1?'cal.d1':'cal.dn',{d:days(a,b)})+(TIME?' · '+tl(TIME):''):a?t('cal.pickret'):t('cal.pickstart')}
 let PL=[],PH_TIMER=0,PH_ABORT=null,PH_STATE='',PH_CACHE={};
 const norm=x=>String(x||'').toLowerCase();
 function localPlaces(){const extra=Object.keys(AREAS).filter(k=>k!=='Airport').map(k=>({n:k,s:'Puerto Princesa, Palawan',p:AREAS[k]}));const seen=new Set(),out=[];[...PLACES,...extra].forEach(x=>{const k=norm(x.n);if(!seen.has(k)){seen.add(k);out.push(x)}});return out}
@@ -350,12 +387,21 @@ function syncBar(){
   $('#whereClr').hidden=!wi.value;
   const a=$('#from').value,b=$('#to').value,d=(a&&b)?days(a,b):0;
   $('#whenV').textContent=(a&&b&&d>=1)?fmtS(a)+' → '+fmtS(b):a?fmtS(a)+' → …':t('when.any');
+  {const pk=[S.sel,$('#from').value,$('#to').value,ST.requests.length,PREF.lang].join('|');if(pk!==PTL){PTL=pk;$('#ptime').innerHTML=timeOpts(S.sel)}}$('#ptime').value=TIME;
+  $('#timeV').textContent=TIME?tl(TIME):t('time.add');$('#timeV').classList.toggle('set',!!TIME);
   const pl=partyLabel();$('#whoV').textContent=pl||t('who.add');
   $('#whoV').classList.toggle('set',!!pl);$('#whenV').classList.toggle('set',!!(a&&b));
+  const mt=$('#asminiT');if(mt)mt.textContent=[S.moved?placeName():t('mini.any'),(a&&b&&d>=1)?fmtS(a)+' → '+fmtS(b):t('when.any'),...(TIME?[tl(TIME)]:[]),pl||t('who.add')].join(' · ');
+  const sv=$('#spotv');if(sv)sv.textContent=S.moved?placeName():t('spot.drop');
 }
+let MVR=0;function miniVis(){if(MVR)return;MVR=requestAnimationFrame(()=>{MVR=0;miniVisNow()})}
+function miniVisNow(){const m=$('#asmini'),w=$('#asw'),h=document.querySelector('.hdr');if(!m||!w)return;const home=!$('#v-home').hidden&&innerWidth<900;m.hidden=!(home&&w.getBoundingClientRect().bottom<(h?h.offsetHeight:56))}
+addEventListener('scroll',miniVis,{passive:true});addEventListener('resize',miniVis);addEventListener('hashchange',()=>setTimeout(miniVis,0));
+document.addEventListener('click',e=>{if(e.target.closest('#asmini')){const w=$('#asw'),h=document.querySelector('.hdr');window.scrollTo({top:Math.max(0,w.getBoundingClientRect().top+scrollY-(h?h.offsetHeight:56)-8),behavior:'smooth'});setTimeout(()=>{try{openSeg('where')}catch(x){}},380)}});
 asb.addEventListener('click',e=>{
   const pl=e.target.closest('[data-pl]');if(pl){pickPlace(PL[+pl.dataset.pl]);return}
   if(e.target.closest('[data-loc]')){closeSeg();$('#locate').click();return}
+  const tm=e.target.closest('[data-time]');if(tm){setTime(tm.dataset.time);setTimeout(()=>{if(!$('#pop-time').hidden)openSeg('who')},220);return}
   const st=e.target.closest('[data-step]');
   if(st){stepParty(st.dataset.step,+st.dataset.d);return}
   if(e.target.closest('[data-party-clear]')){PARTY.a=PARTY.c=PARTY.i=PARTY.p=0;S.seats=0;renderGrid();syncBar();renderWhoPop();return}
@@ -370,7 +416,8 @@ $('#whereIn').addEventListener('input',()=>{$('#whereClr').hidden=!$('#whereIn')
 $('#whereIn').addEventListener('focus',()=>{if($('#pop-where').hidden)openSeg('where')});
 document.addEventListener('click',e=>{if(asb.classList.contains('open')&&!e.composedPath().includes(asb))closeSeg()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSeg()});
-['from','to'].forEach(id=>$('#'+id).addEventListener('change',()=>{syncBar();if(!$('#pop-when').hidden){renderWhenCal();if($('#from').value&&$('#to').value)setTimeout(()=>{if(!$('#pop-when').hidden)openSeg('who')},350)}}));
+['from','to'].forEach(id=>$('#'+id).addEventListener('change',()=>{syncBar();if(!$('#pop-when').hidden){renderWhenCal();if($('#from').value&&$('#to').value)setTimeout(()=>{if(!$('#pop-when').hidden)openSeg('time')},350)}}));
+$('#ptime').addEventListener('change',e=>setTime(e.target.value));
 syncBar();
 
 /* measure header and search bar heights for the pinned layout */
