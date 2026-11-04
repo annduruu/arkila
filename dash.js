@@ -16,7 +16,7 @@ function dhRange(){
   if(DR){a=addD(b,-(DR-1));return{a,b,pa:addD(a,-DR),pb:addD(a,-1),n:DR,label:DRANGES.find(x=>x[0]===DR)[1]}}
   const first=ST.requests.reduce((m,r)=>r.from<m?r.from:m,addD(b,-364));return{a:first,b,pa:'',pb:'',n:days(first,b)+1,label:'All time'}}
 const dhIn=(r,a,b)=>r.from>=a&&r.from<=b;
-function dhDelta(cur,prev){if(!prev)return '';const p=Math.round((cur-prev)/prev*100);return `<small class="dl ${p>=0?'up':'dn'}">${p>=0?'▲':'▼'} ${Math.abs(p)}% vs previous</small>`}
+function dhDelta(cur,prev){if(!prev)return '';const p=Math.round((cur-prev)/prev*100);if(p===0)return '<small class="dl">No change vs previous</small>';return `<small class="dl ${p>=0?'up':'dn'}">${p>=0?'▲':'▼'} ${Math.abs(p)}% vs previous</small>`}
 function dhData(owner){
   const rg=dhRange(),all=ST.requests.filter(r=>!owner||r.hostId===owner),cur=all.filter(r=>dhIn(r,rg.a,rg.b)),prev=rg.pa?all.filter(r=>dhIn(r,rg.pa,rg.pb)):[];
   return{rg,all,cur,prev,paid:cur.filter(dhPaid),pprev:prev.filter(dhPaid),cars:new Map(allCars().map(c=>[c.id,c]))}}
@@ -28,13 +28,14 @@ function dhMonths(){const out=[],now=new Date();for(let i=11;i>=0;i--){const d=n
 function dhWeeks(n){const t=new Date(todayIso()+'T12:00:00'),off=(t.getDay()+6)%7,out=[];for(let i=n-1;i>=0;i--)out.push(addD(iso(new Date(t.getFullYear(),t.getMonth(),t.getDate()-off)),-7*i));return out}
 
 /* ---------- chart pieces ---------- */
+const dhTip=(...a)=>esc(a.filter(x=>x!==''&&x!=null).join('\n'));
 function chBars(d,o){o=o||{};const W=dhW(o.half),H=o.h||190,pl=o.money?44:30,pb=22,pt=8,pr=4,n=d.length,F=o.fmt||(x=>String(Math.round(x)));
   const mx=Math.max(1,...d.map(x=>x.v+(x.w||0))),nc=dhNice(mx),bw=(W-pl-pr)/n,gap=Math.min(8,bw*.22),ih=H-pt-pb,Y=v=>pt+ih-ih*v/nc.top;
   let s=`<svg class="ch" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.label||'')}">`;
   for(let v=0;v<=nc.top+1e-9;v+=nc.step)s+=`<line class="gl" x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}"/><text class="ct" x="${pl-6}" y="${Y(v)+4}" text-anchor="end">${esc(F(v))}</text>`;
   const every=Math.max(1,Math.ceil(n/Math.max(1,Math.floor((W-pl)/(o.lw||44)))));
   d.forEach((x,i)=>{const bx=pl+i*bw+gap/2,w=Math.max(2,bw-gap),y1=Y(x.v),y2=Y(x.v+(x.w||0));
-    s+=`<g><title>${esc(x.l+': '+(x.tip||F(x.v+(x.w||0))))}</title>`;
+    s+=`<g class="bg" data-tip="${dhTip(x.l,...(x.lines||[F(x.v+(x.w||0))+(o.unit?' '+o.unit:'')]))}"><rect class="hit" x="${(pl+i*bw).toFixed(1)}" y="${pt}" width="${bw.toFixed(1)}" height="${ih}"/>`;
     if(x.w)s+=`<rect class="b2" x="${bx.toFixed(1)}" y="${y2.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(0,y1-y2).toFixed(1)}" rx="3"/>`;
     s+=`<rect class="b1" x="${bx.toFixed(1)}" y="${y1.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(0,Y(0)-y1).toFixed(1)}" rx="3"/></g>`;
     if(i%every===0)s+=`<text class="ct" x="${(bx+w/2).toFixed(1)}" y="${H-6}" text-anchor="middle">${esc(x.l)}</text>`});
@@ -46,21 +47,23 @@ function chLine(d,o){o=o||{};const W=dhW(o.half),H=o.h||190,pl=34,pb=22,pt=8,pr=
   const pts=d.map((x,i)=>X(i).toFixed(1)+','+Y(x.v).toFixed(1));
   s+=`<path class="la" d="M${X(0).toFixed(1)},${Y(0)} L${pts.join(' L')} L${X(n-1).toFixed(1)},${Y(0)} Z"/><polyline class="ll" points="${pts.join(' ')}"/>`;
   const every=Math.max(1,Math.ceil(n/Math.max(1,Math.floor((W-pl)/52))));
-  d.forEach((x,i)=>{s+=`<circle class="ld" cx="${X(i).toFixed(1)}" cy="${Y(x.v).toFixed(1)}" r="${n>30?1.5:2.6}"><title>${esc(x.l+': '+F(x.v))}</title></circle>`;if(i%every===0)s+=`<text class="ct" x="${X(i).toFixed(1)}" y="${H-6}" text-anchor="middle">${esc(x.l)}</text>`});
+  const cw=(W-pl-pr)/Math.max(1,n-1);
+  d.forEach((x,i)=>{s+=`<g class="lp" data-tip="${dhTip('Week of '+x.l,F(x.v)+' paid '+(x.v===1?'booking':'bookings'))}"><rect class="hit" x="${(X(i)-cw/2).toFixed(1)}" y="${pt}" width="${cw.toFixed(1)}" height="${ih}"/><line class="lg" x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${pt}" y2="${Y(0)}"/><circle class="ld" cx="${X(i).toFixed(1)}" cy="${Y(x.v).toFixed(1)}" r="${n>30?1.5:2.6}"/></g>`;if(i%every===0)s+=`<text class="ct" x="${X(i).toFixed(1)}" y="${H-6}" text-anchor="middle">${esc(x.l)}</text>`});
   return s+'</svg>'}
 function chDonut(d,o){o=o||{};const tot=d.reduce((s,x)=>s+x.v,0);if(!tot)return '<p class="note">Nothing in this range.</p>';
   const R=58,r=38,C=64,live=d.filter(x=>x.v>0),P=(a,q)=>[(C+q*Math.cos(a)).toFixed(2),(C+q*Math.sin(a)).toFixed(2)];let a0=-Math.PI/2,sv='';
-  if(live.length===1)sv=`<circle cx="${C}" cy="${C}" r="${(R+r)/2}" fill="none" stroke="${live[0].c}" stroke-width="${R-r}"><title>${esc(live[0].l)}: ${live[0].v}</title></circle>`;
+  if(live.length===1)sv=`<circle cx="${C}" cy="${C}" r="${(R+r)/2}" fill="none" stroke="${live[0].c}" stroke-width="${R-r}" data-tip="${dhTip(live[0].l,live[0].v+' (100%)')}"/>`;
   else live.forEach(x=>{const a1=a0+2*Math.PI*x.v/tot,big=(a1-a0)>Math.PI?1:0,p1=P(a0,R),p2=P(a1,R),p3=P(a1,r),p4=P(a0,r);
-    sv+=`<path d="M${p1} A${R} ${R} 0 ${big} 1 ${p2} L${p3} A${r} ${r} 0 ${big} 0 ${p4} Z" fill="${x.c}"><title>${esc(x.l)}: ${x.v}</title></path>`;a0=a1});
+    sv+=`<path d="M${p1} A${R} ${R} 0 ${big} 1 ${p2} L${p3} A${r} ${r} 0 ${big} 0 ${p4} Z" fill="${x.c}" data-tip="${dhTip(x.l,dhN(x.v)+' '+(o.unit||''),Math.round(x.v/tot*100)+'% of all')}"/>`;a0=a1});
   return `<div class="dn"><svg viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="${esc(o.label||'')}">${sv}<text x="64" y="62" text-anchor="middle" class="dnn">${dhN(tot)}</text><text x="64" y="78" text-anchor="middle" class="ct">${esc(o.unit||'total')}</text></svg>
-  <ul class="dleg">${d.map(x=>`<li><i style="background:${x.c}"></i><span>${esc(x.l)}</span><b>${dhN(x.v)}</b><small>${Math.round(x.v/tot*100)}%</small></li>`).join('')}</ul></div>`}
+  <ul class="dleg">${(live.length?live:d).map(x=>`<li data-tip="${dhTip(x.l,dhN(x.v)+' '+(o.unit||''),Math.round(x.v/tot*100)+'% of all')}"><i style="background:${x.c}"></i><span>${esc(x.l)}</span><b>${dhN(x.v)}</b><small>${Math.round(x.v/tot*100)}%</small></li>`).join('')}</ul></div>`}
 function chHB(d,o){o=o||{};const F=o.fmt||dhK;if(!d.length)return '<p class="note">Nothing in this range.</p>';const mx=Math.max(1,...d.map(x=>x.v));
-  return `<div class="hbl">${d.map(x=>`<div class="hb"><span class="hl" title="${esc(x.l)}">${esc(x.l)}${x.sub?`<small>${esc(x.sub)}</small>`:''}</span><span class="hbar"><i style="width:${Math.max(2,x.v/mx*100).toFixed(1)}%"></i></span><b>${esc(F(x.v))}</b></div>`).join('')}</div>`}
+  const tot=d.reduce((s,x)=>s+x.v,0);return `<div class="hbl">${d.map(x=>`<div class="hb" data-tip="${dhTip(x.l,F(x.v)+(tot?' · '+Math.round(x.v/tot*100)+'% of this list':''),x.n!=null?dhS(x.n,'booking'):'')}"><span class="hl" title="${esc(x.l)}">${esc(x.l)}${x.sub?`<small>${esc(x.sub)}</small>`:''}</span><span class="hbar"><i style="width:${Math.max(2,x.v/mx*100).toFixed(1)}%"></i></span><b>${esc(F(x.v))}</b></div>`).join('')}</div>`}
 function chHeat(rows,weeks){if(!rows.length)return '<p class="note">No vehicles yet.</p>';
-  return `<div class="heat" style="--wk:${weeks.length}"><div class="hrow hh"><span></span><div class="hcells">${weeks.map((w,i)=>`<em>${i%4===0?esc(fmtS(w)):''}</em>`).join('')}</div></div>${rows.map(r=>`<div class="hrow"><span class="hl" title="${esc(r.l)}">${esc(r.l)}</span><div class="hcells">${r.c.map((v,i)=>`<i style="background:color-mix(in srgb,var(--accent) ${Math.round(v/7*100)}%,var(--line))" title="${esc(r.l+', week of '+fmtS(weeks[i])+': '+v+' of 7 days booked')}"></i>`).join('')}</div></div>`).join('')}</div><p class="note" style="margin:8px 0 0">Darker means more of that week was booked.</p>`}
+  return `<div class="heat" style="--wk:${weeks.length}"><div class="hrow hh"><span></span><div class="hcells">${weeks.map((w,i)=>`<em>${i%4===0?esc(fmtS(w)):''}</em>`).join('')}</div></div>${rows.map(r=>`<div class="hrow"><span class="hl" title="${esc(r.l)}">${esc(r.l)}</span><div class="hcells">${r.c.map((v,i)=>`<i style="background:color-mix(in srgb,var(--accent) ${Math.round(v/7*100)}%,var(--line))" data-tip="${dhTip(r.l,'Week of '+fmtS(weeks[i]),v+' of 7 days booked')}"></i>`).join('')}</div></div>`).join('')}</div><p class="note" style="margin:8px 0 0">Darker means more of that week was booked.</p>`}
 const dhCard=(title,sub,body,cls)=>`<section class="dc${cls?' '+cls:''}"><h3>${esc(title)}</h3>${sub?`<p class="dcs">${esc(sub)}</p>`:''}${body}</section>`;
-const dhKpi=(label,val,delta,sub)=>`<div class="stat kpi"><span>${esc(label)}</span><b>${val}</b>${delta||''}${sub?`<small class="ks">${esc(sub)}</small>`:''}</div>`;
+const KH={'Booking value':'Total price of paid and completed trips, counted on the pickup date.','Arkila commission':'Arkila\'s cut of the booking value.','Paid bookings':'Trips where the renter paid. Cancelled and declined ones are left out.','New users':'Accounts created in this range.','Live vehicles':'Approved vehicles that are not paused.','Cancel / decline rate':'Share of requests in the range that ended cancelled or declined.','Upcoming paid trips':'Confirmed trips with a pickup date from today on.','Owner payouts due':'Owner share of completed trips not yet marked as paid.','Your earnings':'What you receive after the Arkila fee, for paid and completed trips.','Coming to you':'Confirmed or completed trips not yet paid out to you.','Occupancy':'Booked vehicle-days divided by available vehicle-days in this range.','Rating':'Average of renter reviews on your vehicles.','Waiting for you':'New requests where you still need to say if the dates are free.'};
+const dhKpi=(label,val,delta,sub)=>`<div class="stat kpi" data-tip="${dhTip(label,KH[label]||'')}"><span>${esc(label)}</span><b>${val}</b>${delta||''}${sub?`<small class="ks">${esc(sub)}</small>`:''}</div>`;
 const dhRangeBar=()=>`<div class="chips drs" role="group" aria-label="Date range">${DRANGES.map(x=>`<button type="button" class="chip" data-dr="${x[0]}" aria-pressed="${DR===x[0]}">${x[1]}</button>`).join('')}</div>`;
 
 /* shared series */
@@ -86,15 +89,15 @@ function adDash(){
     dhKpi('Paid bookings',dhN(D.paid.length),dhDelta(D.paid.length,D.pprev.length),'avg '+php(D.paid.length?gross/D.paid.length:0)),dhKpi('New users',dhN(nUsers),dhDelta(nUsers,pUsers),ST.users.length+' in total'),
     dhKpi('Live vehicles',dhN(veh),'',ST.listings.filter(l=>l.status==='pending').length+' waiting approval'),dhKpi('Cancel / decline rate',rate+'%','',dhN(lost)+' of '+dhN(D.cur.length)+' requests'),
     dhKpi('Upcoming paid trips',dhN(upc),'','from today on'),dhKpi('Owner payouts due',dhK(dhSum(due,ownerGets)),'',dhS(due.length,'completed trip')+' unpaid')].join('');
-  const mon=dhSeries(D,(r,m)=>{m.v+=commOf(r);m.w+=ownerGets(r)}).map(m=>({l:m.l,v:m.v,w:m.w,tip:'Arkila '+php(m.v)+' · owners '+php(m.w)}));
+  const mon=dhSeries(D,(r,m)=>{m.v+=commOf(r);m.w+=ownerGets(r)}).map(m=>({l:m.l,v:m.v,w:m.w,lines:['Booking value '+php(m.v+m.w),'Arkila commission '+php(m.v),'Owners\' share '+php(m.w),dhS(m.n,'paid booking')]}));
   const area=dhGroup(D,r=>{const c=D.cars.get(r.carId);return c?c.area:r.spot},r=>r.total).slice(0,8),type=dhGroup(D,r=>{const c=D.cars.get(r.carId);return c?c.type:''},r=>r.total).slice(0,8);
   const topV=dhGroup(D,r=>r.carName,r=>r.total).slice(0,10),topO=dhGroup(D,r=>r.hostName,r=>r.total).slice(0,10).map(x=>({...x,sub:dhS(x.n,'trip')}));
   return `<div class="dhead2"><div><h2 style="margin:0">Dashboard</h2><p class="note" style="margin:2px 0 0">Booking value counts paid and completed trips by pickup date. Showing ${esc(rg.label.toLowerCase())}.</p></div>${dhRangeBar()}</div>
   <div class="stats">${kpis}</div>
   <div class="dgrid">${dhCard('Booking value by month','Last 12 months. The bright bottom part is Arkila’s commission, the soft part is the owners’ share.',chBars(mon,{money:1,fmt:dhK,label:'Booking value by month'}),'wide')}
   ${dhCard('Paid bookings per week','Last 26 weeks, by pickup date',chLine(dhWeekly(D),{label:'Bookings per week',half:1}))}
-  ${dhCard('Busiest pickup days','In the selected range',chBars(dhWeekdays(D),{label:'Pickups by weekday',h:170,half:1}))}
-  ${dhCard('Request outcomes','Everything requested in the range',chDonut(dhStatus(D),{unit:'requests',label:'Request outcomes'}))}
+  ${dhCard('Busiest pickup days','In the selected range',chBars(dhWeekdays(D),{label:'Pickups by weekday',h:170,half:1,unit:'pickups'}))}
+  ${dhCard('Request outcomes','Requests with a pickup date in this range',chDonut(dhStatus(D),{unit:'requests',label:'Request outcomes'}))}
   ${dhCard('Booking value by area','Top areas by pickup vehicle',chHB(area))}
   ${dhCard('Booking value by vehicle type','',chHB(type))}
   ${dhCard('Top 10 vehicles','By booking value',chHB(topV))}
@@ -113,17 +116,18 @@ function ownDash(oid,asAdmin){
   const pay=D.all.filter(r=>(r.status==='completed'&&!r.paid)||r.status==='confirmed'),wait=D.all.filter(r=>r.status==='new'&&!r.avail).length;
   const kpis=[dhKpi('Your earnings',dhK(earn),dhDelta(earn,pe),'after '+Math.round(SETTINGS.commission*100)+'% Arkila fee · '+rg.label),dhKpi('Coming to you',dhK(dhSum(pay,ownerGets)),'',dhS(pay.length,'trip')+' not yet paid out'),
     dhKpi('Paid bookings',dhN(D.paid.length),dhDelta(D.paid.length,D.pprev.length),'avg '+php(D.paid.length?dhSum(D.paid,r=>r.total)/D.paid.length:0)),dhKpi('Occupancy',occ+'%',rg.pa?`<small class="dl ${occ>=pocc?'up':'dn'}">${occ>=pocc?'▲':'▼'} ${Math.abs(occ-pocc)} pts vs previous</small>`:'',bd+' vehicle-days booked'),
-    dhKpi('Rating',rat==='–'?rat:'★ '+rat,'',rv.length+' reviews'),dhKpi('Waiting for you',dhN(wait),'','requests to confirm or decline')].join('');
-  const mon=dhSeries(D,(r,m)=>{m.v+=ownerGets(r)}).map(m=>({l:m.l,v:m.v,tip:php(m.v)}));
+    dhKpi('Rating',rat==='–'?rat:'★ '+rat,'',rv.length+' reviews'),dhKpi('Waiting for you',dhN(wait),'','open requests, any date')].join('');
+  const mon=dhSeries(D,(r,m)=>{m.v+=ownerGets(r)}).map(m=>({l:m.l,v:m.v,lines:['Earnings '+php(m.v),dhS(m.n,'paid booking'),m.n?'avg '+php(m.v/m.n)+' per trip':'']}));
   const wk=dhWeeks(26),heat=mine.filter(l=>l.status==='approved').map(l=>{const c=wk.map(()=>0);D.all.filter(r=>r.carId===l.id&&dhPaid(r)).forEach(r=>wk.forEach((w,i)=>{c[i]+=dhBooked(r,w,addD(w,6))}));return{l:l.name,c,tot:c.reduce((s,x)=>s+x,0)}}).sort((a,b)=>b.tot-a.tot).slice(0,10);
   const perV=dhGroup(D,r=>r.carName,ownerGets).slice(0,10),nxt=D.all.filter(r=>r.status==='confirmed'&&r.from>=t0).sort((a,b)=>a.from>b.from?1:-1).slice(0,5);
-  return back+`<div class="dhead2"><div><h2 style="margin:0">Your numbers</h2><p class="note" style="margin:2px 0 0">Earnings count paid and completed trips by pickup date. Showing ${esc(rg.label.toLowerCase())}.</p></div>${dhRangeBar()}</div>
+  const alert=(!asAdmin&&wait)?`<div class="banner own" style="margin:0 0 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span><b>${dhS(wait,'request')}</b> waiting for your answer.</span><button class="chip on" data-otab="tasks">Answer now</button></div>`:'';
+  return back+alert+`<div class="dhead2"><div><h2 style="margin:0">Your numbers</h2><p class="note" style="margin:2px 0 0">Earnings count paid and completed trips by pickup date. Showing ${esc(rg.label.toLowerCase())}.</p></div>${dhRangeBar()}</div>
   <div class="stats">${kpis}</div>
   <div class="dgrid">${dhCard('Earnings by month','Last 12 months, after the Arkila fee',chBars(mon,{money:1,fmt:dhK,label:'Earnings by month'}),'wide')}
   ${dhCard('Occupancy by vehicle','Last 26 weeks',chHeat(heat,wk),'wide')}
   ${dhCard('Earnings per vehicle','In the selected range',chHB(perV))}
-  ${dhCard('Request outcomes','Everything requested in the range',chDonut(dhStatus(D),{unit:'requests',label:'Request outcomes'}))}
-  ${dhCard('Busiest pickup days','In the selected range',chBars(dhWeekdays(D),{label:'Pickups by weekday',h:170,half:1}))}
+  ${dhCard('Request outcomes','Requests with a pickup date in this range',chDonut(dhStatus(D),{unit:'requests',label:'Request outcomes'}))}
+  ${dhCard('Busiest pickup days','In the selected range',chBars(dhWeekdays(D),{label:'Pickups by weekday',h:170,half:1,unit:'pickups'}))}
   ${dhCard('Next pickups','Paid trips coming up',nxt.length?nxt.map(r=>`<div class="lrow"><div class="lmain"><b>${esc(r.carName)}</b><p class="sub">${esc(fmt(r.from))}${r.time?' · '+tl(r.time):''} · ${r.days} day${r.days>1?'s':''} · you get ${php(ownerGets(r))}</p></div></div>`).join(''):'<p class="note">No paid pickups coming up.</p>')}</div>`}
 
 /* ---------- events ---------- */
@@ -146,3 +150,25 @@ document.addEventListener('change',e=>{if(e.target.id!=='bkin')return;const f=e.
     if(!j||j.app!=='arkila'||!Array.isArray(j.users)||!Array.isArray(j.listings)||!Array.isArray(j.requests)){toast('That file is not an Arkila backup.');return}
     confirmBox({title:'Restore this backup?',text:'It replaces everything now saved on this device ('+j.users.length+' users, '+j.listings.length+' vehicles, '+j.requests.length+' bookings in the file).',go:'Restore',back:'Cancel',ok:()=>{ST.users=j.users;ST.listings=j.listings;ST.requests=j.requests;ST.reviews=Array.isArray(j.reviews)?j.reviews:[];ST.favs=Array.isArray(j.favs)?j.favs:[];ST.blocks=(j.blocks&&typeof j.blocks==='object'&&!Array.isArray(j.blocks))?j.blocks:{};ST.sid=null;ST.save();location.reload()}})};
   rd.onerror=()=>toast('Could not read that file.');rd.readAsText(f)});
+
+/* ---- hover / tap details for every chart, tile and bar ---- */
+(function(){const tip=document.createElement('div');tip.id='dtip';tip.setAttribute('role','tooltip');tip.hidden=true;document.body.appendChild(tip);let cur=null;
+  const show=(el,x,y)=>{const t=el.getAttribute('data-tip');if(!t){hide();return}if(cur!==el){cur=el;tip.textContent='';t.split('\n').forEach((ln,i)=>{const d=document.createElement(i?'span':'b');d.textContent=ln;tip.appendChild(d)})}
+    tip.hidden=false;const w=tip.offsetWidth,h=tip.offsetHeight,vw=document.documentElement.clientWidth,vh=window.innerHeight;let L=x+14,T=y+16;if(L+w>vw-8)L=x-w-14;if(L<8)L=8;if(T+h>vh-8)T=y-h-12;if(T<8)T=8;tip.style.left=L+'px';tip.style.top=T+'px'};
+  const hide=()=>{tip.hidden=true;cur=null};
+  const hit=e=>e.target.closest&&e.target.closest('#v-admin [data-tip],#v-host [data-tip]');
+  const coarse=()=>window.matchMedia('(hover:none),(pointer:coarse)').matches;
+  document.addEventListener('mousemove',e=>{if(coarse())return;const el=hit(e);if(el)show(el,e.clientX,e.clientY);else hide()});
+  document.addEventListener('click',e=>{const el=hit(e);if(el&&coarse()){cur===el&&!tip.hidden?hide():show(el,e.clientX,e.clientY)}else if(!el)hide()});
+  document.addEventListener('scroll',hide,true);document.addEventListener('keydown',e=>{if(e.key==='Escape')hide()});window.addEventListener('hashchange',hide);
+})();
+
+/* ---- owner tabs, search, filters, export ---- */
+$('#v-host').addEventListener('click',e=>{
+  const t=e.target.closest('[data-otab]');if(t){OT=t.dataset.otab;OQ='';OF='all';OS={k:'',d:1};renderHost();window.scrollTo({top:0});return}
+  const f=e.target.closest('[data-of]');if(f){OF=f.dataset.of;renderHost();return}
+  const s=e.target.closest('[data-osort]');if(s){OS=OS.k===s.dataset.osort?{k:s.dataset.osort,d:-OS.d}:{k:s.dataset.osort,d:1};oTable();return}
+  if(e.target.closest('[data-oexp]')){oExport();return}
+});
+$('#v-host').addEventListener('input',e=>{if(e.target.id==='oq'){OQ=e.target.value;oTable()}
+  if(e.target.id==='hd'){const c=$('#hdc');if(c){const n=e.target.value.length;c.textContent=n+' / 600'+(n<20?' · '+(20-n)+' more to go':'')}}});

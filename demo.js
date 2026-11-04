@@ -20,11 +20,11 @@ function demoLoad(){
   const ts=s=>new Date(s+'T12:00:00').getTime();
   /* owners (40) and renters (60) */
   const owners=[],renters=[];
-  for(let i=1;i<=40;i++)owners.push({id:'demo-o'+i,name:name(),provider:'demo',roles:['guest','host'],createdAt:ts(addD(today,-int(40,520))),email:'owner'+i+'@example.test',phone:'09'+int(100000000,999999999),demo:true});
+  for(let i=1;i<=40;i++)owners.push({id:'demo-o'+i,name:i===1?'Demo Owner':name(),first:i===1?'Demo':undefined,last:i===1?'Owner':undefined,provider:'demo',roles:['guest','host'],createdAt:ts(addD(today,-int(40,520))),email:'owner'+i+'@example.test',phone:'09'+int(100000000,999999999),demo:true});
   for(let i=1;i<=60;i++)renters.push({id:'demo-r'+i,name:name(),provider:'demo',roles:['guest'],createdAt:ts(addD(today,-int(0,360))),email:'renter'+i+'@example.test',phone:'09'+int(100000000,999999999),demo:true});
   /* vehicles (120): most owners have 2 to 4 */
   const cars=[];let n=0;
-  owners.forEach((o,oi)=>{const k=oi<30?int(2,4):int(3,5);for(let j=0;j<k&&n<120;j++,n++){
+  owners.forEach((o,oi)=>{const k=oi===0?5:oi<30?int(2,4):int(3,5);for(let j=0;j<k&&n<120;j++,n++){
     const mo=R()<0.5,m=pick(DM_MODELS[mo?'motor':'car']),area=pick(areas),jit=()=>(R()-.5)*0.02,price=Math.round(m[3]*(0.85+R()*0.35)/50)*50,st=n>=114?'pending':'approved';
     cars.push({id:'demo-l'+(n+1),kind:mo?'motor':'car',name:m[0],type:m[1],seats:m[2],service:mo||R()<.6?'Self-drive':'With driver',area,pos:[AREAS[area][0]+jit(),AREAS[area][1]+jit()],place:{n:area,s:''},price,hourly:0,color:pick(COLORS)[0],active:true,
       description:'Demo vehicle for testing the dashboards. '+m[0]+' kept clean and serviced, ready for pickup in '+area+'.',specs:mo?{year:int(2018,2025),transmission:'Automatic',cc:m[0].includes('160')?160:125,fuel:'Gasoline',helmets:2,mileage:'Unlimited'}:{year:int(2016,2025),transmission:R()<.6?'Automatic':'Manual',fuel:'Gasoline',bags:int(2,6),aircon:'Yes'},features:[],images:[],
@@ -47,6 +47,12 @@ function demoLoad(){
     if(status==='completed'){r.paid=end<addD(today,-3)?R()<.96:false;r.depBack=end<addD(today,-2)?R()<.97:false;
       if(R()<.5)reviews.push({id:'demo-rv'+reviews.length,carId:c.id,reqId:r.id,guestName:g.name,rating:Math.min(5,Math.max(2,Math.round(4.4+(R()-.5)*3))),text:pick(['Clean and easy pickup.','Great value for the trip.','Owner was friendly and on time.','Smooth rental, would book again.','Good bike for the island roads.']),createdAt:ts(end),demo:true})}
     reqs.push(r)}
+  /* the demo owner (demo-o1): one paused and one pending vehicle, plus a few fresh requests waiting for an answer */
+  const mine=cars.filter(c=>c.ownerId==='demo-o1');if(mine[3])mine[3].active=false;if(mine[4])mine[4].status='pending';
+  const mlive=mine.filter(c=>c.status==='approved'&&c.active!==false);let mk=0,mt=0;
+  while(mk<4&&mt++<200&&mlive.length){const c=pick(mlive),start=addD(today,int(3,24)),end=addD(start,pick([1,2,3])),b=busy[c.id]||(busy[c.id]=[]);if(b.some(x=>start<=x[1]&&end>=x[0]))continue;
+    const g=pick(renters),d=days(start,end),mo=c.kind==='motor';
+    reqs.push({id:'DEMO-'+(id0++),carId:c.id,carName:c.name,hostId:c.ownerId,hostName:c.ownerName,guestId:g.id,guestName:g.name,guestPhone:g.phone,guestEmail:g.email,from:start,to:end,time:'09:00',extraH:0,extraFee:0,days:d,total:c.price*d,deposit:depositOf(c),spot:c.area,notes:'',msg:'',status:'new',createdAt:Date.now()-mk*3600e3,demo:true});mk++}
   reqs.sort((a,b)=>b.createdAt-a.createdAt);
   ST.users.push(...owners,...renters);ST.listings.push(...cars);ST.requests.push(...reqs);ST.reviews.push(...reviews);
   return ST.save()}

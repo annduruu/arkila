@@ -622,3 +622,29 @@ label.req>.lab::after,.ppick.req>.lab::after{content:" *";color:#c0392b;font-wei
 input[type=checkbox].bad{outline:2px solid #c0392b;outline-offset:2px;box-shadow:none}
 .tefld .lab::after{content:" *";color:#c0392b;font-weight:800}
 .tefld:has(.tin[data-tin=extra]) .lab::after{content:""}
+
+/* chart hover details */
+#dtip{position:fixed;z-index:200;pointer-events:none;max-width:240px;display:grid;gap:2px;padding:8px 10px;border-radius:10px;background:#0f1a2b;color:#fff;font-size:13px;line-height:1.35;box-shadow:0 6px 20px rgba(0,0,0,.28)}
+#dtip[hidden]{display:none}#dtip b{font-size:13px}#dtip span{color:#d3dcec;font-variant-numeric:tabular-nums}
+:root[data-theme="dark"] #dtip,:root:not([data-theme="light"]) #dtip{border:1px solid rgba(255,255,255,.14)}
+.ch .hit{fill:transparent;pointer-events:all}.ch .bg:hover .hit,.ch .lp:hover .hit{fill:color-mix(in srgb,var(--accent) 9%,transparent)}
+.ch .bg:hover .b1,.ch .bg:hover .b2{filter:brightness(1.12)}.ch .lg{stroke:var(--accent);stroke-width:1;stroke-dasharray:3 3;opacity:0}.ch .lp:hover .lg{opacity:.7}.ch .lp:hover .ld{r:5;stroke:var(--surface);stroke-width:2}
+.dn path,.dn circle{transition:opacity .12s}.dn svg:hover path:not(:hover),.dn svg:hover circle:not(:hover){opacity:.55}.dleg li{padding:3px 6px;margin:-3px -6px;border-radius:8px}.dleg li:hover{background:var(--bg)}
+.hb{padding:3px 6px;margin:-3px -6px;border-radius:8px}.hb:hover{background:var(--bg)}.hb:hover .hbar i{filter:brightness(1.15)}
+.heat i:hover{outline:2px solid var(--accent);outline-offset:1px}.kpi[data-tip]{transition:box-shadow .12s,transform .12s}.kpi[data-tip]:hover{box-shadow:0 4px 14px rgba(15,26,43,.12);transform:translateY(-1px)}
+
+/* form polish: description box, photo picker, heatmap fit */
+.form textarea{border:1px solid var(--line);background:var(--bg);color:inherit;border-radius:10px;padding:10px 12px;font-size:16px;line-height:1.45;width:100%;min-width:0;min-height:112px;resize:vertical;display:block}
+.form textarea::placeholder,.form input::placeholder{color:var(--muted);opacity:.8}
+.form textarea:focus,.form input:focus,.form select:focus{outline:2px solid color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:1px;border-color:var(--accent)}
+.lab .cnt{font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);margin-left:6px}
+.form input[type=file]{border:1.5px dashed color-mix(in srgb,var(--accent) 45%,var(--line));background:var(--surface);border-radius:12px;padding:14px;cursor:pointer;color:var(--muted);font-size:14px}
+.form input[type=file]:hover{background:var(--bg)}
+.form input[type=file]::file-selector-button{border:0;border-radius:999px;background:var(--accent);color:#fff;padding:9px 16px;margin-right:12px;font:inherit;font-weight:600;font-size:14px;cursor:pointer}
+.form input[type=file]::file-selector-button:hover{filter:brightness(1.1)}
+.hcells{grid-template-columns:repeat(var(--wk),minmax(0,1fr))}.hrow>div{min-width:0}.hcells em{display:block;width:0}
+.dl:not(.up):not(.dn){color:var(--muted)}
+.banner.own{background:color-mix(in srgb,var(--accent) 10%,var(--surface));border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+#v-host .adbar{margin-top:0}
+#v-host .at .ract{display:flex;flex-wrap:wrap;gap:6px;min-width:128px;max-width:150px}
+.lab .cnt:empty{display:none}#hf .f2{align-items:start}

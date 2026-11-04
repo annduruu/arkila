@@ -104,7 +104,7 @@ function openLogin(msg,role){
   <div class="rolepick" role="radiogroup"><label class="rp"><input type="radio" name="lrole" value="guest"${role==="host"?"":" checked"}><span><b>${esc(t('l.rent'))}</b><small>${esc(t('l.rents'))}</small></span></label><label class="rp"><input type="radio" name="lrole" value="host"${role==="host"?" checked":""}><span><b>${esc(t('l.list'))}</b><small>${esc(t('l.lists'))}</small></span></label></div>
   <p class="err" id="lerr" role="alert"></p>
   <button type="button" class="btn" data-lgo="facebook">${esc(t('l.fb'))}</button><button type="button" class="btn ghost" data-lgo="google">${esc(t('l.g'))}</button>
-  <button type="button" class="chip" data-lgo="admin" style="justify-self:start">${esc(t('l.admin'))}</button></div>`;
+  <button type="button" class="chip" data-lgo="admin" style="justify-self:start">${esc(t('l.admin'))}</button>${ST.users.some(u=>u.id==='demo-o1')?'<div class="chips" style="margin-top:2px"><button type="button" class="chip" data-lgo="demoowner">Demo owner (test load)</button><button type="button" class="chip" data-lgo="demorenter">Demo renter (test load)</button></div>':''}</div>`;
   if(!ldlg.open)ldlg.showModal();
 }
 function doLogin(provider){
@@ -119,7 +119,7 @@ function doLogin(provider){
   if(wantHost)location.hash='host';else if(provider==='admin')location.hash='admin';else route();
   refreshHome();
 }
-ldlg.addEventListener('click',e=>{if(e.target===ldlg||e.target.closest('[data-lclose]'))ldlg.close();const g=e.target.closest('[data-lgo]');if(g)doLogin(g.dataset.lgo)});
+ldlg.addEventListener('click',e=>{if(e.target===ldlg||e.target.closest('[data-lclose]'))ldlg.close();const g=e.target.closest('[data-lgo]');if(g){if(g.dataset.lgo==='demoowner'||g.dataset.lgo==='demorenter'){const id=g.dataset.lgo==='demoowner'?'demo-o1':'demo-r1',u=ST.users.find(x=>x.id===id);if(!u)return;ST.sid=id;ST.save();ldlg.close();renderNav();{const fl=userFL(u);$('#fn').value=fl[0];$('#ln').value=fl[1]}toast(t('l.in',{n:first(u.name)}));location.hash=id==='demo-o1'?'host':'home';route();refreshHome();return}doLogin(g.dataset.lgo)}});
 
 /* ---- owner ---- */
 const HF={photos:[],err:'',place:null};
@@ -128,13 +128,65 @@ function hostDay(id,s){const me=ST.me(),l=me&&ST.listings.find(x=>x.id===id&&x.o
 const COLORS=[['#A9B3C0','Silver'],['#1F2933','Black'],['#D6DBE2','White'],['#2E86DE','Blue'],['#C0392B','Red'],['#3E6B4E','Green'],['#7D8794','Grey']];
 function readImg(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const sc=Math.min(1,900/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.72))};im.onerror=rej;im.src=fr.result};fr.onerror=rej;fr.readAsDataURL(file)})}
 function hostSteps(){return `<section class="step"><h2>How a booking works for you</h2><ol class="rules"><li>Arkila checks the renter's licence and ID.</li><li>Arkila asks you to confirm the vehicle is free for the dates. Reply within [2 hours] or the request lapses.</li><li>The renter agrees to the renter notice and pays Arkila online. Arkila confirms the booking and blocks the dates on your calendar.</li><li>You and the renter complete Arkila's handover checklist at pickup, with dated photos.</li><li>Arkila pays you the rental fee, less its fee, 24 hours after pickup if the renter reports no problem.</li><li>The renter's deposit stays with Arkila. If you report damage within [24 hours] of return, the claimed amount stays held until it is settled.</li></ol></section>`}
+/* ---- owner area: the same tabbed layout as the admin, but only this owner's own data ---- */
+let OT='dashboard',OQ='',OF='all',OS={k:'',d:1};
+const OTABS=[['dashboard','Dashboard'],['tasks','Tasks'],['vehicles','Vehicles'],['bookings','Bookings'],['payouts','Payouts'],['add','Add vehicle']];
+const oMine=()=>{const me=ST.me();return me?ST.listings.filter(l=>l.ownerId===me.id):[]};
+const oReqs=()=>{const me=ST.me();return me?ST.requests.filter(r=>r.hostId===me.id):[]};
+const oWait=r=>r.status==='new'&&!r.avail;
+const oBtn=(attr,label,on)=>`<button class="chip${on?' on':''}" ${attr}>${label}</button>`;
+function oDef(tab){
+  const pk=r=>fmt(r.from)+(r.time?`<small>${tl(r.time)}</small>`:'');
+  if(tab==='vehicles')return{name:'vehicles',rows:oMine,filters:[['all','All'],['approved','Live'],['pending','Waiting for approval'],['paused','Paused'],['rejected','Not approved']],fit:(l,f)=>f==='all'||lkind(l)===f,txt:l=>[l.name,l.type,l.area,l.service,lkind(l)]};
+  if(tab==='bookings')return{name:'bookings',rows:oReqs,
+    filters:[['all','All'],['wait','Needs your answer'],['new','Requested'],['confirmed','Paid'],['completed','Completed'],['cancelled','Cancelled'],['declined','Declined']],fit:(r,f)=>f==='all'||(f==='wait'?oWait(r):r.status===f),
+    cols:[{h:'Booking',v:r=>`<b>${esc(r.id)}</b><small>${esc(r.carName)}</small>`,s:r=>r.id,c:r=>r.id},
+      {h:'Guest',v:r=>`${esc(first(r.guestName))}<small>${(r.status==='confirmed'||r.status==='completed')?esc(r.guestPhone||''):'contact shared once paid'}</small>`,s:r=>(r.guestName||'').toLowerCase(),c:r=>first(r.guestName)},
+      {h:'Pickup',v:pk,s:r=>r.from+(r.time||''),c:r=>r.from},{h:'Return',v:r=>fmt(r.to),s:r=>r.to,c:r=>r.to},{h:'Days',v:r=>r.days,s:r=>r.days,c:r=>r.days,num:1},
+      {h:'You get',v:r=>`<b>${php(ownerGets(r))}</b>`,s:r=>ownerGets(r),c:r=>ownerGets(r),num:1},
+      {h:'Status',v:r=>pill(r.status)+(oWait(r)?'<small>waiting for you</small>':(r.status==='new'&&r.avail==='yes')?'<small>waiting for the renter</small>':''),s:r=>r.status,c:r=>r.status}],
+    act:r=>oWait(r)?`<div class="ract">${oBtn(`data-rav="${esc(r.id)}|yes"`,'Dates are free',1)}${oBtn(`data-rav="${esc(r.id)}|no"`,'Decline')}</div>`:''};
+  if(tab==='payouts')return{name:'payouts',rows:()=>oReqs().filter(r=>r.status==='confirmed'||r.status==='completed'),
+    filters:[['all','All'],['owe','To be paid'],['paid','Paid to you']],fit:(r,f)=>f==='all'||(f==='owe'?!r.paid:!!r.paid),
+    cols:[{h:'Booking',v:r=>`<b>${esc(r.id)}</b><small>${esc(r.carName)}</small>`,s:r=>r.id,c:r=>r.id},{h:'Pickup',v:pk,s:r=>r.from,c:r=>r.from},
+      {h:'Payout due',v:r=>fmt(addD(r.from,1)),s:r=>r.from,c:r=>addD(r.from,1)},{h:'Rental',v:r=>php(r.total),s:r=>r.total,c:r=>r.total,num:1},
+      {h:'Arkila fee',v:r=>php(commOf(r)),s:r=>commOf(r),c:r=>commOf(r),num:1},{h:'You get',v:r=>`<b>${php(ownerGets(r))}</b>`,s:r=>ownerGets(r),c:r=>ownerGets(r),num:1},
+      {h:'Status',v:r=>r.paid?'<span class="pill g">Paid</span>':'<span class="pill w">To be paid</span>',s:r=>r.paid?1:0,c:r=>r.paid?'paid':'to be paid'}]};
+  return null}
+function oRows(def){
+  const q=OQ.trim().toLowerCase();let rows=def.rows().filter(r=>def.fit(r,OF));
+  if(q)rows=rows.filter(r=>(def.txt?def.txt(r):def.cols.map(c=>c.c(r)).concat([r.id])).some(x=>String(x==null?'':x).toLowerCase().includes(q)));
+  if(OS.k!==''&&def.cols){const c=def.cols[+OS.k];if(c)rows=rows.slice().sort((a,b)=>{const x=c.s(a),y=c.s(b);return (x>y?1:x<y?-1:0)*OS.d})}
+  return rows}
+function oTable(){
+  const def=oDef(OT),box=$('#otbl');if(!def||!box)return;const rows=oRows(def),all=def.rows().length;
+  if(OT==='vehicles'){box.innerHTML=oVehHtml(rows)+`<p class="note">${rows.length} of ${all} shown.</p>`;trFil(box);return}
+  box.innerHTML=`${OT==='payouts'?`<div class="stats" style="margin-bottom:12px"><div class="stat"><span>To be paid</span><b>${php(dhSum(rows.filter(r=>!r.paid),ownerGets))}</b><small class="ks">${dhS(rows.filter(r=>!r.paid).length,'trip')}</small></div><div class="stat"><span>Paid to you</span><b>${php(dhSum(rows.filter(r=>r.paid),ownerGets))}</b><small class="ks">${dhS(rows.filter(r=>r.paid).length,'trip')}</small></div></div><p class="note" style="margin:0 0 10px">Arkila pays you 24 hours after pickup, less its ${Math.round(SETTINGS.commission*100)}% fee. The renter's deposit is held by Arkila and goes back to the renter, not to you.</p>`:''}
+  <div class="tw"><table class="at"><thead><tr>${def.cols.map((c,i)=>`<th${c.num?' class="num"':''}><button type="button" data-osort="${i}">${c.h}${OS.k===String(i)?(OS.d>0?' ▲':' ▼'):''}</button></th>`).join('')}${def.act?'<th></th>':''}</tr></thead>
+  <tbody>${rows.length?rows.slice(0,200).map(r=>`<tr>${def.cols.map(c=>`<td${c.num?' class="num"':''}>${c.v(r)}</td>`).join('')}${def.act?`<td>${def.act(r)}</td>`:''}</tr>`).join(''):`<tr><td colspan="${def.cols.length+1}"><div class="empty" style="margin:6px 0">Nothing here yet.</div></td></tr>`}</tbody></table></div>
+  <p class="note">${Math.min(rows.length,200)} of ${all} shown.</p>`}
+const oVehHtml=vl=>`<section class="step" style="margin-top:0"><h2>Your vehicles</h2>${vl.length?vl.map(l=>{const k=l.status==='approved'&&l.active===false?'paused':l.status;return `<div class="lrow"><div class="lthumb">${imgsOf(l)[0]}</div><div class="lmain"><b>${esc(l.name)}</b> ${pill(k)}<p class="sub">${esc(l.type)} · ${l.seats} ${l.kind==='motor'?'riders':'seats'} · ${esc(l.service)} · ${esc(l.area)} · ${php(l.price)}/day</p></div><div class="row2" style="gap:6px"><button class="chip" data-open="${esc(l.id)}">View</button>${l.status==='approved'?`<button class="chip" data-hcal="${esc(l.id)}">${HCAL.has(l.id)?'Hide calendar':'Calendar'}</button><button class="chip" data-hpause="${esc(l.id)}">${l.active===false?'Resume':'Pause'}</button>`:''}<button class="chip" data-hdel="${esc(l.id)}">Delete</button></div></div>${l.status==='approved'?`<div class="calwrap">${HCAL.has(l.id)?`<div class="cal" id="cal-h-${esc(l.id)}" data-key="h-${esc(l.id)}" data-car="${esc(l.id)}" data-mode="host">${calInner('h-'+l.id,l.id,'host')}</div><p class="note">Tap a free day to block it, tap again to unblock. Booked days update by themselves when Arkila confirms a booking.</p>`:''}</div>`:''}`}).join(''):'<div class="empty">No vehicles here. Use the Add vehicle tab to list one.</div>'}</section>`;
+function oExport(){
+  const def=oDef(OT);if(!def||!def.cols)return;const rows=oRows(def),csv=toCSV([def.cols.map(c=>c.h)].concat(rows.map(r=>def.cols.map(c=>c.c(r))))),file='arkila-my-'+def.name+'-'+todayIso()+'.csv';
+  $('#xbody').innerHTML=`<h2 id="xtitle">Export ${def.name}</h2><p class="note">${rows.length} row${rows.length===1?'':'s'}${OQ||OF!=='all'?' (current search and filter)':''}. Open the file in Excel or Google Sheets.</p><textarea class="xta" readonly rows="8" id="xta">${esc(csv.replace(/^﻿/,''))}</textarea><div class="crow"><button type="button" class="lnk" data-xcopy>Copy</button><button type="button" class="btn" data-xdl="${esc(file)}">Download ${esc(file)}</button></div><p class="note" id="xnote"></p>`;
+  xdlg.dataset.csv=csv;if(!xdlg.open)xdlg.showModal()}
+function ownTasks(mine,reqs){
+  const t0=todayIso(),item=(txt,tab,btn)=>`<div class="lrow"><div class="lmain">${txt}</div>${btn?`<button class="chip on" data-otab="${tab}">${btn}</button>`:''}</div>`;
+  const wait=reqs.filter(oWait),forR=reqs.filter(r=>r.status==='new'&&r.avail==='yes'),soon=reqs.filter(r=>r.status==='confirmed'&&r.from>=t0&&r.from<=addD(t0,7)),due=reqs.filter(r=>r.status==='completed'&&!r.paid),pend=mine.filter(l=>l.status==='pending'),rej=mine.filter(l=>l.status==='rejected'),paused=mine.filter(l=>lkind(l)==='paused');
+  const ans=wait.length?wait.map(r=>`<div class="lrow"><div class="lmain"><b>${esc(r.carName)}</b> ${pill(r.status)}<p class="sub">${dr(r)} · ${dhS(r.days,'day')} · you get ${php(ownerGets(r))} · ${esc(r.id)}</p><p class="sub">Guest: ${esc(first(r.guestName))} · contact shared once the deposit is received</p></div><div class="row2" style="gap:6px">${oBtn(`data-rav="${esc(r.id)}|yes"`,'Dates are free',1)}${oBtn(`data-rav="${esc(r.id)}|no"`,'Decline')}</div></div>`).join(''):'<div class="empty">Nothing waiting for your answer.</div>';
+  const other=[forR.length?item(`<b>${forR.length}</b> request${forR.length>1?'s':''} where you confirmed the dates. Waiting for the renter to pay`,'bookings','Open'):'',soon.length?item(`<b>${soon.length}</b> paid trip${soon.length>1?'s':''} starting in the next 7 days`,'bookings','Open'):'',due.length?item(`<b>${due.length}</b> completed trip${due.length>1?'s':''} waiting for Arkila's payout (${php(dhSum(due,ownerGets))})`,'payouts','Open'):'',pend.length?item(`<b>${pend.length}</b> vehicle${pend.length>1?'s':''} waiting for Arkila's approval`,'vehicles','Open'):'',rej.length?item(`<b>${rej.length}</b> vehicle${rej.length>1?'s were':' was'} not approved. Check the details and add it again`,'vehicles','Open'):'',paused.length?item(`<b>${paused.length}</b> paused vehicle${paused.length>1?'s':''}. Renters cannot see ${paused.length>1?'them':'it'}`,'vehicles','Open'):''].join('');
+  return `<section class="step"><h2>Needs your answer${wait.length?' ('+wait.length+')':''}</h2><p class="note" style="margin:0 0 8px">Reply within 2 hours or the request lapses. Say whether the dates are free.</p>${ans}</section>
+  <section class="step"><h2>Other things to know</h2>${other||'<div class="empty">All clear.</div>'}</section>${hostSteps()}`}
 function renderHost(){
   const me=ST.me(),el=$('#v-host');
   if(!has(me,'host')){el.innerHTML=`<h1>Earn from your vehicle</h1><p class="lead">List a car, van or motorbike. Arkila handles the renter checks, the paperwork and the payment. The renter pays Arkila online up front, and Arkila pays you after the handover, less its fee.</p>${hostSteps()}<button class="btn" data-becomehost>List your vehicle</button>`;trFil(el);return}
-  const mine=ST.listings.filter(l=>l.ownerId===me.id),reqs=ST.requests.filter(r=>r.hostId===me.id);
-  el.innerHTML=`<h1>Owner dashboard</h1><p class="lead">New vehicles are checked by the Arkila team before renters can see them.</p>${ownDash(me.id,false)}${hostSteps()}
-  <section class="step"><h2>Your vehicles</h2>${mine.length?mine.map(l=>{const k=l.status==='approved'&&l.active===false?'paused':l.status;return `<div class="lrow"><div class="lthumb">${imgsOf(l)[0]}</div><div class="lmain"><b>${esc(l.name)}</b> ${pill(k)}<p class="sub">${esc(l.type)} · ${l.seats} ${l.kind==='motor'?'riders':'seats'} · ${esc(l.service)} · ${esc(l.area)} · ${php(l.price)}/day</p></div><div class="row2" style="gap:6px"><button class="chip" data-open="${esc(l.id)}">View</button>${l.status==='approved'?`<button class="chip" data-hcal="${esc(l.id)}">${HCAL.has(l.id)?'Hide calendar':'Calendar'}</button><button class="chip" data-hpause="${esc(l.id)}">${l.active===false?'Resume':'Pause'}</button>`:''}<button class="chip" data-hdel="${esc(l.id)}">Delete</button></div></div>${l.status==='approved'?`<div class="calwrap">${HCAL.has(l.id)?`<div class="cal" id="cal-h-${esc(l.id)}" data-key="h-${esc(l.id)}" data-car="${esc(l.id)}" data-mode="host">${calInner('h-'+l.id,l.id,'host')}</div><p class="note">Tap a free day to block it, tap again to unblock. Booked days update by themselves when Arkila confirms a booking.</p>`:''}</div>`:''}`}).join(''):'<div class="empty">No vehicles yet. Add your first one below.</div>'}</section>
-  <section class="step"><h2>Add a vehicle</h2><form class="form" id="hf" novalidate>
+  const mine=oMine(),reqs=oReqs(),nWait=reqs.filter(oWait).length;
+  const head=`<h1>Owner dashboard</h1><p class="lead">New vehicles are checked by the Arkila team before renters can see them.</p>
+  <div class="chips adtabs" role="tablist">${OTABS.map(x=>`<button type="button" class="chip" role="tab" data-otab="${x[0]}" aria-pressed="${OT===x[0]}">${x[1]}${x[0]==='tasks'&&nWait?` (${nWait})`:''}</button>`).join('')}</div>`;
+  let body='';
+  if(OT==='dashboard')body=ownDash(me.id,false);
+  else if(OT==='tasks')body=ownTasks(mine,reqs);
+  else if(OT==='add')body=`<section class="step"><h2>Add a vehicle</h2><form class="form" id="hf" novalidate>
     <label><span class="lab">Category</span><select id="hk"><option value="car">Car, van or pickup</option><option value="motor">Motorbike or scooter</option></select></label>
     <label class="req"><span class="lab">Vehicle name</span><input id="hn" placeholder="Toyota Vios 2021"></label>
     <div class="f2"><label class="req"><span class="lab">Type</span><select id="ht"><option value="">Select…</option>${['Sedan','Hatchback','SUV','Van','Pickup'].map(t=>`<option>${t}</option>`).join('')}</select></label>
@@ -144,7 +196,7 @@ function renderHost(){
     <div class="f2"><label class="req"><span class="lab">Price per day (PHP)</span><input id="hp" type="number" min="300" step="50" placeholder="1800"></label>
     <label class="req"><span class="lab">Color</span><select id="hc"><option value="">Select…</option>${COLORS.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join('')}</select></label></div>
     <label class="req"><span class="lab">Price per extra hour (PHP)</span><input id="hph" type="number" min="1" step="10" placeholder="Usually about ${Math.round(XRATE*100)}% of the daily price"></label>
-    <label class="req"><span class="lab">Description (at least 20 characters)</span><textarea id="hd" rows="4" maxlength="600" placeholder="Tell renters about the vehicle: its condition, what is included, and tips for the trip"></textarea></label>
+    <label class="req"><span class="lab">Description (at least 20 characters) <small class="cnt" id="hdc"></small></span><textarea id="hd" rows="4" maxlength="600" placeholder="Tell renters about the vehicle: its condition, what is included, and tips for the trip"></textarea></label>
     <div class="f2"><label class="req"><span class="lab">Year</span><input id="hy" type="number" min="1995" max="2030" placeholder="2021"></label>
     <label class="ca req"><span class="lab">Luggage (bags)</span><input id="hb" type="number" min="0" max="20" placeholder="3"></label>
     <label class="mo req" hidden><span class="lab">Engine size (cc)</span><input id="hcc" type="number" min="50" max="2000" placeholder="125"></label></div>
@@ -159,9 +211,12 @@ function renderHost(){
     <p class="muted" style="margin:4px 0 0;font-size:12px">Only upload photos you took or have permission to use.</p>
     <div class="thumbs" id="hthumbs"></div>
     <label class="ck"><input type="checkbox" id="hack"><span>I have read and agree to the <button type="button" class="lnk" data-notice="host">owner declaration</button> and the <a href="#terms" target="_blank" rel="noopener">Terms of Service</a>, and I understand Arkila holds the booking money and pays me after the handover.</span></label>
-    <p class="err" id="herr" role="alert"></p><button class="btn" type="submit">Submit for approval</button></form></section>
-  <section class="step"><h2>Requests for your vehicles</h2>${reqs.length?reqs.map(r=>`<div class="lrow"><div class="lmain"><b>${esc(r.carName)}</b> ${pill(r.status)}<p class="sub">${dr(r)} · ${r.days} day${r.days>1?'s':''} · ${php(r.total)} · ${esc(r.id)}</p><p class="sub">Guest: ${esc(first(r.guestName))}${(r.status==='confirmed'||r.status==='completed')?` · ${esc(r.guestPhone)}${r.guestEmail?' · '+esc(r.guestEmail):''}`:' · contact shared once the deposit is received'}</p>${r.status==='new'&&r.avail==='yes'?'<p class="sub">You confirmed the dates. Waiting for the renter to pay.</p>':''}</div>${r.status==='new'&&!r.avail?`<div class="row2" style="gap:6px"><button class="chip on" data-rav="${esc(r.id)}|yes">Dates are free</button><button class="chip" data-rav="${esc(r.id)}|no">Decline</button></div>`:''}</div>`).join(''):'<div class="empty">No requests yet.</div>'}</section>`;
-  renderHthumbs();trFil(el);
+    <p class="err" id="herr" role="alert"></p><button class="btn" type="submit">Submit for approval</button></form></section>`;
+  else{const def=oDef(OT);if(!def){OT='dashboard';return renderHost()}
+    body=`<div class="adbar"><input id="oq" type="search" placeholder="Search ${def.name}" value="${esc(OQ)}" aria-label="Search"><div class="chips">${def.filters.map(f=>`<button type="button" class="chip" data-of="${f[0]}" aria-pressed="${OF===f[0]}">${f[1]}</button>`).join('')}</div>${def.cols?'<div class="chips"><button type="button" class="chip" data-oexp>Export CSV</button></div>':''}</div><div id="otbl"></div>`}
+  el.innerHTML=head+body;
+  if(OT==='add')renderHthumbs();else if(OT==='vehicles'||OT==='bookings'||OT==='payouts')oTable()
+  trFil(el);
 }
 /* ---- owner: pickup location search (same local list + Photon as the Where box) ---- */
 let HPT=0;

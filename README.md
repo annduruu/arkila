@@ -85,3 +85,10 @@ Note: when pickup and return dates are set, vehicles already booked or blocked f
 - Owner form: every field is required except photos and features. Dropdowns start at "Select…" and number boxes start empty (placeholders only), so nothing is pre-filled. A missed field is outlined in red with a message.
 - CSV import has the same rules: name, kind, type, seats, service, area, price (300 or more), hourly (1 up to the daily price), deposit, description (20+ characters), year, transmission and fuel are needed, plus bags for cars and cc, helmets and distance for motorbikes. The preview lists each problem per row.
 - Names are first name + last name (booking form, login and account). Older accounts with one name are split automatically.
+
+## Hover details and demo accounts
+- Every dashboard tile, bar, line point, donut slice, list row and heatmap cell shows a small details box on hover (tap on phones). It lives in dash.js (one shared box, `data-tip` on each element).
+- After "Load demo data", the login box offers "Demo owner" and "Demo renter". The demo owner has 5 vehicles (one paused, one waiting for approval), many past bookings and a few new requests to answer.
+
+## Owner area (tabs)
+The owner page now has the same tabbed layout as the admin, with only the owner's own data: Dashboard, Tasks (requests to answer, things to know), Vehicles (search, filters, calendar, pause, delete), Bookings (search, filters, sort, answer requests, CSV), Payouts (what is paid and still to be paid) and Add vehicle. Owners can only answer requests for their own vehicles.
