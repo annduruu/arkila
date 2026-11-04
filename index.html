@@ -53,9 +53,9 @@
       <div id="chosen"></div>
       <p class="note" id="datesum" style="margin:0"></p>
       <div id="tebox-f"></div>
-      <label><span class="lab" data-i18n="f.name"></span><input id="name" autocomplete="name" placeholder="Juan Dela Cruz"></label>
-      <label><span class="lab" data-i18n="f.mobile"></span><span class="phone"><select id="cc" aria-label="Country code" autocomplete="tel-country-code"><option value="+63">🇵🇭 +63 Philippines</option><option value="+61">🇦🇺 +61 Australia</option><option value="+1">🇺🇸 +1 US / Canada</option><option value="+44">🇬🇧 +44 United Kingdom</option><option value="+64">🇳🇿 +64 New Zealand</option><option value="+82">🇰🇷 +82 South Korea</option><option value="+81">🇯🇵 +81 Japan</option><option value="+86">🇨🇳 +86 China</option><option value="+886">🇹🇼 +886 Taiwan</option><option value="+852">🇭🇰 +852 Hong Kong</option><option value="+65">🇸🇬 +65 Singapore</option><option value="+60">🇲🇾 +60 Malaysia</option><option value="+66">🇹🇭 +66 Thailand</option><option value="+84">🇻🇳 +84 Vietnam</option><option value="+62">🇮🇩 +62 Indonesia</option><option value="+91">🇮🇳 +91 India</option><option value="+49">🇩🇪 +49 Germany</option><option value="+33">🇫🇷 +33 France</option><option value="+31">🇳🇱 +31 Netherlands</option><option value="+34">🇪🇸 +34 Spain</option><option value="+39">🇮🇹 +39 Italy</option><option value="+41">🇨🇭 +41 Switzerland</option><option value="+46">🇸🇪 +46 Sweden</option><option value="+7">🇷🇺 +7 Russia</option><option value="+971">🇦🇪 +971 UAE</option><option value="+966">🇸🇦 +966 Saudi Arabia</option><option value="+972">🇮🇱 +972 Israel</option><option value="">Other (type +code)</option></select><input id="phone" inputmode="tel" autocomplete="tel-national" data-i18n-ph="f.mobile.ph"></span></label>
-      <label><span class="lab" data-i18n="f.email"></span><input id="email" type="email" inputmode="email" autocomplete="email" data-i18n-ph="f.email.ph"></label>
+      <div class="f2"><label class="req"><span class="lab" data-i18n="f.fname"></span><input id="fn" autocomplete="given-name" placeholder="Juan"></label><label class="req"><span class="lab" data-i18n="f.lname"></span><input id="ln" autocomplete="family-name" placeholder="Dela Cruz"></label></div>
+      <label class="req"><span class="lab" data-i18n="f.mobile"></span><span class="phone"><select id="cc" aria-label="Country code" autocomplete="tel-country-code"><option value="+63">🇵🇭 +63 Philippines</option><option value="+61">🇦🇺 +61 Australia</option><option value="+1">🇺🇸 +1 US / Canada</option><option value="+44">🇬🇧 +44 United Kingdom</option><option value="+64">🇳🇿 +64 New Zealand</option><option value="+82">🇰🇷 +82 South Korea</option><option value="+81">🇯🇵 +81 Japan</option><option value="+86">🇨🇳 +86 China</option><option value="+886">🇹🇼 +886 Taiwan</option><option value="+852">🇭🇰 +852 Hong Kong</option><option value="+65">🇸🇬 +65 Singapore</option><option value="+60">🇲🇾 +60 Malaysia</option><option value="+66">🇹🇭 +66 Thailand</option><option value="+84">🇻🇳 +84 Vietnam</option><option value="+62">🇮🇩 +62 Indonesia</option><option value="+91">🇮🇳 +91 India</option><option value="+49">🇩🇪 +49 Germany</option><option value="+33">🇫🇷 +33 France</option><option value="+31">🇳🇱 +31 Netherlands</option><option value="+34">🇪🇸 +34 Spain</option><option value="+39">🇮🇹 +39 Italy</option><option value="+41">🇨🇭 +41 Switzerland</option><option value="+46">🇸🇪 +46 Sweden</option><option value="+7">🇷🇺 +7 Russia</option><option value="+971">🇦🇪 +971 UAE</option><option value="+966">🇸🇦 +966 Saudi Arabia</option><option value="+972">🇮🇱 +972 Israel</option><option value="">Other (type +code)</option></select><input id="phone" inputmode="tel" autocomplete="tel-national" data-i18n-ph="f.mobile.ph"></span></label>
+      <label class="req"><span class="lab" data-i18n="f.email"></span><input id="email" type="email" inputmode="email" autocomplete="email" data-i18n-ph="f.email.ph"></label>
       <details class="more"><summary data-i18n="more.sum"></summary><label><span class="lab" data-i18n="f.ref"></span><input id="code" autocapitalize="characters" placeholder="e.g. MARIA"></label>
       <label><span class="lab" data-i18n="f.notes"></span><input id="notes" maxlength="140" data-i18n-ph="f.notes.ph"></label></details>
       <details class="spot" id="spotd"><summary><svg class="spi" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg><span class="spt"><b data-i18n="spot.sum"></b><small id="spotv"></small></span></summary>
@@ -96,13 +96,13 @@
 <dialog id="cdlg" class="mini" aria-labelledby="ctitle"><button type="button" class="x" data-cclose aria-label="Close">×</button><div id="cbody"></div></dialog>
 <dialog id="ldlg" class="mini" aria-labelledby="ltitle"><button type="button" class="x" data-lclose aria-label="Close">×</button><div id="lbody" style="padding:18px"></div></dialog>
 <dialog id="dlg" aria-labelledby="dtitle"><button type="button" class="x" data-close aria-label="Close">×</button><div id="dbody"></div></dialog>
-<script src="config.js?v=45"></script>
-<script src="store.js?v=45"></script>
-<script src="i18n.js?v=45"></script>
-<script src="app.js?v=45"></script>
-<script src="legal.js?v=45"></script>
-<script src="views.js?v=45"></script>
-<script src="demo.js?v=45"></script>
-<script src="dash.js?v=45"></script>
+<script src="config.js?v=46"></script>
+<script src="store.js?v=46"></script>
+<script src="i18n.js?v=46"></script>
+<script src="app.js?v=46"></script>
+<script src="legal.js?v=46"></script>
+<script src="views.js?v=46"></script>
+<script src="demo.js?v=46"></script>
+<script src="dash.js?v=46"></script>
 </body>
 </html>

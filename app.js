@@ -97,6 +97,9 @@ function filtered(){
 }
 const depositOf=c=>{const d=c&&c.specs&&c.specs.deposit;return (d!=null&&d!=='')?+d:SETTINGS.deposit[isMotor(c)?'motor':'car']};
 let TIME='',PTL='';
+const splitName=n=>{n=String(n||'').trim();const k=n.indexOf(' ');return k<0?[n,'']:[n.slice(0,k),n.slice(k+1).trim()]};
+const userFL=u=>u?((u.first||u.last)?[u.first||'',u.last||'']:splitName(u.name)):['',''];
+const mark=el=>{if(!el)return;el.classList.add('bad');el.addEventListener('input',()=>el.classList.remove('bad'),{once:true});try{el.focus()}catch(x){}};
 const tl=v=>{if(!v)return '';const [h,m]=v.split(':').map(Number);return ((h%12)||12)+':'+String(m).padStart(2,'0')+' '+(h<12?'AM':'PM')};
 const TSLOTS=(()=>{const o=[];for(let h=0;h<24;h++)for(const m of [0,30])o.push(String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'));return o})();
 const GAP=(SETTINGS.turnaroundHours||3)*60,mins=v=>{const [h,m]=v.split(':').map(Number);return h*60+m};
@@ -301,19 +304,20 @@ let MSG='';
 $('#f').addEventListener('submit',e=>{
   e.preventDefault();const err=$('#err');err.textContent='';
   if(!ST.me()){openLogin(t('l.needreq'));return}
-  const q=quote(),name=$('#name').value.trim(),phone=fullPhone(),email=$('#email').value.trim(),code=$('#code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,''),notes=$('#notes').value.trim();
+  const q=quote(),fnv=$('#fn').value.trim(),lnv=$('#ln').value.trim(),name=(fnv+' '+lnv).trim(),phone=fullPhone(),email=$('#email').value.trim(),code=$('#code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,''),notes=$('#notes').value.trim();
   if(!q){err.textContent=GAPMSG||t('e.pick');return}
-  if(!TIME){err.textContent=t('e.time');const ti=$('#tebox-f [data-tin=time]');if(ti)ti.focus();return}
+  if(!TIME){err.textContent=t('e.time');mark($('#tebox-f [data-tin=time]'));return}
   if(unavailable(q.c)){err.textContent=t('e.unavail');return}
-  if(name.length<2){err.textContent=t('e.name');return}
+  if(fnv.length<2){err.textContent=t('e.fname');mark($('#fn'));return}
+  if(lnv.length<2){err.textContent=t('e.lname');mark($('#ln'));return}
   if(ST.requests.some(r=>r.guestId===ST.me().id&&r.carId===q.c.id&&r.from===q.a&&r.to===q.b&&(r.status==='new'||r.status==='confirmed'))){err.textContent=t('e.dup');return}
-  if(!/^\+?\d{8,15}$/.test(phone)){err.textContent=t('e.phone');return}
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){err.textContent=t('e.email');return}
-  if(!$('#ack').checked){err.textContent=t('e.ack');return}
+  if(!/^\+?\d{8,15}$/.test(phone)){err.textContent=t('e.phone');mark($('#phone'));return}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){err.textContent=t('e.email');mark($('#email'));return}
+  if(!$('#ack').checked){err.textContent=t('e.ack');mark($('#ack'));return}
   const area=placeName(),spot=S.moved?`near ${area}, https://www.google.com/maps?q=${S.pin[0].toFixed(5)},${S.pin[1].toFixed(5)}`:'to be agreed on chat';
   MSG=`Hi ${BRAND.name}, I would like to request a vehicle.\n\nVehicle: ${q.c.name} (${q.c.service}, ${q.c.area})\nPickup: ${fmtEn(q.a)}, ${tl(TIME)}\nReturn: ${fmtEn(q.b)}, ${tl(endTime(TIME,q.extra))} (${q.d} day${q.d>1?'s':''} of 24 hours${q.extra?' + '+q.extra+' extra hour'+(q.extra>1?'s':''):''})\nPickup spot: ${spot}\nRental fee: ${php(q.total)}${q.xfee?' (includes '+php(q.xfee)+' for extra hours)':''}\nRefundable security deposit: ${php(q.dep)}\nTotal to pay online after the owner confirms: ${php(q.total+q.dep)}${partyText()?'\nGuests: '+partyText():''}\nName: ${name}\nMobile: ${phone}\nEmail (for the invoice and booking confirmation): ${email}${code?'\nReferral code: '+code:''}${notes?'\nNotes: '+notes:''}\nI have read and agree to the renter notice.\n\nRequest ref: ${q.c.id}|${q.a}|${q.b}|${phone}${code?'|'+code:''}`;
   const rq=saveRequest(q,name,phone,notes,spot,MSG,email);
-  lss('contact',{name,phone,email});
+  lss('contact',{name,first:fnv,last:lnv,phone,email});
   $('#msg').textContent=MSG;$('#out').hidden=false;$('#reqnote').textContent=t('reqnote',{id:rq.id});$('#out').scrollIntoView({behavior:'smooth',block:'start'});
   const fb=$('#fb');let copied=false;
   try{if(navigator.clipboard)navigator.clipboard.writeText(MSG).catch(()=>{});copied=!!navigator.clipboard}catch(x){}
@@ -339,7 +343,7 @@ function splitPhone(p){const cc=[...$('#cc').options].map(o=>o.value).filter(Boo
 (function(){const sel=$('#cc');[...sel.options].forEach(o=>{o.dataset.long=o.textContent;o.dataset.short=o.value?o.textContent.split(' ').slice(0,2).join(' '):'+ …'});
   const short=()=>[...sel.options].forEach(o=>o.textContent=o.dataset.short),long=()=>[...sel.options].forEach(o=>o.textContent=o.dataset.long);
   short();sel.addEventListener('mousedown',long);sel.addEventListener('focus',long);sel.addEventListener('change',()=>{short();$('#phone').focus()});sel.addEventListener('blur',short);})();
-function prefill(){const me=ST.me(),c=lsg('contact',{});if(c&&typeof c==='object'&&!Array.isArray(c)){if(!$('#name').value)$('#name').value=c.name||'';if(!$('#phone').value&&c.phone){const [cc,n]=splitPhone(c.phone);$('#cc').value=cc;$('#phone').value=n}if(!$('#email').value)$('#email').value=c.email||''}if(me&&!$('#name').value)$('#name').value=me.name;if(me&&me.email&&!$('#email').value)$('#email').value=me.email;if(me&&me.phone&&!$('#phone').value){const [cc,n]=splitPhone(me.phone);$('#cc').value=cc;$('#phone').value=n}}
+function prefill(){const me=ST.me(),c=lsg('contact',{});if(c&&typeof c==='object'&&!Array.isArray(c)){if(!$('#fn').value&&!$('#ln').value){const fl=(c.first||c.last)?[c.first||'',c.last||'']:splitName(c.name);$('#fn').value=fl[0];$('#ln').value=fl[1]}if(!$('#phone').value&&c.phone){const [cc,n]=splitPhone(c.phone);$('#cc').value=cc;$('#phone').value=n}if(!$('#email').value)$('#email').value=c.email||''}if(me&&!$('#fn').value&&!$('#ln').value){const fl=userFL(me);$('#fn').value=fl[0];$('#ln').value=fl[1]}if(me&&me.email&&!$('#email').value)$('#email').value=me.email;if(me&&me.phone&&!$('#phone').value){const [cc,n]=splitPhone(me.phone);$('#cc').value=cc;$('#phone').value=n}}
 function setSubmitLabel(){const b=$('#subbtn');if(b)b.textContent=t(BRAND.fb?'f.submit.fb':'f.submit')}
 /* sticky bottom bar on small screens: total and a jump to the form */
 let formSeen=false;
@@ -349,7 +353,7 @@ function updateBar(){const bar=$('#sbarb');if(!bar)return;const q=LASTQ;
   if(q){$('#sbt').textContent=money(q.total+q.dep);$('#sbs').textContent=t('bar.sub',{d:q.d})}}
 try{new IntersectionObserver(es=>{formSeen=es[0].isIntersecting;updateBar()}).observe($('#f'))}catch(x){}
 $('#sbgo').addEventListener('click',()=>$('#f').scrollIntoView({behavior:'smooth',block:'start'}));
-['name','phone','email'].forEach(i=>$('#'+i).addEventListener('input',()=>{}));
+['fn','ln','phone','email'].forEach(i=>$('#'+i).addEventListener('input',()=>{}));
 document.addEventListener('toggle',e=>{if(e.target&&e.target.id==='spotd'&&e.target.open){if(map)setTimeout(()=>map.invalidateSize(),50);else ensureMap()}},true);
 window.addEventListener('hashchange',updateBar);
 

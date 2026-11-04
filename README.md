@@ -80,3 +80,8 @@ Note: when pickup and return dates are set, vehicles already booked or blocked f
 - Admin, Settings, Test load: loads about 40 owners, 60 renters, 120 vehicles and 600 bookings (demo.js), tagged demo and removable with Clear demo data.
 - Safety nets: damaged saved data is tidied on load (store.js), a reload bar appears if the page errors, and Admin, Settings has Download backup / Restore.
 - Still demo only: anyone can edit browser data. Real logins, payments and shared data need the Phase 2 backend.
+
+## Required fields and names
+- Owner form: every field is required except photos and features. Dropdowns start at "Select…" and number boxes start empty (placeholders only), so nothing is pre-filled. A missed field is outlined in red with a message.
+- CSV import has the same rules: name, kind, type, seats, service, area, price (300 or more), hourly (1 up to the daily price), deposit, description (20+ characters), year, transmission and fuel are needed, plus bags for cars and cc, helmets and distance for motorbikes. The preview lists each problem per row.
+- Names are first name + last name (booking form, login and account). Older accounts with one name are split automatically.

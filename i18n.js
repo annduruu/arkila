@@ -112,3 +112,6 @@ Object.assign(DICT.fil,{"time.total": "{h} h kabuuan", "time.forx": "para sa dag
 
 Object.assign(DICT.en,{"when":"Dates & time","tin.time.ph":"e.g. 9:30 am","tin.time.bad":"Type a time like 9:30 am or 21:00, on the hour or half hour.","tin.extra.over":"Up to {n} extra hours. More than that costs a full day, so book another day instead."});
 Object.assign(DICT.fil,{"when":"Petsa at oras","tin.time.ph":"hal. 9:30 am","tin.time.bad":"Mag-type ng oras tulad ng 9:30 am o 21:00, sa tamang oras o kalahating oras.","tin.extra.over":"Hanggang {n} dagdag na oras lang. Kung mas marami, isang buong araw na ang singil, kaya magdagdag na lang ng araw."});
+
+Object.assign(DICT.en,{"f.fname":"First name","f.lname":"Last name","e.fname":"Enter your first name.","e.lname":"Enter your last name.","l.fname":"First name","l.lname":"Last name","l.err":"Enter your first and last name to continue."});
+Object.assign(DICT.fil,{"f.fname":"Pangalan","f.lname":"Apelyido","e.fname":"Ilagay ang pangalan mo.","e.lname":"Ilagay ang apelyido mo.","l.fname":"Pangalan","l.lname":"Apelyido","l.err":"Ilagay ang pangalan at apelyido mo para magpatuloy."});

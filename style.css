@@ -615,3 +615,10 @@ dialog[open]::backdrop{animation:fin .2s ease-out}
 .heat{display:grid;gap:3px;--wk:26}.hrow{display:grid;grid-template-columns:minmax(80px,28%) 1fr;gap:8px;align-items:center}
 .hrow .hl{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hcells{display:grid;grid-template-columns:repeat(var(--wk),1fr);gap:2px}.hcells i{height:16px;border-radius:3px}.hcells em{font-style:normal;font-size:10px;color:var(--muted);white-space:nowrap;overflow:visible}
+
+/* ---- required fields: red star on the label, red outline on the field that needs attention ---- */
+label.req>.lab::after,.ppick.req>.lab::after{content:" *";color:#c0392b;font-weight:800}
+.form input.bad,.form select.bad,.form textarea.bad,.tin.bad,.ppw input.bad,input[type=checkbox].bad{border-color:#c0392b!important;box-shadow:0 0 0 3px rgba(192,57,43,.18);outline:0}
+input[type=checkbox].bad{outline:2px solid #c0392b;outline-offset:2px;box-shadow:none}
+.tefld .lab::after{content:" *";color:#c0392b;font-weight:800}
+.tefld:has(.tin[data-tin=extra]) .lab::after{content:""}

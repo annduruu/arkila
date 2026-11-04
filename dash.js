@@ -91,7 +91,7 @@ function adDash(){
   const topV=dhGroup(D,r=>r.carName,r=>r.total).slice(0,10),topO=dhGroup(D,r=>r.hostName,r=>r.total).slice(0,10).map(x=>({...x,sub:dhS(x.n,'trip')}));
   return `<div class="dhead2"><div><h2 style="margin:0">Dashboard</h2><p class="note" style="margin:2px 0 0">Booking value counts paid and completed trips by pickup date. Showing ${esc(rg.label.toLowerCase())}.</p></div>${dhRangeBar()}</div>
   <div class="stats">${kpis}</div>
-  <div class="dgrid">${dhCard('Booking value by month','Last 12 months. Dark is Arkila commission, light is the owners’ share.',chBars(mon,{money:1,fmt:dhK,label:'Booking value by month'}),'wide')}
+  <div class="dgrid">${dhCard('Booking value by month','Last 12 months. The bright bottom part is Arkila’s commission, the soft part is the owners’ share.',chBars(mon,{money:1,fmt:dhK,label:'Booking value by month'}),'wide')}
   ${dhCard('Paid bookings per week','Last 26 weeks, by pickup date',chLine(dhWeekly(D),{label:'Bookings per week',half:1}))}
   ${dhCard('Busiest pickup days','In the selected range',chBars(dhWeekdays(D),{label:'Pickups by weekday',h:170,half:1}))}
   ${dhCard('Request outcomes','Everything requested in the range',chDonut(dhStatus(D),{unit:'requests',label:'Request outcomes'}))}

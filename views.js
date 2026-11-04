@@ -43,8 +43,8 @@ function trFil(root){
 /* ---- account settings ---- */
 let ACT='personal',ACE=null;
 const ACTABS=[['personal','Personal details'],['signin','Sign-in'],['privacy','Privacy & data'],['notif','Notifications'],['pay','Payments'],['lang','Language & currency'],['owner','Owner tools']];
-const ACF=[['name','Legal name','Your name as it appears on your driving licence.','text',2],['pname','Preferred first name','What owners call you on chat.','text',0],['email','Email','Used only for invoices and booking confirmations.','email',1],['phone','Mobile number','Include the country code, for example +639171234567.','tel',3],['addr','Home address','Where you live. Optional.','text',0],['emer','Emergency contact','Name and number of someone we can reach. Optional.','text',0]];
-function acctVal(me,k){return k==='name'?me.name:(me[k]||'')}
+const ACF=[['first','First name','Your first name as it appears on your driving licence.','text',2],['last','Last name','Your last name as it appears on your driving licence.','text',2],['pname','Preferred first name','What owners call you on chat.','text',0],['email','Email','Used only for invoices and booking confirmations.','email',1],['phone','Mobile number','Include the country code, for example +639171234567.','tel',3],['addr','Home address','Where you live. Optional.','text',0],['emer','Emergency contact','Name and number of someone we can reach. Optional.','text',0]];
+function acctVal(me,k){return k==='first'?userFL(me)[0]:k==='last'?userFL(me)[1]:(me[k]||'')}
 function renderAccount(){
   const me=ST.me(),el=$('#v-account');if(!me){el.innerHTML='';return}
   const tabs=ACTABS.filter(x=>x[0]!=='owner'||has(me,'host'));if(!tabs.some(x=>x[0]===ACT))ACT='personal';
@@ -85,12 +85,13 @@ $('#v-account').addEventListener('click',e=>{
 $('#v-account').addEventListener('submit',e=>{
   const f=e.target.closest('[data-aform]');if(!f)return;e.preventDefault();
   const me=ST.me(),k=f.dataset.aform,val=f.elements[0].value.trim(),er=f.querySelector('.aerr');let m='';
-  if(k==='name'&&val.length<2)m='Please enter your full name.';
+  if(k==='first'&&val.length<2)m='Please enter your first name.';
+  else if(k==='last'&&val.length<2)m='Please enter your last name.';
   else if(k==='email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val))m='Please enter a valid email address.';
   else if(k==='phone'&&!/^\+?\d{8,15}$/.test(val.replace(/[\s-]/g,'')))m='Please enter a valid mobile number with the country code.';
   if(m){er.textContent=X(m);return}
-  me[k]=k==='phone'?val.replace(/[\s-]/g,''):val;
-  if(k==='name'||k==='email'||k==='phone'){const c=lsg('contact',{});lss('contact',Object.assign({},c&&typeof c==='object'&&!Array.isArray(c)?c:{},{name:me.name,phone:me.phone||(c&&c.phone)||'',email:me.email||(c&&c.email)||''}))}
+  if(k==='first'||k==='last'){const fl=userFL(me);me.first=k==='first'?val:fl[0];me.last=k==='last'?val:fl[1];me.name=(me.first+' '+me.last).trim()}else me[k]=k==='phone'?val.replace(/[\s-]/g,''):val;
+  if(k==='first'||k==='last'||k==='email'||k==='phone'){const c=lsg('contact',{});lss('contact',Object.assign({},c&&typeof c==='object'&&!Array.isArray(c)?c:{},{name:me.name,first:userFL(me)[0],last:userFL(me)[1],phone:me.phone||(c&&c.phone)||'',email:me.email||(c&&c.email)||''}))}
   ST.save();ACE=null;renderNav();renderAccount();toast(X('Saved'));
 });
 
@@ -99,7 +100,7 @@ const ldlg=$('#ldlg');
 function openLogin(msg,role){
   $('#lbody').innerHTML=`<h2 id="ltitle">${esc(t('l.title'))}</h2><p class="note" style="margin:6px 0 0">${esc(msg||t('l.sub'))}</p>
   <div class="banner" style="margin:12px 0">${esc(t('l.demo'))}</div>
-  <div class="form"><label><span class="lab">${esc(t('l.name'))}</span><input id="lname" autocomplete="name" placeholder="Juan Dela Cruz"></label>
+  <div class="form"><div class="f2"><label class="req"><span class="lab">${esc(t('l.fname'))}</span><input id="lfn" autocomplete="given-name" placeholder="Juan"></label><label class="req"><span class="lab">${esc(t('l.lname'))}</span><input id="lln" autocomplete="family-name" placeholder="Dela Cruz"></label></div>
   <div class="rolepick" role="radiogroup"><label class="rp"><input type="radio" name="lrole" value="guest"${role==="host"?"":" checked"}><span><b>${esc(t('l.rent'))}</b><small>${esc(t('l.rents'))}</small></span></label><label class="rp"><input type="radio" name="lrole" value="host"${role==="host"?" checked":""}><span><b>${esc(t('l.list'))}</b><small>${esc(t('l.lists'))}</small></span></label></div>
   <p class="err" id="lerr" role="alert"></p>
   <button type="button" class="btn" data-lgo="facebook">${esc(t('l.fb'))}</button><button type="button" class="btn ghost" data-lgo="google">${esc(t('l.g'))}</button>
@@ -107,15 +108,14 @@ function openLogin(msg,role){
   if(!ldlg.open)ldlg.showModal();
 }
 function doLogin(provider){
-  let name=$('#lname').value.trim();const wantHost=(document.querySelector('input[name="lrole"]:checked')||{}).value==='host';
-  if(provider==='admin'&&!name)name='Arkila Admin';
-  if(name.length<2){$('#lerr').textContent=t('l.err');return}
+  let fnv=$('#lfn').value.trim(),lnv=$('#lln').value.trim();if(provider==='admin'&&!fnv&&!lnv){fnv='Arkila';lnv='Admin'}let name=(fnv+' '+lnv).trim();const wantHost=(document.querySelector('input[name="lrole"]:checked')||{}).value==='host';
+  if(fnv.length<2||lnv.length<2){$('#lerr').textContent=t(fnv.length<2?'e.fname':'e.lname');mark(fnv.length<2?$('#lfn'):$('#lln'));return}
   const id=(provider==='admin'?'admin':provider)+':'+slug(name);let u=ST.users.find(x=>x.id===id);
-  if(!u){u={id,name,provider,roles:['guest'],createdAt:Date.now()};ST.users.push(u)}
+  if(!u){u={id,name,first:fnv,last:lnv,provider,roles:['guest'],createdAt:Date.now()};ST.users.push(u)}
   if(u.suspended){$('#lerr').textContent='This account is suspended. Please contact Arkila.';return}
   if(provider==='admin'&&!has(u,'admin'))u.roles.push('admin');
   if(wantHost&&!has(u,'host'))u.roles.push('host');
-  ST.sid=id;ST.save();$('#name').value=(provider==='admin'?'':name);ldlg.close();renderNav();toast(t('l.in',{n:first(name)}));
+  ST.sid=id;ST.save();{const fl=provider==='admin'?['','']:userFL(u);$('#fn').value=fl[0];$('#ln').value=fl[1]}ldlg.close();renderNav();toast(t('l.in',{n:first(name)}));
   if(wantHost)location.hash='host';else if(provider==='admin')location.hash='admin';else route();
   refreshHome();
 }
@@ -136,26 +136,26 @@ function renderHost(){
   <section class="step"><h2>Your vehicles</h2>${mine.length?mine.map(l=>{const k=l.status==='approved'&&l.active===false?'paused':l.status;return `<div class="lrow"><div class="lthumb">${imgsOf(l)[0]}</div><div class="lmain"><b>${esc(l.name)}</b> ${pill(k)}<p class="sub">${esc(l.type)} · ${l.seats} ${l.kind==='motor'?'riders':'seats'} · ${esc(l.service)} · ${esc(l.area)} · ${php(l.price)}/day</p></div><div class="row2" style="gap:6px"><button class="chip" data-open="${esc(l.id)}">View</button>${l.status==='approved'?`<button class="chip" data-hcal="${esc(l.id)}">${HCAL.has(l.id)?'Hide calendar':'Calendar'}</button><button class="chip" data-hpause="${esc(l.id)}">${l.active===false?'Resume':'Pause'}</button>`:''}<button class="chip" data-hdel="${esc(l.id)}">Delete</button></div></div>${l.status==='approved'?`<div class="calwrap">${HCAL.has(l.id)?`<div class="cal" id="cal-h-${esc(l.id)}" data-key="h-${esc(l.id)}" data-car="${esc(l.id)}" data-mode="host">${calInner('h-'+l.id,l.id,'host')}</div><p class="note">Tap a free day to block it, tap again to unblock. Booked days update by themselves when Arkila confirms a booking.</p>`:''}</div>`:''}`}).join(''):'<div class="empty">No vehicles yet. Add your first one below.</div>'}</section>
   <section class="step"><h2>Add a vehicle</h2><form class="form" id="hf" novalidate>
     <label><span class="lab">Category</span><select id="hk"><option value="car">Car, van or pickup</option><option value="motor">Motorbike or scooter</option></select></label>
-    <label><span class="lab">Vehicle name</span><input id="hn" placeholder="Toyota Vios 2021"></label>
-    <div class="f2"><label><span class="lab">Type</span><select id="ht">${['Sedan','Hatchback','SUV','Van','Pickup'].map(t=>`<option>${t}</option>`).join('')}</select></label>
-    <label><span class="lab" id="hsl">Seats</span><input id="hs" type="number" min="1" max="20" value="5"></label></div>
-    <div class="f2"><label><span class="lab">Service</span><select id="hv"><option>Self-drive</option><option>With driver</option></select></label>
-    <div class="ppick"><span class="lab" id="hpl-l">Pickup location</span><div class="ppw"><input id="hpl" role="combobox" aria-labelledby="hpl-l" aria-expanded="false" aria-controls="hpop" autocomplete="off" placeholder="Search a town, airport or place" value="${esc(HF.place?HF.place.n:'')}"><div class="ppop" id="hpop" role="listbox" hidden></div></div><p class="note" id="hpn" style="margin:4px 0 0">${HF.place?'Pinned: '+esc(HF.place.n)+(HF.place.s?', '+esc(HF.place.s):''):'Pick one from the list so renters can find you on the map.'}</p></div></div>
-    <div class="f2"><label><span class="lab">Price per day (PHP)</span><input id="hp" type="number" min="300" step="50" placeholder="1800"></label>
-    <label><span class="lab">Color</span><select id="hc">${COLORS.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join('')}</select></label></div>
-    <label><span class="lab">Price per extra hour, PHP (optional)</span><input id="hph" type="number" min="0" step="10" placeholder="Leave empty: ${Math.round(XRATE*100)}% of the daily price"></label>
-    <label><span class="lab">Description</span><textarea id="hd" rows="4" maxlength="600" placeholder="Tell renters about the vehicle: its condition, what is included, and tips for the trip"></textarea></label>
-    <div class="f2"><label><span class="lab">Year</span><input id="hy" type="number" min="1995" max="2030" value="2021"></label>
-    <label class="ca"><span class="lab">Luggage (bags)</span><input id="hb" type="number" min="0" max="20" value="3"></label>
-    <label class="mo" hidden><span class="lab">Engine size (cc)</span><input id="hcc" type="number" min="50" max="2000" value="125"></label></div>
-    <div class="f2"><label><span class="lab">Transmission</span><select id="hm"><option>Automatic</option><option>Manual</option></select></label>
-    <label><span class="lab">Fuel</span><select id="hfu"><option>Gasoline</option><option>Diesel</option><option>Hybrid</option><option>Electric</option></select></label></div>
-    <div class="f2 mo" hidden><label><span class="lab">Helmets included</span><input id="hhel" type="number" min="0" max="2" value="2"></label>
+    <label class="req"><span class="lab">Vehicle name</span><input id="hn" placeholder="Toyota Vios 2021"></label>
+    <div class="f2"><label class="req"><span class="lab">Type</span><select id="ht"><option value="">Select…</option>${['Sedan','Hatchback','SUV','Van','Pickup'].map(t=>`<option>${t}</option>`).join('')}</select></label>
+    <label class="req"><span class="lab" id="hsl">Seats</span><input id="hs" type="number" min="1" max="20" placeholder="5"></label></div>
+    <div class="f2"><label class="req"><span class="lab">Service</span><select id="hv"><option value="">Select…</option><option>Self-drive</option><option>With driver</option></select></label>
+    <div class="ppick req"><span class="lab" id="hpl-l">Pickup location</span><div class="ppw"><input id="hpl" role="combobox" aria-labelledby="hpl-l" aria-expanded="false" aria-controls="hpop" autocomplete="off" placeholder="Search a town, airport or place" value="${esc(HF.place?HF.place.n:'')}"><div class="ppop" id="hpop" role="listbox" hidden></div></div><p class="note" id="hpn" style="margin:4px 0 0">${HF.place?'Pinned: '+esc(HF.place.n)+(HF.place.s?', '+esc(HF.place.s):''):'Pick one from the list so renters can find you on the map.'}</p></div></div>
+    <div class="f2"><label class="req"><span class="lab">Price per day (PHP)</span><input id="hp" type="number" min="300" step="50" placeholder="1800"></label>
+    <label class="req"><span class="lab">Color</span><select id="hc"><option value="">Select…</option>${COLORS.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join('')}</select></label></div>
+    <label class="req"><span class="lab">Price per extra hour (PHP)</span><input id="hph" type="number" min="1" step="10" placeholder="Usually about ${Math.round(XRATE*100)}% of the daily price"></label>
+    <label class="req"><span class="lab">Description (at least 20 characters)</span><textarea id="hd" rows="4" maxlength="600" placeholder="Tell renters about the vehicle: its condition, what is included, and tips for the trip"></textarea></label>
+    <div class="f2"><label class="req"><span class="lab">Year</span><input id="hy" type="number" min="1995" max="2030" placeholder="2021"></label>
+    <label class="ca req"><span class="lab">Luggage (bags)</span><input id="hb" type="number" min="0" max="20" placeholder="3"></label>
+    <label class="mo req" hidden><span class="lab">Engine size (cc)</span><input id="hcc" type="number" min="50" max="2000" placeholder="125"></label></div>
+    <div class="f2"><label class="req"><span class="lab">Transmission</span><select id="hm"><option value="">Select…</option><option>Automatic</option><option>Manual</option></select></label>
+    <label class="req"><span class="lab">Fuel</span><select id="hfu"><option value="">Select…</option><option>Gasoline</option><option>Diesel</option><option>Hybrid</option><option>Electric</option></select></label></div>
+    <div class="f2 mo" hidden><label class="req"><span class="lab">Helmets included</span><input id="hhel" type="number" min="0" max="2" placeholder="2"></label>
 </div>
-    <label><span class="lab">Security deposit (PHP), paid to Arkila and refunded to the renter</span><input id="hsd" type="number" min="0" step="500" value="5000"></label>
-    <label class="mo" hidden><span class="lab">Daily distance limit</span><input id="hmi" placeholder="150 km/day, or Unlimited"></label>
+    <label class="req"><span class="lab">Security deposit (PHP), paid to Arkila and refunded to the renter</span><input id="hsd" type="number" min="0" step="500" placeholder="5000"></label>
+    <label class="mo req" hidden><span class="lab">Daily distance limit</span><input id="hmi" placeholder="150 km/day, or Unlimited"></label>
     <label><span class="lab">Features (separate with commas)</span><input id="hft" placeholder="Air conditioning, Bluetooth audio, USB charging"></label>
-    <label><span class="lab">Photos (up to 4)</span><input id="hph" type="file" accept="image/*" multiple></label>
+    <label><span class="lab">Photos (up to 4)</span><input id="hphoto" type="file" accept="image/*" multiple></label>
     <p class="muted" style="margin:4px 0 0;font-size:12px">Only upload photos you took or have permission to use.</p>
     <div class="thumbs" id="hthumbs"></div>
     <label class="ck"><input type="checkbox" id="hack"><span>I have read and agree to the <button type="button" class="lnk" data-notice="host">owner declaration</button> and the <a href="#terms" target="_blank" rel="noopener">Terms of Service</a>, and I understand Arkila holds the booking money and pays me after the handover.</span></label>
@@ -193,21 +193,35 @@ document.addEventListener('click',e=>{
 function renderHthumbs(){const t=$('#hthumbs');if(t)t.innerHTML=HF.photos.map((p,i)=>`<div class="th on" style="position:relative"><img src="${p}" alt="Photo ${i+1}"><button type="button" class="chip" data-hrm="${i}" style="position:absolute;right:2px;top:2px;padding:0 7px">×</button></div>`).join('')}
 const KIND_OPTS={car:{types:['Sedan','Hatchback','SUV','Van','Pickup'],trans:['Automatic','Manual'],seats:[5,20,'Seats'],ph:'Toyota Vios 2021'},motor:{types:['Scooter','Underbone','Mid-size','Big bike'],trans:['Automatic','Semi-automatic','Manual'],seats:[2,2,'Riders'],ph:'Honda Click 125i'}};
 function hostKind(){
-  const k=$('#hk').value,o=KIND_OPTS[k];const dp=$('#hsd');if(dp&&!dp.dataset.t)dp.value=SETTINGS.deposit[k==='motor'?'motor':'car'];
-  $('#ht').innerHTML=o.types.map(t=>`<option>${t}</option>`).join('');$('#hm').innerHTML=o.trans.map(t=>`<option>${t}</option>`).join('');
-  $('#hs').max=o.seats[1];$('#hs').value=o.seats[0];$('#hsl').textContent=o.seats[2];$('#hn').placeholder=o.ph;
+  const k=$('#hk').value,o=KIND_OPTS[k];const dp=$('#hsd');if(dp)dp.placeholder=SETTINGS.deposit[k==='motor'?'motor':'car'];
+  $('#ht').innerHTML='<option value="">Select…</option>'+o.types.map(t=>`<option>${t}</option>`).join('');$('#hm').innerHTML='<option value="">Select…</option>'+o.trans.map(t=>`<option>${t}</option>`).join('');
+  $('#hs').max=o.seats[1];$('#hs').value='';$('#hs').placeholder=o.seats[0];$('#hsl').textContent=o.seats[2];$('#hn').placeholder=o.ph;
   document.querySelectorAll('#hf .mo').forEach(e=>e.hidden=k!=='motor');document.querySelectorAll('#hf .ca').forEach(e=>e.hidden=k==='motor');
   $('#hp').placeholder=k==='motor'?'600':'1800';
 }
 async function addHostListing(){
   const me=ST.me(),v=id=>$('#'+id).value.trim(),err=$('#herr');err.textContent='';
-  const name=v('hn'),price=+v('hp'),seats=+v('hs');
-  if(name.length<3){err.textContent=X('Add the vehicle name.');return}
-  if(!HF.place){err.textContent=X('Search and pick the pickup location from the list.');return}
-  if(!$('#hack').checked){err.textContent=X('Tick the owner declaration to submit.');return}
-  if(!(price>=300)){err.textContent='Enter a price per day, at least ₱300.';return}
-  const mo=v('hk')==='motor';
-  if(!(seats>=1)||(mo&&seats>2)){err.textContent=mo?'Riders must be 1 or 2.':'Enter the number of seats.';return}
+  const name=v('hn'),price=+v('hp'),seats=+v('hs'),mo=v('hk')==='motor',hourly=+v('hph'),year=+v('hy'),dep=v('hsd');
+  const bad=(id,m)=>{err.textContent=X(m);mark($('#'+id));return true};
+  if(name.length<3){bad('hn','Add the vehicle name.');return}
+  if(!v('ht')){bad('ht','Choose the vehicle type.');return}
+  if(!(seats>=1)||(mo&&seats>2)){bad('hs',mo?'Riders must be 1 or 2.':'Enter the number of seats.');return}
+  if(!v('hv')){bad('hv','Choose self-drive or with driver.');return}
+  if(!HF.place){err.textContent=X('Search and pick the pickup location from the list.');mark($('#hpl'));return}
+  if(!(price>=300)){bad('hp','Enter a price per day, at least ₱300.');return}
+  if(!v('hc')){bad('hc','Choose the color.');return}
+  if(!(hourly>=1)){bad('hph','Enter the price per extra hour.');return}
+  if(hourly>price){bad('hph','The extra hour price must be less than the daily price.');return}
+  if(v('hd').length<20){bad('hd','Add a description of at least 20 characters.');return}
+  if(!(year>=1995&&year<=2030)){bad('hy','Enter the year (1995 to 2030).');return}
+  if(!mo&&v('hb')===''){bad('hb','Enter how many bags fit.');return}
+  if(mo&&!(+v('hcc')>=50)){bad('hcc','Enter the engine size in cc.');return}
+  if(!v('hm')){bad('hm','Choose the transmission.');return}
+  if(!v('hfu')){bad('hfu','Choose the fuel.');return}
+  if(mo&&v('hhel')===''){bad('hhel','Enter how many helmets are included (0 to 2).');return}
+  if(mo&&!v('hmi')){bad('hmi','Enter the daily distance limit, or Unlimited.');return}
+  if(dep===''||!(+dep>=0)){bad('hsd','Enter the security deposit (0 or more).');return}
+  if(!$('#hack').checked){err.textContent=X('Tick the owner declaration to submit.');mark($('#hack'));return}
   const l={id:'u-'+Date.now().toString(36),kind:mo?'motor':'car',name,type:v('ht'),seats,service:v('hv'),area:HF.place.n,pos:HF.place.p,place:{n:HF.place.n,s:HF.place.s||''},price,hourly:Math.max(0,+v('hph')||0),color:v('hc'),active:true,description:v('hd'),
     specs:mo?{year:+v('hy')||'',transmission:v('hm'),cc:+v('hcc')||'',fuel:v('hfu'),helmets:Math.max(0,Math.min(2,+v('hhel')||0)),mileage:v('hmi')||'',deposit:Math.max(0,+v('hsd')||0)}:{year:+v('hy')||'',transmission:v('hm'),fuel:v('hfu'),bags:+v('hb')||0,aircon:'Yes',deposit:Math.max(0,+v('hsd')||0)},features:v('hft').split(',').map(s=>s.trim()).filter(Boolean),images:HF.photos.slice(),
     ownerId:me.id,ownerName:me.name,status:'pending',ack:{hostDeclaration:Date.now(),v:'2026-11-03'},createdAt:Date.now()};
@@ -227,7 +241,7 @@ $('#v-host').addEventListener('click',e=>{
 $('#v-host').addEventListener('submit',e=>{if(e.target.id==='hf'){e.preventDefault();addHostListing()}});
 $('#v-host').addEventListener('change',async e=>{
   if(e.target.id==='hk'){hostKind();return}
-  if(e.target.id!=='hph')return;const files=[...e.target.files].slice(0,4-HF.photos.length);
+  if(e.target.id!=='hphoto')return;const files=[...e.target.files].slice(0,4-HF.photos.length);
   for(const f of files){try{HF.photos.push(await readImg(f))}catch(x){toast('Could not read that photo.')}}
   e.target.value='';renderHthumbs();
 });
@@ -365,14 +379,14 @@ function adExport(name){
   const def=adDef(name);if(!def)return;const rows=adRows(def);
   let head=def.cols.map(c=>c.h).concat(def.extra.map(x=>x[0])),body=rows.map(r=>def.cols.map(c=>c.c(r)).concat(def.extra.map(x=>x[1](r))));
   if(name==='vehicles'){/* same columns as the import, so an export can be edited and imported back */
-    const G={id:l=>l.id,name:l=>l.name,kind:l=>l.kind,type:l=>l.type,seats:l=>l.seats,service:l=>l.service,area:l=>l.area,lat:l=>l.pos?l.pos[0]:'',lng:l=>l.pos?l.pos[1]:'',price:l=>l.price,hourly:l=>hourlyOf(l),deposit:l=>(l.specs&&l.specs.deposit)||'',color:l=>l.color||'',description:l=>l.description||'',features:l=>(l.features||[]).join('; '),year:l=>(l.specs&&l.specs.year)||'',transmission:l=>(l.specs&&l.specs.transmission)||'',status:l=>l.status,owner:l=>l.ownerName||''};
+    const G={id:l=>l.id,name:l=>l.name,kind:l=>l.kind,type:l=>l.type,seats:l=>l.seats,service:l=>l.service,area:l=>l.area,lat:l=>l.pos?l.pos[0]:'',lng:l=>l.pos?l.pos[1]:'',price:l=>l.price,hourly:l=>hourlyOf(l),deposit:l=>(l.specs&&l.specs.deposit!=null)?l.specs.deposit:'',color:l=>l.color||'',description:l=>l.description||'',features:l=>(l.features||[]).join('; '),year:l=>(l.specs&&l.specs.year)||'',transmission:l=>(l.specs&&l.specs.transmission)||'',fuel:l=>(l.specs&&l.specs.fuel)||'',bags:l=>(l.specs&&l.specs.bags!=null)?l.specs.bags:'',cc:l=>(l.specs&&l.specs.cc)||'',helmets:l=>(l.specs&&l.specs.helmets!=null)?l.specs.helmets:'',distance:l=>(l.specs&&l.specs.mileage)||'',status:l=>l.status,owner:l=>l.ownerName||''};
     head=IMPCOLS;body=rows.map(r=>IMPCOLS.map(k=>G[k](r)))}
   const csv=toCSV([head].concat(body));
   const file='arkila-'+name+'-'+todayIso()+'.csv';
   $('#xbody').innerHTML=`<h2 id="xtitle">Export ${name}</h2><p class="note">${rows.length} row${rows.length===1?'':'s'}${ADQ||ADFLT!=='all'?' (current search and filter)':''}. Open the file in Excel or Google Sheets.</p><textarea class="xta" readonly rows="8" id="xta">${esc(csv.replace(/^﻿/,''))}</textarea><div class="crow"><button type="button" class="lnk" data-xcopy>Copy</button><button type="button" class="btn" data-xdl="${esc(file)}">Download ${esc(file)}</button></div><p class="note" id="xnote"></p>`;
   xdlg.dataset.csv=csv;if(!xdlg.open)xdlg.showModal()}
-const IMPCOLS=['id','name','kind','type','seats','service','area','lat','lng','price','hourly','deposit','color','description','features','year','transmission','status','owner'];
-const IMPEX=[['','Toyota Vios 2021','car','Sedan',5,'Self-drive','City Proper','','',1800,360,5000,'#C0392B','Clean and cool. Good for a family.','Air conditioning; Bluetooth audio',2021,'Automatic','approved','Arkila'],['','Honda Click 125i','motor','Scooter',2,'Self-drive','Sabang','10.1578','118.8369',600,120,2000,'#2E86DE','Easy to ride.','Helmet included',2022,'Automatic','approved','Arkila']];
+const IMPCOLS=['id','name','kind','type','seats','service','area','lat','lng','price','hourly','deposit','color','description','features','year','transmission','fuel','bags','cc','helmets','distance','status','owner'];
+const IMPEX=[['','Toyota Vios 2021','car','Sedan',5,'Self-drive','City Proper','','',1800,360,5000,'#C0392B','Clean and cool. Good for a family trip around the city.','Air conditioning; Bluetooth audio',2021,'Automatic','Gasoline',3,'','','','approved','Arkila'],['','Honda Click 125i','motor','Scooter',2,'Self-drive','Sabang','10.1578','118.8369',600,120,2000,'#2E86DE','Easy to ride, light on fuel, good for the coast road.','Helmet included',2022,'Automatic','Gasoline','',125,2,'Unlimited','approved','Arkila']];
 let IMPPLAN=[];
 function adImportOpen(){
   $('#xbody').innerHTML=`<h2 id="xtitle">Import vehicles from CSV</h2><p class="note">Upload a file or paste rows. Columns: ${IMPCOLS.join(', ')}. Leave <b>id</b> empty to add a new vehicle, or use an existing id to update it. Features are separated with a semicolon. Area can be one of ${Object.keys(AREAS).join(', ')}, or any name with lat and lng.</p>
@@ -383,25 +397,33 @@ function adImportCheck(){
   const rows=parseCSV($('#xin').value),prev=$('#xprev'),go=$('#xgo');IMPPLAN=[];go.disabled=true;
   if(rows.length<2){prev.innerHTML='<p class="err">Add a header row and at least one vehicle.</p>';return}
   const head=rows[0].map(h=>h.trim().toLowerCase()),ix=k=>head.indexOf(k),errs=[];
-  ['name','price'].forEach(k=>{if(ix(k)<0)errs.push('Missing column: '+k)});if(errs.length){prev.innerHTML=errs.map(e=>`<p class="err">${esc(e)}</p>`).join('');return}
+  ['name','kind','type','seats','service','area','price','hourly','deposit','description','year','transmission','fuel'].forEach(k=>{if(ix(k)<0)errs.push('Missing column: '+k)});if(errs.length){prev.innerHTML=errs.map(e=>`<p class="err">${esc(e)}</p>`).join('');return}
   const motorT=KIND_OPTS.motor.types,carT=KIND_OPTS.car.types;let add=0,upd=0;
   rows.slice(1).forEach((r,n)=>{
     const g=k=>{const i=ix(k);return i<0?'':String(r[i]==null?'':r[i]).trim()},line='Row '+(n+2)+': ',e=[];
-    const name=g('name'),price=+g('price'),type=g('type'),kind=(g('kind')||(motorT.includes(type)?'motor':'car')).toLowerCase();
+    const name=g('name'),price=+g('price'),type=g('type'),kind=g('kind').toLowerCase();
     if(name.length<3)e.push('name needs 3+ letters');if(!(price>=300))e.push('price must be 300 or more');
-    if(kind!=='car'&&kind!=='motor')e.push('kind must be car or motor');
-    const tl2=(kind==='motor'?motorT:carT),tt=tl2.find(x=>x.toLowerCase()===type.toLowerCase());if(!tt)e.push('type must be one of '+tl2.join(', '));
-    const seats=+g('seats')||(kind==='motor'?2:5);if(kind==='motor'&&seats>2)e.push('riders must be 1 or 2');
+    if(kind!=='car'&&kind!=='motor')e.push('kind is required: car or motor');
+    const tl2=(kind==='motor'?motorT:carT),tt=tl2.find(x=>x.toLowerCase()===type.toLowerCase());if(!tt)e.push('type is required, one of '+tl2.join(', '));
+    const seats=+g('seats');if(!(seats>=1))e.push('seats is required');else if(kind==='motor'&&seats>2)e.push('riders must be 1 or 2');
+    const hourly=+g('hourly');if(!(hourly>=1))e.push('hourly (extra hour price) is required');else if(hourly>price)e.push('hourly must be less than the daily price');
+    if(g('description').length<20)e.push('description is required (20+ characters)');
+    const yr=+g('year');if(!(yr>=1995&&yr<=2030))e.push('year is required (1995 to 2030)');
+    const trl=(kind==='motor'?KIND_OPTS.motor:KIND_OPTS.car).trans,tr=trl.find(x=>x.toLowerCase()===g('transmission').toLowerCase());if(!tr)e.push('transmission is required, one of '+trl.join(', '));
+    const FUELS=['Gasoline','Diesel','Hybrid','Electric'],fu=FUELS.find(x=>x.toLowerCase()===g('fuel').toLowerCase());if(!fu)e.push('fuel is required, one of '+FUELS.join(', '));
+    if(kind==='car'&&g('bags')==='')e.push('bags is required for cars');
+    if(kind==='motor'){if(!(+g('cc')>=50))e.push('cc is required for motorbikes');if(g('helmets')===''||!(+g('helmets')>=0&&+g('helmets')<=2))e.push('helmets is required (0 to 2)');if(!g('distance'))e.push('distance is required (for example Unlimited)')}
+    if(g('deposit')===''||!(+g('deposit')>=0))e.push('deposit is required (0 or more)');
     const area=g('area');let pos=null;const ak=Object.keys(AREAS).find(a=>a.toLowerCase()===area.toLowerCase());
     if(ak)pos=AREAS[ak].slice();else if(g('lat')&&g('lng')&&!isNaN(+g('lat'))&&!isNaN(+g('lng')))pos=[+g('lat'),+g('lng')];
     if(!area)e.push('area is required');else if(!pos)e.push('area "'+area+'" needs lat and lng');
-    const svc=g('service')||'Self-drive';if(svc!=='Self-drive'&&svc!=='With driver')e.push('service must be Self-drive or With driver');
+    const svc=g('service');if(svc!=='Self-drive'&&svc!=='With driver')e.push('service is required: Self-drive or With driver');
     const st=(g('status')||'approved').toLowerCase();if(!['approved','pending','rejected'].includes(st))e.push('status must be approved, pending or rejected');
     const id=g('id'),ex=id?ST.listings.find(l=>l.id===id):null;if(id&&!ex)e.push('id "'+id+'" not found (leave empty to add)');
     if(e.length){errs.push(line+e.join('; '));return}
     const dep=Math.max(0,+g('deposit')||0),mo=kind==='motor';
-    const l={id:ex?ex.id:'u-'+Date.now().toString(36)+n,kind,name,type:tt,seats,service:svc,area:ak||area,pos,place:{n:ak||area,s:''},price,hourly:Math.max(0,+g('hourly')||0),color:g('color')||'#2E86DE',active:true,description:g('description'),
-      specs:mo?{year:+g('year')||'',transmission:g('transmission')||'Automatic',cc:'',fuel:'Gasoline',helmets:1,mileage:'',deposit:dep}:{year:+g('year')||'',transmission:g('transmission')||'Automatic',fuel:'Gasoline',bags:2,aircon:'Yes',deposit:dep},
+    const l={id:ex?ex.id:'u-'+Date.now().toString(36)+n,kind,name,type:tt,seats,service:svc,area:ak||area,pos,place:{n:ak||area,s:''},price,hourly:Math.round(hourly),color:g('color')||'#2E86DE',active:true,description:g('description'),
+      specs:mo?{year:yr,transmission:tr,cc:+g('cc'),fuel:fu,helmets:+g('helmets'),mileage:g('distance'),deposit:dep}:{year:yr,transmission:tr,fuel:fu,bags:+g('bags'),aircon:'Yes',deposit:dep},
       features:g('features').split(';').map(s=>s.trim()).filter(Boolean),images:ex?ex.images||[]:[],ownerId:ex?ex.ownerId:'arkila',ownerName:g('owner')||(ex?ex.ownerName:'Arkila'),status:st,createdAt:ex?ex.createdAt:Date.now()};
     if(ex)upd++;else add++;IMPPLAN.push({l,ex});
   });
@@ -483,7 +505,7 @@ document.addEventListener('click',e=>{
   const fv=e.target.closest('[data-fav]');
   if(fv){toggleFav(fv.dataset.fav);return}
   const lg=e.target.closest('[data-login]');if(lg){if(lg.tagName==='A')e.preventDefault();closeMenu();openLogin(lg.dataset.login==='host'?t('l.hostneed'):undefined,lg.dataset.login==='host'?'host':undefined)}
-  else if(e.target.closest('[data-logout]')){closeMenu();ST.sid=null;ST.save();$('#name').value='';$('#phone').value='';$('#email').value='';renderNav();toast(t('l.out'));if(location.hash.slice(1)!=='home')location.hash='home';else route()}
+  else if(e.target.closest('[data-logout]')){closeMenu();ST.sid=null;ST.save();$('#fn').value='';$('#ln').value='';$('#phone').value='';$('#email').value='';renderNav();toast(t('l.out'));if(location.hash.slice(1)!=='home')location.hash='home';else route()}
 });
 function route(){
   const h=location.hash.slice(1),v=ROUTES.includes(h)?h:'home',me=ST.me();
