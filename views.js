@@ -177,12 +177,14 @@ function ownTasks(mine,reqs){
   const other=[forR.length?item(`<b>${forR.length}</b> request${forR.length>1?'s':''} where you confirmed the dates. Waiting for the renter to pay`,'bookings','Open'):'',soon.length?item(`<b>${soon.length}</b> paid trip${soon.length>1?'s':''} starting in the next 7 days`,'bookings','Open'):'',due.length?item(`<b>${due.length}</b> completed trip${due.length>1?'s':''} waiting for Arkila's payout (${php(dhSum(due,ownerGets))})`,'payouts','Open'):'',pend.length?item(`<b>${pend.length}</b> vehicle${pend.length>1?'s':''} waiting for Arkila's approval`,'vehicles','Open'):'',rej.length?item(`<b>${rej.length}</b> vehicle${rej.length>1?'s were':' was'} not approved. Check the details and add it again`,'vehicles','Open'):'',paused.length?item(`<b>${paused.length}</b> paused vehicle${paused.length>1?'s':''}. Renters cannot see ${paused.length>1?'them':'it'}`,'vehicles','Open'):''].join('');
   return `<section class="step"><h2>Needs your answer${wait.length?' ('+wait.length+')':''}</h2><p class="note" style="margin:0 0 8px">Reply within 2 hours or the request lapses. Say whether the dates are free.</p>${ans}</section>
   <section class="step"><h2>Other things to know</h2>${other||'<div class="empty">All clear.</div>'}</section>${hostSteps()}`}
+const oTabN=(k,nWait,mine,reqs)=>{const n=k==='tasks'?nWait:k==='vehicles'?mine.filter(l=>l.status==='pending').length:k==='payouts'?reqs.filter(r=>r.status==='completed'&&!r.paid).length:0;return n?`<b class="tb">${n}</b>`:''};
 function renderHost(){
   const me=ST.me(),el=$('#v-host');
   if(!has(me,'host')){el.innerHTML=`<h1>Earn from your vehicle</h1><p class="lead">List a car, van or motorbike. Arkila handles the renter checks, the paperwork and the payment. The renter pays Arkila online up front, and Arkila pays you after the handover, less its fee.</p>${hostSteps()}<button class="btn" data-becomehost>List your vehicle</button>`;trFil(el);return}
   const mine=oMine(),reqs=oReqs(),nWait=reqs.filter(oWait).length;
-  const head=`<h1>Owner dashboard</h1><p class="lead">New vehicles are checked by the Arkila team before renters can see them.</p>
-  <div class="chips adtabs" role="tablist">${OTABS.map(x=>`<button type="button" class="chip" role="tab" data-otab="${x[0]}" aria-pressed="${OT===x[0]}">${x[1]}${x[0]==='tasks'&&nWait?` (${nWait})`:''}</button>`).join('')}</div>`;
+  const demoBar=(me.id==='demo-o1')?`<div class="banner own" style="margin:0 0 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span><b>Test account.</b> You are looking at the demo owner. Nothing here is real.</span><button class="chip" data-demoback>${DEMOBACK?'Back to admin':'Sign out'}</button></div>`:'';
+  const head=demoBar+`<h1>Owner dashboard</h1><p class="lead">New vehicles are checked by the Arkila team before renters can see them.</p>
+  <div class="chips adtabs" role="tablist">${OTABS.map(x=>`<button type="button" class="chip" role="tab" data-otab="${x[0]}" aria-pressed="${OT===x[0]}">${x[1]}${oTabN(x[0],nWait,mine,reqs)}</button>`).join('')}</div>`;
   let body='';
   if(OT==='dashboard')body=ownDash(me.id,false);
   else if(OT==='tasks')body=ownTasks(mine,reqs);
@@ -213,7 +215,7 @@ function renderHost(){
     <label class="ck"><input type="checkbox" id="hack"><span>I have read and agree to the <button type="button" class="lnk" data-notice="host">owner declaration</button> and the <a href="#terms" target="_blank" rel="noopener">Terms of Service</a>, and I understand Arkila holds the booking money and pays me after the handover.</span></label>
     <p class="err" id="herr" role="alert"></p><button class="btn" type="submit">Submit for approval</button></form></section>`;
   else{const def=oDef(OT);if(!def){OT='dashboard';return renderHost()}
-    body=`<div class="adbar"><input id="oq" type="search" placeholder="Search ${def.name}" value="${esc(OQ)}" aria-label="Search"><div class="chips">${def.filters.map(f=>`<button type="button" class="chip" data-of="${f[0]}" aria-pressed="${OF===f[0]}">${f[1]}</button>`).join('')}</div>${def.cols?'<div class="chips"><button type="button" class="chip" data-oexp>Export CSV</button></div>':''}</div><div id="otbl"></div>`}
+    body=`<div class="adbar"><input id="oq" type="search" placeholder="Search ${def.name}" value="${esc(OQ)}" aria-label="Search"><div class="chips">${def.filters.map(f=>`<button type="button" class="chip" data-of="${f[0]}" aria-pressed="${OF===f[0]}">${f[1]}<b class="fc">${def.rows().filter(r=>def.fit(r,f[0])).length}</b></button>`).join('')}</div>${def.cols?'<div class="chips"><button type="button" class="chip" data-oexp>Export CSV</button></div>':''}</div><div id="otbl"></div>`}
   el.innerHTML=head+body;
   if(OT==='add')renderHthumbs();else if(OT==='vehicles'||OT==='bookings'||OT==='payouts')oTable()
   trFil(el);
@@ -402,9 +404,10 @@ function adTable(){
 }
 function renderAdmin(){
   const pend=ST.listings.filter(l=>l.status==='pending'),rs=ST.requests,booked=rs.filter(r=>r.status==='confirmed'||r.status==='completed');
+  const tabN=k=>{const n=k==='vehicles'?pend.length:k==='bookings'?rs.filter(r=>r.status==='new'&&r.avail==='yes').length:k==='payouts'?rs.filter(r=>r.status==='completed'&&!r.paid).length:0;return n?`<b class="tb">${n}</b>`:''};
   const val=booked.reduce((s,r)=>s+r.total,0);
   const head=`<h1>Arkila admin</h1><p class="lead">Backoffice for vehicles, bookings, users and payouts. Search, sort, bulk edit and CSV in and out. Only admin logins can open this screen.</p>
-  <div class="chips adtabs" role="tablist">${ADTABS.map(x=>`<button type="button" class="chip" role="tab" data-adtab="${x[0]}" aria-pressed="${ADT===x[0]}">${x[1]}${x[0]==='vehicles'&&pend.length?` (${pend.length})`:''}</button>`).join('')}</div>`;
+  <div class="chips adtabs" role="tablist">${ADTABS.map(x=>`<button type="button" class="chip" role="tab" data-adtab="${x[0]}" aria-pressed="${ADT===x[0]}">${x[1]}${tabN(x[0])}</button>`).join('')}</div>`;
   let body='';
   if(ADT==='dashboard'){body=adDash()}
   else if(ADT==='ownerdash'){body=ownDash(ADOWN,true)}
@@ -419,12 +422,12 @@ function renderAdmin(){
   }else if(ADT==='settings'){
     const row=(k,v)=>`<div class="lrow"><div class="lmain"><b>${esc(k)}</b><p class="sub">${esc(typeof v==='object'?JSON.stringify(v):String(v)||'not set')}</p></div></div>`;
     body=`<section class="step"><h2>Settings</h2><p class="note" style="margin:0 0 8px">These come from config.js. Change them there and re-upload the file. The real site will get editable settings in Phase 2.</p>${Object.entries(SETTINGS).map(([k,v])=>row(k,v)).join('')}<h2 style="margin-top:16px">Brand</h2>${Object.entries(BRAND).map(([k,v])=>row(k,v===''?'not set':v)).join('')}</section>
-    <section class="step"><h2>Test load</h2><p class="note" style="margin:0 0 8px">Fills the site with about 40 owners, 60 renters, 120 vehicles and 600 bookings over the past year so you can see the dashboards. Demo records are tagged and removed by Clear. Real records are never touched. Now loaded: ${dmDemoCount().users} users, ${dmDemoCount().listings} vehicles, ${dmDemoCount().requests} bookings.</p><div class="chips"><button class="chip on" data-demoload>${dmDemoCount().requests?'Reload':'Load'} demo data</button>${dmDemoCount().requests?'<button class="chip" data-democlear>Clear demo data</button>':''}</div></section>
+    <section class="step"><h2>Test load</h2><p class="note" style="margin:0 0 8px">Fills the site with about 40 owners, 60 renters, 120 vehicles and 600 bookings over the past year so you can see the dashboards. Demo records are tagged and removed by Clear. Real records are never touched. Now loaded: ${dmDemoCount().users} users, ${dmDemoCount().listings} vehicles, ${dmDemoCount().requests} bookings.</p><div class="chips"><button class="chip on" data-demoload>${dmDemoCount().requests?'Reload':'Load'} demo data</button>${dmDemoCount().requests?'<button class="chip" data-democlear>Clear demo data</button>':''}</div>${dmDemoCount().requests?'<p class="note" style="margin:12px 0 6px"><b>Test accounts.</b> Jump into the owner area or the renter view as a demo account. Use the banner to come back to admin.</p><div class="chips"><button class="chip on" data-demoas="demo-o1">Open owner area (Demo Owner)</button><button class="chip" data-demoas="demo-r1">Open renter view (Demo Renter)</button></div>':''}</section>
     <section class="step"><h2>Backup</h2><p class="note" style="margin:0 0 8px">Download everything saved on this device (accounts, vehicles, bookings, reviews) as one file. Restore it later or on another device.</p><div class="chips"><button class="chip on" data-bkdl>Download backup</button><button class="chip" data-bkrs>Restore from file</button></div><input type="file" id="bkin" accept="application/json,.json" hidden></section>
     <section class="step"><h2>Reset</h2><p class="note">Clears every account, vehicle and request saved on this device.</p><button class="chip" data-areset>Reset demo data</button></section>`;
   }else{
     const def=adDef(ADT);
-    body=`<div class="adbar"><input id="adq" type="search" placeholder="Search ${def.name}" value="${esc(ADQ)}" aria-label="Search"><div class="chips">${def.filters.map(f=>`<button type="button" class="chip" data-adf="${f[0]}" aria-pressed="${ADFLT===f[0]}">${f[1]}</button>`).join('')}</div><div class="chips"><button type="button" class="chip" data-adexp="${def.name}">Export CSV</button>${ADT==='vehicles'?'<button type="button" class="chip on" data-adimp>Import CSV</button>':''}</div></div><div id="adtbl"></div>`;
+    body=`<div class="adbar"><input id="adq" type="search" placeholder="Search ${def.name}" value="${esc(ADQ)}" aria-label="Search"><div class="chips">${def.filters.map(f=>`<button type="button" class="chip" data-adf="${f[0]}" aria-pressed="${ADFLT===f[0]}">${f[1]}<b class="fc">${def.rows().filter(r=>def.fit(r,f[0])).length}</b></button>`).join('')}</div><div class="chips"><button type="button" class="chip" data-adexp="${def.name}">Export CSV</button>${ADT==='vehicles'?'<button type="button" class="chip on" data-adimp>Import CSV</button>':''}</div></div><div id="adtbl"></div>`;
   }
   $('#v-admin').innerHTML=head+body;if(!['dashboard','ownerdash','overview','settings'].includes(ADT))adTable();
 }

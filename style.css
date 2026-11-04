@@ -648,3 +648,38 @@ input[type=checkbox].bad{outline:2px solid #c0392b;outline-offset:2px;box-shadow
 #v-host .adbar{margin-top:0}
 #v-host .at .ract{display:flex;flex-wrap:wrap;gap:6px;min-width:128px;max-width:150px}
 .lab .cnt:empty{display:none}#hf .f2{align-items:start}
+/* dashboard tiles: tidy rows */
+.kpg{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:760px){#v-admin .kpg{grid-template-columns:repeat(4,1fr)}#v-host .kpg{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:1000px){#v-host .kpg{grid-template-columns:repeat(6,1fr)}}
+.ch .hit:hover{fill-opacity:.09}.ch .bg:hover .hit,.ch .lp:hover .hit{fill-opacity:.09;fill:var(--accent)}.ch .lp:hover .lg{stroke-opacity:.7}.ch .lg{opacity:1}
+/* three blues: Arkila commission (dark), booking value (medium), owners' share (light) */
+.ch .b1{fill:var(--accent)}.ch .b3{fill:color-mix(in srgb,var(--accent) 62%,var(--surface))}.ch .b2{fill:color-mix(in srgb,var(--accent) 28%,var(--surface))}
+
+/* tabs = segmented bar; filters = blue round chips with counts; range calendar */
+.adtabs{display:flex;gap:2px;padding:4px;margin:0 0 14px;background:color-mix(in srgb,var(--ink) 8%,var(--bg));border-radius:14px;overflow-x:auto;max-width:100%;width:fit-content;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.adtabs::-webkit-scrollbar{display:none}
+.adtabs .chip{border:0;background:transparent;color:var(--muted);border-radius:10px;padding:9px 16px;white-space:nowrap;font-weight:600;flex:0 0 auto;display:inline-flex;gap:8px;align-items:center;box-shadow:none}
+.adtabs .chip:hover{color:var(--ink)}
+.adtabs .chip[aria-pressed=true]{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgba(15,26,43,.14),0 0 0 1px color-mix(in srgb,var(--line) 70%,transparent)}
+.tb{font-size:12px;font-weight:700;min-width:22px;padding:1px 7px;border-radius:99px;text-align:center;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent)}
+.adbar .chips .chip,.drs .chip{padding:6px 12px;font-size:14px;display:inline-flex;gap:6px;align-items:center}
+.adbar .chips .chip[aria-pressed=true],.drs .chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink,#fff)}
+.fc{font-size:12px;font-weight:700;padding:0 6px;border-radius:99px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent)}
+.chip[aria-pressed=true] .fc{background:rgba(255,255,255,.24);color:inherit}
+#rcbk{position:fixed;inset:0;z-index:150;background:rgba(10,18,30,.35);display:none}
+#rcpop{position:fixed;z-index:151;left:50%;top:50%;transform:translate(-50%,-50%);width:min(700px,calc(100vw - 20px));max-height:calc(100vh - 20px);overflow:auto;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.28);padding:14px 18px;display:none}
+.rcm{display:grid;grid-template-columns:1fr 1fr;gap:26px}@media(max-width:640px){.rcm{grid-template-columns:1fr}.rcm .rc2{display:none}}
+.rch{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.rcn{width:36px;height:36px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer;font-size:18px;color:inherit}.rcn.ph{border:0;background:none;cursor:default}
+.rc1 .rch,.rc2 .rch{min-height:36px}.rc1 .rch .nx{display:none}@media(max-width:640px){.rc1 .rch .nx{display:inline-flex}}
+.rcg{display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px;text-align:center}.rcg .wd{font-size:12px;color:var(--muted);padding:4px 0}
+.rcg button{height:40px;border:0;background:transparent;border-radius:0;font:inherit;font-size:15px;cursor:pointer;color:inherit}
+.rcg button:hover{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.rcg button.in{background:color-mix(in srgb,var(--accent) 14%,var(--surface))}
+.rcg button.a,.rcg button.z{background:var(--accent);color:var(--accent-ink,#fff);font-weight:700}
+.rcg button.a{border-radius:10px 0 0 10px}.rcg button.z{border-radius:0 10px 10px 0}.rcg button.a.z{border-radius:10px}
+.rcg button.td:not(.a):not(.z){box-shadow:inset 0 -2px 0 var(--accent)}
+.rcf{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--line)}.rcs{font-size:14px;color:var(--muted)}.rcb2{display:flex;gap:8px}
+.rcf .chip.on[disabled]{opacity:.45;cursor:not-allowed}
+
+.rcg button.fu{opacity:.3;cursor:not-allowed}

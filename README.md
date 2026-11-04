@@ -92,3 +92,12 @@ Note: when pickup and return dates are set, vehicles already booked or blocked f
 
 ## Owner area (tabs)
 The owner page now has the same tabbed layout as the admin, with only the owner's own data: Dashboard, Tasks (requests to answer, things to know), Vehicles (search, filters, calendar, pause, delete), Bookings (search, filters, sort, answer requests, CSV), Payouts (what is paid and still to be paid) and Add vehicle. Owners can only answer requests for their own vehicles.
+
+## Test accounts
+- Admin > Settings > Test load (after loading demo data): "Open owner area (Demo Owner)" and "Open renter view (Demo Renter)" sign you in as a test account. A banner on the owner area has a "Back to admin" button.
+
+## Dashboard date range
+The range chips (30 days, 90 days, 12 months, All time) now have a **Custom range** chip. It opens a two-month calendar (one month on phones): pick the first day, then the last day, then Apply. KPIs, charts, weekly and heatmap views follow the range and compare with the previous period of the same length. Ranges of 31 days or less show daily bars; longer ones show months. Reset to default (or the × chip) goes back to 90 days. Not remembered between visits. Admin and owner dashboards both have it (owners only see their own data).
+
+## Tabs and filters
+Tabs are a grey segmented bar with a white active tab and small count badges (vehicles waiting, bookings to pay, payouts unpaid). Filter chips are filled blue when on and show counts. The old chart colour filter chips were removed (the three blues and hover details cover it).
