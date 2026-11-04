@@ -11,10 +11,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
-<link rel="stylesheet" href="style.css?v=11">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
-<header class="hdr"><div class="hwrap"><a class="top" href="#home"><i><svg width="20" height="14" viewBox="0 0 24 16" aria-hidden="true"><path d="M2 11 L5 6 Q7 3 11 3 L15 3 Q19 3 21 7 L22 11 Z" fill="#fff"/><circle cx="7" cy="12" r="2.6" fill="#FFC72C"/><circle cx="17" cy="12" r="2.6" fill="#FFC72C"/></svg></i><span>Arkila <small>Puerto Princesa</small></span></a><nav id="nav" aria-label="Main"></nav><button type="button" class="chip globe" id="thbtn" aria-label="Theme"></button><button type="button" class="chip globe" id="setbtn" data-setopen aria-label="Language and currency"></button></div></header>
+<header class="hdr"><div class="hwrap"><a class="top" href="#home"><i><svg width="20" height="14" viewBox="0 0 24 16" aria-hidden="true"><path d="M2 11 L5 6 Q7 3 11 3 L15 3 Q19 3 21 7 L22 11 Z" fill="#fff"/><circle cx="7" cy="12" r="2.6" fill="#FFC72C"/><circle cx="17" cy="12" r="2.6" fill="#FFC72C"/></svg></i><span>Arkila <small>Puerto Princesa</small></span></a><span class="sp"></span><a class="hostbtn" id="hostbtn" href="#host"></a><div class="mwrap"><button type="button" class="mbtn" id="mbtn" aria-haspopup="true" aria-expanded="false" aria-controls="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="av" id="mav" aria-hidden="true"></span></button><div class="menu" id="menu" role="menu" hidden><nav id="nav" aria-label="Main"></nav><hr><button type="button" class="mi" id="setbtn" data-setopen role="menuitem"></button><button type="button" class="mi" id="thbtn" role="menuitem"></button><hr><div id="mauth"></div></div></div></div></header>
 <div class="demo">Demo mode: accounts, vehicles and requests are saved on this device only.</div>
 <div class="wrap" id="v-home">
   <h1 data-i18n="h1">Rent a vehicle from a local owner</h1>
@@ -75,16 +75,17 @@
 <div class="wrap" id="v-privacy" hidden></div>
 <footer class="foot"><div class="fwrap"><div class="fcols"><div><b class="fname" id="fname"></b><p class="note" id="ftag" style="margin:2px 0 0"></p></div><div><span class="lab" data-i18n="foot.follow"></span><div class="soc" id="soc"></div></div></div><p class="note" data-i18n="foot.note"></p><p class="note"><button type="button" class="lnk" data-notice="renter" data-i18n="nt.rlink"></button> · <button type="button" class="lnk" data-notice="host" data-i18n="nt.hlink"></button> · <a href="#terms" data-i18n="ack.terms"></a> · <a href="#privacy" data-i18n="nt.privacy"></a></p></div></footer>
 <a class="fab" id="fab" href="#" target="_blank" rel="noopener" hidden aria-label="Chat on Messenger"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.4 2 2 6.1 2 11.3c0 2.9 1.4 5.4 3.6 7.1V22l3.3-1.8c.9.2 1.9.4 3.1.4 5.6 0 10-4.1 10-9.3S17.6 2 12 2zm1 12.5-2.6-2.7L5.4 14.5l5.5-5.8 2.6 2.7 5-2.7-5.5 5.8z"/></svg><span>Chat</span></a>
-<dialog id="sdlg" aria-labelledby="stitle"><button type="button" class="x" data-sclose aria-label="Close">×</button><div id="sbody" style="padding:18px"></div></dialog>
+<dialog id="sdlg" class="mini" aria-labelledby="stitle"><button type="button" class="x" data-sclose aria-label="Close">×</button><div id="sbody" style="padding:18px"></div></dialog>
 <dialog id="ndlg" aria-labelledby="ntitle"><button type="button" class="x" data-nclose aria-label="Close">×</button><div id="nbody" style="padding:18px"></div></dialog>
-<dialog id="ldlg" aria-labelledby="ltitle"><button type="button" class="x" data-lclose aria-label="Close">×</button><div id="lbody" style="padding:18px"></div></dialog>
+<dialog id="cdlg" class="mini" aria-labelledby="ctitle"><button type="button" class="x" data-cclose aria-label="Close">×</button><div id="cbody"></div></dialog>
+<dialog id="ldlg" class="mini" aria-labelledby="ltitle"><button type="button" class="x" data-lclose aria-label="Close">×</button><div id="lbody" style="padding:18px"></div></dialog>
 <dialog id="dlg" aria-labelledby="dtitle"><button type="button" class="x" data-close aria-label="Close">×</button><div id="dbody"></div></dialog>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-<script src="config.js?v=11"></script>
-<script src="store.js?v=11"></script>
-<script src="i18n.js?v=11"></script>
-<script src="app.js?v=11"></script>
-<script src="legal.js?v=11"></script>
-<script src="views.js?v=11"></script>
+<script src="config.js?v=13"></script>
+<script src="store.js?v=13"></script>
+<script src="i18n.js?v=13"></script>
+<script src="app.js?v=13"></script>
+<script src="legal.js?v=13"></script>
+<script src="views.js?v=13"></script>
 </body>
 </html>

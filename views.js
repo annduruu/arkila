@@ -15,19 +15,26 @@ const setReq=(id,status)=>{const r=ST.requests.find(x=>x.id===id);if(r){r.status
 
 /* ---- nav ---- */
 function renderNav(){
-  const me=ST.me(),h=location.hash.slice(1)||'home',on=k=>h===k?' class="on"':'';
-  const myTrips=me?ST.requests.filter(r=>r.guestId===me.id).length:0;
-  $('#nav').innerHTML=`<a href="#home"${on('home')}>${esc(t('nav.rent'))}</a><a href="#saved"${on('saved')}>${esc(t('nav.saved'))}${ST.favs.length?`<b>${ST.favs.length}</b>`:''}</a>`+(me?`<a href="#trips"${on('trips')}>${esc(t('nav.trips'))}${myTrips?`<b>${myTrips}</b>`:''}</a><a href="#host"${on('host')}>${esc(has(me,'host')?t('nav.host'):t('nav.become'))}</a>`:'')+(has(me,'admin')?`<a href="#admin"${on('admin')}>${esc(t('nav.admin'))}</a>`:'')+(me?`<button type="button" class="chip" data-logout title="${esc(t('nav.logout'))}">${esc(first(me.name))} · ${esc(t('nav.logout'))}</button>`:`<button type="button" class="chip on" data-login>${esc(t('nav.login'))}</button>`);
+  const me=ST.me(),h=location.hash.slice(1)||'home',on=k=>h===k?' class="on" aria-current="page"':'';
+  const myTrips=me?ST.requests.filter(r=>r.guestId===me.id&&r.status!=='cancelled').length:0;
+  const ic=p=>`<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  const I={rent:'<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/>',saved:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',trips:'<path d="M3 13l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5v4H3z"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/>',admin:'<path d="M12 3l8 3v6c0 4.5-3.4 7.7-8 9-4.6-1.3-8-4.5-8-9V6z"/>'};
+  const row=(href,k,label,badge)=>`<a href="${href}" role="menuitem"${on(k)}>${ic(I[k])}<span>${esc(label)}</span>${badge?`<b>${badge}</b>`:''}</a>`;
+  $('#nav').innerHTML=row('#home','rent',t('nav.rent'))+row('#saved','saved',t('nav.saved'),ST.favs.length)+(me?row('#trips','trips',t('nav.trips'),myTrips):'')+(has(me,'admin')?row('#admin','admin',t('nav.admin')):'');
+  $('#mauth').innerHTML=me?`<div class="who">${esc(me.name)}</div><button type="button" class="mi" data-logout role="menuitem">${esc(t('nav.logout'))}</button>`:`<button type="button" class="mi strong" data-login role="menuitem">${esc(t('nav.login'))}</button>`;
+  const hb=$('#hostbtn');if(hb){hb.textContent=has(me,'host')?t('nav.host'):t('nav.become');if(me){hb.setAttribute('href','#host');hb.removeAttribute('data-login');hb.classList.toggle('on',h==='host')}else{hb.setAttribute('href','#host');hb.dataset.login='host'}}
+  const av=$('#mav');if(av)av.textContent=me?first(me.name).charAt(0).toUpperCase():'';
+  const mb=$('#mbtn');if(mb)mb.classList.toggle('in',!!me);
   const sb=$('#setbtn');if(sb)sb.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-3px"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" fill="none" stroke="currentColor" stroke-width="2"/></svg> ${PREF.lang.toUpperCase()} · ${PREF.cur}`;
 }
 
 /* ---- login ---- */
 const ldlg=$('#ldlg');
-function openLogin(msg){
+function openLogin(msg,role){
   $('#lbody').innerHTML=`<h2 id="ltitle">${esc(t('l.title'))}</h2><p class="note" style="margin:6px 0 0">${esc(msg||t('l.sub'))}</p>
   <div class="banner" style="margin:12px 0">${esc(t('l.demo'))}</div>
   <div class="form"><label><span class="lab">${esc(t('l.name'))}</span><input id="lname" autocomplete="name" placeholder="Juan Dela Cruz"></label>
-  <div class="rolepick" role="radiogroup"><label class="rp"><input type="radio" name="lrole" value="guest" checked><span><b>${esc(t('l.rent'))}</b><small>${esc(t('l.rents'))}</small></span></label><label class="rp"><input type="radio" name="lrole" value="host"><span><b>${esc(t('l.list'))}</b><small>${esc(t('l.lists'))}</small></span></label></div>
+  <div class="rolepick" role="radiogroup"><label class="rp"><input type="radio" name="lrole" value="guest"${role==="host"?"":" checked"}><span><b>${esc(t('l.rent'))}</b><small>${esc(t('l.rents'))}</small></span></label><label class="rp"><input type="radio" name="lrole" value="host"${role==="host"?" checked":""}><span><b>${esc(t('l.list'))}</b><small>${esc(t('l.lists'))}</small></span></label></div>
   <p class="err" id="lerr" role="alert"></p>
   <button type="button" class="btn" data-lgo="facebook">${esc(t('l.fb'))}</button><button type="button" class="btn ghost" data-lgo="google">${esc(t('l.g'))}</button>
   <button type="button" class="chip" data-lgo="admin" style="justify-self:start">${esc(t('l.admin'))}</button></div>`;
@@ -133,13 +140,24 @@ function renderTrips(){
   const me=ST.me(),mine=ST.requests.filter(r=>r.guestId===me.id);
   $('#v-trips').innerHTML=`<h1>${esc(t('tr.t'))}</h1><p class="lead">${esc(t('tr.lead'))}</p>`+(mine.length?mine.map(r=>`<section class="step"><div class="row2"><h2>${esc(r.carName)}</h2>${pill(r.status)}</div><p class="sub" style="margin:0">${fmt(r.from)} → ${fmt(r.to)} · ${esc(t('tr.days',{d:r.days}))} · ${esc(r.id)}</p>
     <div class="q"><div><span>${esc(t('tr.total'))}</span><span>${esc(money(r.total))}</span></div><div><span>${esc(t('tr.dep'))}</span><span>${esc(money(r.deposit))}</span></div><div class="t"><span>${esc(t('tr.pay'))}</span><span>${esc(money(r.total+r.deposit))}</span></div></div>
+    ${r.status==='new'||r.status==='confirmed'?`<div class="stack"><button class="btn ghost danger" data-cancelreq="${esc(r.id)}">${esc(t('tr.cancel'))}</button></div>`:''}${r.status==='cancelled'?`<div class="stack"><button class="btn ghost danger" data-delreq="${esc(r.id)}">${esc(t('tr.del'))}</button></div>`:''}
     ${r.status==='new'?`<p class="note">${esc(t('tr.send'))}</p><div class="stack"><button class="btn ghost" data-copyreq="${esc(r.id)}">${esc(t('tr.copy'))}</button></div>`:''}
     ${r.status==='completed'?(ST.reviews.some(x=>x.reqId===r.id)?`<p class="note">${esc(t('rv.thanks'))}</p>`:`<form class="form" data-rvf="${esc(r.id)}"><span class="lab">${esc(t('rv.q'))}</span><select name="rating">${[5,4,3,2,1].map(n=>`<option value="${n}">${esc(t('rv.'+n))}</option>`).join('')}</select><input name="text" maxlength="200" placeholder="${esc(t('rv.ph'))}"><button class="btn" type="submit">${esc(t('rv.post'))}</button></form>`):''}
     ${r.status==='confirmed'?`<div class="ok" style="background:color-mix(in srgb,var(--good) 12%,var(--surface));border:1px solid var(--good);border-radius:12px;padding:10px 14px">${esc(t('tr.ok',{phone:r.guestPhone}))}</div>`:''}</section>`).join(''):'<div class="empty">'+esc(t('tr.empty'))+'</div>');
 }
 $('#v-trips').addEventListener('submit',e=>{const f=e.target.closest('[data-rvf]');if(!f)return;e.preventDefault();const r=ST.requests.find(x=>x.id===f.dataset.rvf),me=ST.me();if(!r||!me||r.guestId!==me.id||r.status!=='completed')return;const text=f.elements.text.value.trim();if(text.length<3){toast(t('rv.short'));return}
   ST.reviews.push({id:'rv-'+Date.now().toString(36),carId:r.carId,reqId:r.id,guestId:me.id,guestName:me.name,rating:+f.elements.rating.value,text,createdAt:Date.now()});ST.save();toast(t('rv.posted'));renderTrips()});
-$('#v-trips').addEventListener('click',e=>{const b=e.target.closest('[data-copyreq]');if(!b)return;const r=ST.requests.find(x=>x.id===b.dataset.copyreq);if(!r)return;
+/* ---- mini confirm window ---- */
+const cdlg=$('#cdlg');let cOK=null;
+function confirmBox(o){cOK=o.ok;$('#cbody').innerHTML=`<h2 id="ctitle">${esc(o.title)}</h2><p>${esc(o.text)}</p><div class="crow"><button type="button" class="lnk cbk" data-cclose>${esc(o.back||t('c.keep'))}</button><button type="button" class="btn dark" data-cgo>${esc(o.go)}</button></div>`;cdlg.showModal()}
+cdlg.addEventListener('click',e=>{if(e.target===cdlg||e.target.closest('[data-cclose]')){cOK=null;cdlg.close()}else if(e.target.closest('[data-cgo]')){const f=cOK;cOK=null;cdlg.close();if(f)f()}});
+$('#v-trips').addEventListener('click',e=>{
+  const cb=e.target.closest('[data-cancelreq]'),db=e.target.closest('[data-delreq]'),me0=ST.me();
+  if(cb||db){const id=(cb||db).dataset.cancelreq||(cb||db).dataset.delreq,r=ST.requests.find(x=>x.id===id);if(!r||!me0||r.guestId!==me0.id)return;
+    if(cb)confirmBox({title:t('c.cancel.t'),text:t(r.status==='confirmed'?'c.cancel.paid':'c.cancel.new',{n:r.carName,c:SETTINGS.cancellation||''}),go:t('tr.cancel'),ok:()=>{r.status='cancelled';r.cancelledAt=Date.now();ST.save();toast(t('c.cancelled'));renderTrips();renderNav()}});
+    else confirmBox({title:t('c.del.t'),text:t('c.del.x',{n:r.carName}),go:t('tr.del'),ok:()=>{ST.requests=ST.requests.filter(x=>x.id!==id);ST.save();toast(t('c.deleted'));renderTrips();renderNav()}});
+    return}
+const b=e.target.closest('[data-copyreq]');if(!b)return;const r=ST.requests.find(x=>x.id===b.dataset.copyreq);if(!r)return;
   (navigator.clipboard?navigator.clipboard.writeText(r.msg):Promise.reject()).then(()=>toast(t('copied'))).catch(()=>toast(t('copyfail')))});
 
 /* ---- admin ---- */
@@ -165,12 +183,18 @@ function renderSaved(){
 }
 function toggleFav(id){const i=ST.favs.indexOf(id);if(i>=0)ST.favs.splice(i,1);else ST.favs.push(id);ST.save();renderNav();const h=location.hash.slice(1);if(h==='saved')renderSaved();else refreshHome();if(dlg.open&&S.gid===id)openDetail(id)}
 
+/* ---- account menu ---- */
+function closeMenu(){const m=$('#menu');if(m&&!m.hidden){m.hidden=true;$('#mbtn').setAttribute('aria-expanded','false')}}
+document.addEventListener('click',e=>{const mb=e.target.closest('#mbtn'),m=$('#menu');
+  if(mb){m.hidden=!m.hidden;mb.setAttribute('aria-expanded',String(!m.hidden));return}
+  if(!e.target.closest('#menu')||e.target.closest('#menu a,#menu [data-setopen],#menu [data-login],#menu [data-logout]'))closeMenu()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
 /* ---- shared ---- */
 document.addEventListener('click',e=>{
   const fv=e.target.closest('[data-fav]');
   if(fv){toggleFav(fv.dataset.fav);return}
-  if(e.target.closest('[data-login]'))openLogin();
-  else if(e.target.closest('[data-logout]')){ST.sid=null;ST.save();$('#name').value='';$('#phone').value='';renderNav();toast(t('l.out'));if(location.hash.slice(1)!=='home')location.hash='home';else route()}
+  const lg=e.target.closest('[data-login]');if(lg){if(lg.tagName==='A')e.preventDefault();closeMenu();openLogin(lg.dataset.login==='host'?t('l.hostneed'):undefined,lg.dataset.login==='host'?'host':undefined)}
+  else if(e.target.closest('[data-logout]')){closeMenu();ST.sid=null;ST.save();$('#name').value='';$('#phone').value='';renderNav();toast(t('l.out'));if(location.hash.slice(1)!=='home')location.hash='home';else route()}
 });
 function route(){
   const h=location.hash.slice(1),v=ROUTES.includes(h)?h:'home',me=ST.me();
@@ -231,7 +255,7 @@ function renderBrand(){
   L.push([BRAND.ig?'https://instagram.com/'+encodeURIComponent(BRAND.ig):'',ICON.ig,'Instagram']);
   if(BRAND.whatsapp)L.push(['https://wa.me/'+String(BRAND.whatsapp).replace(/\D/g,''),ICON.wa,'WhatsApp']);
   if(BRAND.email)L.push(['mailto:'+BRAND.email,ICON.mail,BRAND.email]);
-  $('#soc').innerHTML=L.map(x=>x[0]?`<a class="soca" href="${esc(x[0])}" target="_blank" rel="noopener" aria-label="${esc(x[2])}">${x[1]}<span>${esc(x[2])}</span></a>`:`<span class="soca off" role="img" aria-label="${esc(x[2])} (link not set yet)" title="Add the link in config.js">${x[1]}<span>${esc(x[2])}</span></span>`).join('');
+  $('#soc').innerHTML=L.map(x=>x[0]?`<a class="soca" href="${esc(x[0])}" target="_blank" rel="noopener" aria-label="${esc(x[2])}">${x[1]}</a>`:`<span class="soca off" role="img" aria-label="${esc(x[2])} (link not set yet)" title="${esc(x[2])} – add the link in config.js">${x[1]}</span>`).join('');
   const fab=$('#fab');if(BRAND.fb){fab.href='https://m.me/'+encodeURIComponent(BRAND.fb);fab.hidden=false}
 }
 function refreshAll(){
