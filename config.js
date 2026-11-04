@@ -13,7 +13,7 @@ const SETTINGS={
   damageCap:{car:50000,motor:30000}, // most a renter pays for damage in one rental (placeholder amounts: decide)
   deposit:{car:5000,motor:2000}, // refundable security deposit, paid online to Arkila and held until the return check (placeholder amounts: decide)
   commission:0.12,  // Arkila share of each trip total (shown on the admin screen)
-  cancellation:"Free cancellation up to 7 days before pickup. After that the host may keep up to one day's rental and the rest is refunded. Your security deposit is always refunded.", // placeholder, matches the Terms draft. Edit to your real policy
+  cancellation:"Free cancellation up to 7 days before pickup. After that the owner may keep up to one day's rental and the rest is refunded. Your security deposit is always refunded.", // placeholder, matches the Terms draft. Edit to your real policy
   isSample:true     // set to false once real vehicles are listed, to hide the sample banner
 };
 
@@ -34,6 +34,21 @@ const AREAS={
   'Honda Bay':[9.8097,118.7633],
   'Irawan':[9.7970,118.6820]
 };
+
+/* ---- places shown in the Where search before anyone types (approximate centres, edit freely).
+   Searching also finds any other place in Palawan online. n=name, s=line under it, p=[lat,lng] ---- */
+const PLACES=[
+  {n:'Puerto Princesa Airport',s:'Puerto Princesa, Palawan',p:[9.7421,118.7587]},
+  {n:'El Nido',s:'Palawan',p:[11.1784,119.3939]},
+  {n:'Coron',s:'Palawan',p:[11.9986,120.2043]},
+  {n:'San Vicente',s:'Palawan',p:[10.5224,119.2793]},
+  {n:'Port Barton',s:'San Vicente, Palawan',p:[10.4167,119.1500]},
+  {n:'Sabang (Underground River)',s:'Puerto Princesa, Palawan',p:[10.1578,118.8369]},
+  {n:'Taytay',s:'Palawan',p:[10.8267,119.5206]},
+  {n:'Roxas',s:'Palawan',p:[10.3236,119.3431]},
+  {n:'Narra',s:'Palawan',p:[9.2833,118.4167]},
+  {n:'Puerto Princesa City',s:'Palawan',p:[9.7392,118.7353]}
+];
 
 /* ---- vehicles ----
    Each vehicle is a block you can copy. Fields to fill:
@@ -108,7 +123,7 @@ CARS.push(
    features:['Adventure touring','2 helmets included','Luggage rack','Long-distance comfort'],images:[]}
 );
 
-/* Dates a vehicle is not available (both days included). The Arkila team edits this list when a host asks to block dates.
+/* Dates a vehicle is not available (both days included). The Arkila team edits this list when an owner asks to block dates.
    Greyed out on the website for everyone. The two ranges below are samples: delete them any time. */
 const BLOCKED={
   'm-click':[['2026-11-12','2026-11-15'],['2026-11-24','2026-11-26']]

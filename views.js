@@ -1,4 +1,4 @@
-/* Login, host, trips and admin screens. Demo only: no real Facebook or Google yet. */
+/* Login, owner, trips and admin screens. Demo only: no real Facebook or Google yet. */
 const ROUTES=['home','saved','host','trips','admin','terms','privacy'];
 const STATUS={new:['Requested','w'],confirmed:['Paid and confirmed','b'],completed:['Completed','g'],cancelled:['Cancelled','r'],pending:['Waiting for approval','w'],approved:['Live','g'],rejected:['Not approved','r'],paused:['Paused','']};
 const pill=k=>{const s=STATUS[k]||[k,''];return `<span class="pill ${s[1]}">${esc(t('st.'+k)===('st.'+k)?s[0]:t('st.'+k))}</span>`};
@@ -6,9 +6,9 @@ const has=(u,r)=>!!(u&&u.roles.includes(r));
 const first=n=>String(n||'').split(' ')[0];
 
 /* ---- requests ---- */
-function saveRequest(q,name,phone,notes,spot,msg){
+function saveRequest(q,name,phone,notes,spot,msg,email){
   const me=ST.me();let id;do{id='REQ-'+(1000+Math.floor(Math.random()*9000))}while(ST.requests.some(r=>r.id===id));
-  const r={id,carId:q.c.id,carName:q.c.name,hostId:q.c.ownerId,hostName:q.c.ownerName,guestId:me.id,guestName:name,guestPhone:phone,from:q.a,to:q.b,days:q.d,total:q.total,deposit:q.dep,spot,notes,msg,status:'new',ack:{renterNotice:Date.now(),v:'2026-11-03'},createdAt:Date.now()};
+  const r={id,carId:q.c.id,carName:q.c.name,hostId:q.c.ownerId,hostName:q.c.ownerName,guestId:me.id,guestName:name,guestPhone:phone,guestEmail:email||'',from:q.a,to:q.b,days:q.d,total:q.total,deposit:q.dep,spot,notes,msg,status:'new',ack:{renterNotice:Date.now(),v:'2026-11-03'},createdAt:Date.now()};
   ST.requests.unshift(r);ST.save();renderNav();return r;
 }
 const setReq=(id,status)=>{const r=ST.requests.find(x=>x.id===id);if(r){r.status=status;ST.save()}};
@@ -18,7 +18,7 @@ function renderNav(){
   const me=ST.me(),h=location.hash.slice(1)||'home',on=k=>h===k?' class="on" aria-current="page"':'';
   const myTrips=me?ST.requests.filter(r=>r.guestId===me.id&&r.status!=='cancelled').length:0;
   const ic=p=>`<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
-  const I={rent:'<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/>',saved:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',trips:'<path d="M3 13l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5v4H3z"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/>',admin:'<path d="M12 3l8 3v6c0 4.5-3.4 7.7-8 9-4.6-1.3-8-4.5-8-9V6z"/>'};
+  const I={rent:'<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/>',saved:'<path d="M6 3.5h12v17l-6-4.5-6 4.5z"/>',trips:'<path d="M3 13l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5v4H3z"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/>',admin:'<path d="M12 3l8 3v6c0 4.5-3.4 7.7-8 9-4.6-1.3-8-4.5-8-9V6z"/>'};
   const row=(href,k,label,badge)=>`<a href="${href}" role="menuitem"${on(k)}>${ic(I[k])}<span>${esc(label)}</span>${badge?`<b>${badge}</b>`:''}</a>`;
   $('#nav').innerHTML=row('#home','rent',t('nav.rent'))+row('#saved','saved',t('nav.saved'),ST.favs.length)+(me?row('#trips','trips',t('nav.trips'),myTrips):'')+(has(me,'admin')?row('#admin','admin',t('nav.admin')):'');
   $('#mauth').innerHTML=me?`<div class="who">${esc(me.name)}</div><button type="button" class="mi" data-logout role="menuitem">${esc(t('nav.logout'))}</button>`:`<button type="button" class="mi strong" data-login role="menuitem">${esc(t('nav.login'))}</button>`;
@@ -54,7 +54,7 @@ function doLogin(provider){
 }
 ldlg.addEventListener('click',e=>{if(e.target===ldlg||e.target.closest('[data-lclose]'))ldlg.close();const g=e.target.closest('[data-lgo]');if(g)doLogin(g.dataset.lgo)});
 
-/* ---- host ---- */
+/* ---- owner ---- */
 const HF={photos:[],err:''};
 const HCAL=new Set();
 function hostDay(id,s){const me=ST.me(),l=me&&ST.listings.find(x=>x.id===id&&x.ownerId===me.id);if(!l)return;const k=dayInfo(id,s);if(k==='booked'||k==='arkila')return;const arr=ST.blocks[id]||(ST.blocks[id]=[]),i=arr.indexOf(s);if(i>=0)arr.splice(i,1);else arr.push(s);if(!arr.length)delete ST.blocks[id];ST.save();refreshHome()}
@@ -63,9 +63,9 @@ function readImg(file){return new Promise((res,rej)=>{const fr=new FileReader();
 function hostSteps(){return `<section class="step"><h2>How a booking works for you</h2><ol class="rules"><li>Arkila checks the renter's licence and ID.</li><li>Arkila asks you to confirm the vehicle is free for the dates. Reply within [2 hours] or the request lapses.</li><li>The renter agrees to the renter notice and pays Arkila online. Arkila confirms the booking and blocks the dates on your calendar.</li><li>You and the renter complete Arkila's handover checklist at pickup, with dated photos.</li><li>Arkila pays you the rental fee, less its fee, 24 hours after pickup if the renter reports no problem.</li><li>The renter's deposit stays with Arkila. If you report damage within [24 hours] of return, the claimed amount stays held until it is settled.</li></ol></section>`}
 function renderHost(){
   const me=ST.me(),el=$('#v-host');
-  if(!has(me,'host')){el.innerHTML=`<h1>Earn from your vehicle</h1><p class="lead">List a car, van or motorbike. Arkila handles the renter checks, the paperwork and the payment. The renter pays Arkila online up front, and Arkila pays you after the handover, less its fee.</p>${hostSteps()}<button class="btn" data-becomehost>Become a host</button>`;return}
+  if(!has(me,'host')){el.innerHTML=`<h1>Earn from your vehicle</h1><p class="lead">List a car, van or motorbike. Arkila handles the renter checks, the paperwork and the payment. The renter pays Arkila online up front, and Arkila pays you after the handover, less its fee.</p>${hostSteps()}<button class="btn" data-becomehost>List your vehicle</button>`;return}
   const mine=ST.listings.filter(l=>l.ownerId===me.id),reqs=ST.requests.filter(r=>r.hostId===me.id);
-  el.innerHTML=`<h1>Host dashboard</h1><p class="lead">New vehicles are checked by the Arkila team before guests can see them.</p>${hostSteps()}
+  el.innerHTML=`<h1>Owner dashboard</h1><p class="lead">New vehicles are checked by the Arkila team before renters can see them.</p>${hostSteps()}
   <section class="step"><h2>Your vehicles</h2>${mine.length?mine.map(l=>{const k=l.status==='approved'&&l.active===false?'paused':l.status;return `<div class="lrow"><div class="lthumb">${imgsOf(l)[0]}</div><div class="lmain"><b>${esc(l.name)}</b> ${pill(k)}<p class="sub">${esc(l.type)} · ${l.seats} ${l.kind==='motor'?'riders':'seats'} · ${esc(l.service)} · ${esc(l.area)} · ${php(l.price)}/day</p></div><div class="row2" style="gap:6px"><button class="chip" data-open="${esc(l.id)}">View</button>${l.status==='approved'?`<button class="chip" data-hcal="${esc(l.id)}">${HCAL.has(l.id)?'Hide calendar':'Calendar'}</button><button class="chip" data-hpause="${esc(l.id)}">${l.active===false?'Resume':'Pause'}</button>`:''}<button class="chip" data-hdel="${esc(l.id)}">Delete</button></div></div>${l.status==='approved'?`<div class="calwrap">${HCAL.has(l.id)?`<div class="cal" id="cal-h-${esc(l.id)}" data-key="h-${esc(l.id)}" data-car="${esc(l.id)}" data-mode="host">${calInner('h-'+l.id,l.id,'host')}</div><p class="note">Tap a free day to block it, tap again to unblock. Booked days update by themselves when Arkila confirms a booking.</p>`:''}</div>`:''}`}).join(''):'<div class="empty">No vehicles yet. Add your first one below.</div>'}</section>
   <section class="step"><h2>Add a vehicle</h2><form class="form" id="hf" novalidate>
     <label><span class="lab">Category</span><select id="hk"><option value="car">Car, van or pickup</option><option value="motor">Motorbike or scooter</option></select></label>
@@ -90,9 +90,9 @@ function renderHost(){
     <label><span class="lab">Photos (up to 4)</span><input id="hph" type="file" accept="image/*" multiple></label>
     <p class="muted" style="margin:4px 0 0;font-size:12px">Only upload photos you took or have permission to use.</p>
     <div class="thumbs" id="hthumbs"></div>
-    <label class="ck"><input type="checkbox" id="hack"><span>I have read and agree to the <button type="button" class="lnk" data-notice="host">host declaration</button> and the <a href="#terms" target="_blank" rel="noopener">Terms of Service</a>, and I understand Arkila holds the booking money and pays me after the handover.</span></label>
+    <label class="ck"><input type="checkbox" id="hack"><span>I have read and agree to the <button type="button" class="lnk" data-notice="host">owner declaration</button> and the <a href="#terms" target="_blank" rel="noopener">Terms of Service</a>, and I understand Arkila holds the booking money and pays me after the handover.</span></label>
     <p class="err" id="herr" role="alert"></p><button class="btn" type="submit">Submit for approval</button></form></section>
-  <section class="step"><h2>Requests for your vehicles</h2>${reqs.length?reqs.map(r=>`<div class="lrow"><div class="lmain"><b>${esc(r.carName)}</b> ${pill(r.status)}<p class="sub">${fmt(r.from)} to ${fmt(r.to)} · ${r.days} day${r.days>1?'s':''} · ${php(r.total)} · ${esc(r.id)}</p><p class="sub">Guest: ${esc(first(r.guestName))}${(r.status==='confirmed'||r.status==='completed')?` · ${esc(r.guestPhone)}`:' · contact shared once the deposit is received'}</p></div></div>`).join(''):'<div class="empty">No requests yet.</div>'}</section>`;
+  <section class="step"><h2>Requests for your vehicles</h2>${reqs.length?reqs.map(r=>`<div class="lrow"><div class="lmain"><b>${esc(r.carName)}</b> ${pill(r.status)}<p class="sub">${fmt(r.from)} to ${fmt(r.to)} · ${r.days} day${r.days>1?'s':''} · ${php(r.total)} · ${esc(r.id)}</p><p class="sub">Guest: ${esc(first(r.guestName))}${(r.status==='confirmed'||r.status==='completed')?` · ${esc(r.guestPhone)}${r.guestEmail?' · '+esc(r.guestEmail):''}`:' · contact shared once the deposit is received'}</p></div></div>`).join(''):'<div class="empty">No requests yet.</div>'}</section>`;
   renderHthumbs();
 }
 function renderHthumbs(){const t=$('#hthumbs');if(t)t.innerHTML=HF.photos.map((p,i)=>`<div class="th on" style="position:relative"><img src="${p}" alt="Photo ${i+1}"><button type="button" class="chip" data-hrm="${i}" style="position:absolute;right:2px;top:2px;padding:0 7px">×</button></div>`).join('')}
@@ -108,7 +108,7 @@ async function addHostListing(){
   const me=ST.me(),v=id=>$('#'+id).value.trim(),err=$('#herr');err.textContent='';
   const name=v('hn'),price=+v('hp'),seats=+v('hs');
   if(name.length<3){err.textContent='Add the vehicle name.';return}
-  if(!$('#hack').checked){err.textContent='Tick the host declaration to submit.';return}
+  if(!$('#hack').checked){err.textContent='Tick the owner declaration to submit.';return}
   if(!(price>=300)){err.textContent='Enter a price per day, at least ₱300.';return}
   const mo=v('hk')==='motor';
   if(!(seats>=1)||(mo&&seats>2)){err.textContent=mo?'Riders must be 1 or 2.':'Enter the number of seats.';return}
@@ -141,7 +141,7 @@ function renderTrips(){
   $('#v-trips').innerHTML=`<h1>${esc(t('tr.t'))}</h1><p class="lead">${esc(t('tr.lead'))}</p>`+(mine.length?mine.map(r=>`<section class="step"><div class="row2"><h2>${esc(r.carName)}</h2>${pill(r.status)}</div><p class="sub" style="margin:0">${fmt(r.from)} → ${fmt(r.to)} · ${esc(t('tr.days',{d:r.days}))} · ${esc(r.id)}</p>
     <div class="q"><div><span>${esc(t('tr.total'))}</span><span>${esc(money(r.total))}</span></div><div><span>${esc(t('tr.dep'))}</span><span>${esc(money(r.deposit))}</span></div><div class="t"><span>${esc(t('tr.pay'))}</span><span>${esc(money(r.total+r.deposit))}</span></div></div>
     ${r.status==='new'||r.status==='confirmed'?`<div class="stack"><button class="btn ghost danger" data-cancelreq="${esc(r.id)}">${esc(t('tr.cancel'))}</button></div>`:''}${r.status==='cancelled'?`<div class="stack"><button class="btn ghost danger" data-delreq="${esc(r.id)}">${esc(t('tr.del'))}</button></div>`:''}
-    ${r.status==='new'?`<p class="note">${esc(t('tr.send'))}</p><div class="stack"><button class="btn ghost" data-copyreq="${esc(r.id)}">${esc(t('tr.copy'))}</button></div>`:''}
+    ${r.status==='new'?`<p class="note">${esc(t('tr.send'))}</p>${r.guestEmail?`<p class="note">${esc(t('tr.mail',{email:r.guestEmail}))}</p>`:''}<div class="stack"><button class="btn ghost" data-copyreq="${esc(r.id)}">${esc(t('tr.copy'))}</button></div>`:''}
     ${r.status==='completed'?(ST.reviews.some(x=>x.reqId===r.id)?`<p class="note">${esc(t('rv.thanks'))}</p>`:`<form class="form" data-rvf="${esc(r.id)}"><span class="lab">${esc(t('rv.q'))}</span><select name="rating">${[5,4,3,2,1].map(n=>`<option value="${n}">${esc(t('rv.'+n))}</option>`).join('')}</select><input name="text" maxlength="200" placeholder="${esc(t('rv.ph'))}"><button class="btn" type="submit">${esc(t('rv.post'))}</button></form>`):''}
     ${r.status==='confirmed'?`<div class="ok" style="background:color-mix(in srgb,var(--good) 12%,var(--surface));border:1px solid var(--good);border-radius:12px;padding:10px 14px">${esc(t('tr.ok',{phone:r.guestPhone}))}</div>`:''}</section>`).join(''):'<div class="empty">'+esc(t('tr.empty'))+'</div>');
 }
@@ -166,8 +166,8 @@ function renderAdmin(){
   const val=booked.reduce((s,r)=>s+r.total,0);
   $('#v-admin').innerHTML=`<h1>Arkila team</h1><p class="lead">Approve vehicles and move requests along. Demo screen: anyone can open it in this version.</p>
   <div class="stats"><div class="stat"><span>Waiting approval</span><b>${pend.length}</b></div><div class="stat"><span>Requests</span><b>${rs.length}</b></div><div class="stat"><span>Paid bookings</span><b>${booked.length}</b></div><div class="stat"><span>Commission (${Math.round(SETTINGS.commission*100)}%)</span><b>${php(val*SETTINGS.commission)}</b></div></div>
-  <section class="step"><h2>Vehicles waiting for approval</h2>${pend.length?pend.map(l=>`<div class="lrow"><div class="lthumb">${imgsOf(l)[0]}</div><div class="lmain"><b>${esc(l.name)}</b><p class="sub">${esc(l.type)} · ${l.seats} ${l.kind==='motor'?'riders':'seats'} · ${esc(l.area)} · ${php(l.price)}/day · host ${esc(l.ownerName)}</p></div><div class="row2" style="gap:6px"><button class="chip" data-open="${esc(l.id)}">View</button><button class="chip on" data-lapp="${esc(l.id)}">Approve</button><button class="chip" data-lrej="${esc(l.id)}">Reject</button></div></div>`).join(''):'<div class="empty">Nothing waiting.</div>'}</section>
-  <section class="step"><h2>All requests</h2>${rs.length?rs.map(r=>`<div class="lrow"><div class="lmain"><b>${esc(r.carName)}</b> ${pill(r.status)}<p class="sub">${esc(r.id)} · ${fmt(r.from)} to ${fmt(r.to)} · ${php(r.total)} · deposit ${php(r.deposit)} · to pay ${php(r.total+r.deposit)}</p><p class="sub">Guest ${esc(r.guestName)} ${esc(r.guestPhone)} · host ${esc(r.hostName)}${r.spot&&r.spot!=='not set'?' · pickup '+esc(r.spot.split(',')[0]):''}</p></div><div class="row2" style="gap:6px">${r.status==='new'?`<button class="chip on" data-rset="${esc(r.id)}|confirmed">Payment received</button>`:''}${r.status==='confirmed'?`<button class="chip on" data-rset="${esc(r.id)}|completed">Mark completed</button>`:''}${(r.status==='new'||r.status==='confirmed')?`<button class="chip" data-rset="${esc(r.id)}|cancelled">Cancel</button>`:''}</div></div>`).join(''):'<div class="empty">No requests yet.</div>'}</section>`;
+  <section class="step"><h2>Vehicles waiting for approval</h2>${pend.length?pend.map(l=>`<div class="lrow"><div class="lthumb">${imgsOf(l)[0]}</div><div class="lmain"><b>${esc(l.name)}</b><p class="sub">${esc(l.type)} · ${l.seats} ${l.kind==='motor'?'riders':'seats'} · ${esc(l.area)} · ${php(l.price)}/day · owner ${esc(l.ownerName)}</p></div><div class="row2" style="gap:6px"><button class="chip" data-open="${esc(l.id)}">View</button><button class="chip on" data-lapp="${esc(l.id)}">Approve</button><button class="chip" data-lrej="${esc(l.id)}">Reject</button></div></div>`).join(''):'<div class="empty">Nothing waiting.</div>'}</section>
+  <section class="step"><h2>All requests</h2>${rs.length?rs.map(r=>`<div class="lrow"><div class="lmain"><b>${esc(r.carName)}</b> ${pill(r.status)}<p class="sub">${esc(r.id)} · ${fmt(r.from)} to ${fmt(r.to)} · ${php(r.total)} · deposit ${php(r.deposit)} · to pay ${php(r.total+r.deposit)}</p><p class="sub">Guest ${esc(r.guestName)} ${esc(r.guestPhone)}${r.guestEmail?' · '+esc(r.guestEmail):''} · owner ${esc(r.hostName)}${r.spot&&r.spot!=='not set'?' · pickup '+esc(r.spot.split(',')[0]):''}</p></div><div class="row2" style="gap:6px">${r.status==='new'?`<button class="chip on" data-rset="${esc(r.id)}|confirmed">Payment received</button>`:''}${r.status==='confirmed'?`<button class="chip on" data-rset="${esc(r.id)}|completed">Mark completed</button>`:''}${(r.status==='new'||r.status==='confirmed')?`<button class="chip" data-rset="${esc(r.id)}|cancelled">Cancel</button>`:''}</div></div>`).join(''):'<div class="empty">No requests yet.</div>'}</section>`;
 }
 $('#v-admin').addEventListener('click',e=>{
   const a=e.target.closest('[data-lapp],[data-lrej],[data-rset]');if(!a)return;
@@ -194,7 +194,7 @@ document.addEventListener('click',e=>{
   const fv=e.target.closest('[data-fav]');
   if(fv){toggleFav(fv.dataset.fav);return}
   const lg=e.target.closest('[data-login]');if(lg){if(lg.tagName==='A')e.preventDefault();closeMenu();openLogin(lg.dataset.login==='host'?t('l.hostneed'):undefined,lg.dataset.login==='host'?'host':undefined)}
-  else if(e.target.closest('[data-logout]')){closeMenu();ST.sid=null;ST.save();$('#name').value='';$('#phone').value='';renderNav();toast(t('l.out'));if(location.hash.slice(1)!=='home')location.hash='home';else route()}
+  else if(e.target.closest('[data-logout]')){closeMenu();ST.sid=null;ST.save();$('#name').value='';$('#phone').value='';$('#email').value='';renderNav();toast(t('l.out'));if(location.hash.slice(1)!=='home')location.hash='home';else route()}
 });
 function route(){
   const h=location.hash.slice(1),v=ROUTES.includes(h)?h:'home',me=ST.me();

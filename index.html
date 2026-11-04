@@ -11,21 +11,31 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
-<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="style.css?v=26">
 </head>
 <body>
-<header class="hdr"><div class="hwrap"><a class="top" href="#home"><i><svg width="20" height="14" viewBox="0 0 24 16" aria-hidden="true"><path d="M2 11 L5 6 Q7 3 11 3 L15 3 Q19 3 21 7 L22 11 Z" fill="#fff"/><circle cx="7" cy="12" r="2.6" fill="#FFC72C"/><circle cx="17" cy="12" r="2.6" fill="#FFC72C"/></svg></i><span>Arkila <small>Puerto Princesa</small></span></a><span class="sp"></span><a class="hostbtn" id="hostbtn" href="#host"></a><div class="mwrap"><button type="button" class="mbtn" id="mbtn" aria-haspopup="true" aria-expanded="false" aria-controls="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="av" id="mav" aria-hidden="true"></span></button><div class="menu" id="menu" role="menu" hidden><nav id="nav" aria-label="Main"></nav><hr><button type="button" class="mi" id="setbtn" data-setopen role="menuitem"></button><button type="button" class="mi" id="thbtn" role="menuitem"></button><hr><div id="mauth"></div></div></div></div></header>
+<header class="hdr"><div class="hwrap"><a class="top" href="#home"><i><svg width="20" height="14" viewBox="0 0 24 16" aria-hidden="true"><path d="M2 11 L5 6 Q7 3 11 3 L15 3 Q19 3 21 7 L22 11 Z" fill="#fff"/><circle cx="7" cy="12" r="2.6" fill="#FFC72C"/><circle cx="17" cy="12" r="2.6" fill="#FFC72C"/></svg></i><span>Arkila <small>Puerto Princesa</small></span></a><span class="sp"></span><a class="hostbtn" id="hostbtn" href="#host"></a><div class="mwrap"><button type="button" class="mbtn" id="mbtn" aria-haspopup="true" aria-expanded="false" aria-controls="menu" aria-label="Menu"><span class="mt" data-i18n="menu">Menu</span><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9l7 7 7-7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="av" id="mav" aria-hidden="true"></span></button><div class="menu" id="menu" role="menu" hidden><nav id="nav" aria-label="Main"></nav><hr><button type="button" class="mi" id="setbtn" data-setopen role="menuitem"></button><button type="button" class="mi" id="thbtn" role="menuitem"></button><hr><div id="mauth"></div></div></div></div></header>
 <div class="demo">Demo mode: accounts, vehicles and requests are saved on this device only.</div>
 <div class="wrap" id="v-home">
   <h1 data-i18n="h1">Rent a vehicle from a local owner</h1>
   <p class="lead" data-i18n="lead"></p>
   <div id="sampleBanner" class="banner" hidden data-i18n="sample"></div>
-  <div class="sbar" role="search"><label><span class="lab" data-i18n="where">Where</span><select id="areaSel"></select></label><label><span class="lab" data-i18n="pickup">Pickup</span><input type="date" id="from"></label><label><span class="lab" data-i18n="return">Return</span><input type="date" id="to"></label><label><span class="lab" data-i18n="who">Who</span><select id="seats"><option value="0" data-i18n="anygroup"></option><option value="4" data-i18n="g4"></option><option value="7" data-i18n="g7"></option><option value="10" data-i18n="g10"></option></select></label></div>
+  <div class="asw" id="asw"><div class="asb" id="asb" role="search">
+    <div class="seg" data-seg="where"><span class="lab" data-i18n="where">Where</span><input id="whereIn" type="text" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="pop-where" data-i18n-ph="where.ph"><button type="button" class="clr" id="whereClr" aria-label="Clear" hidden>×</button>
+      <div class="pop pw" id="pop-where" role="listbox" hidden></div></div>
+    <div class="seg" data-seg="when" tabindex="0" role="button" aria-haspopup="dialog"><span class="lab" data-i18n="when">When</span><span class="val" id="whenV"></span>
+      <div class="pop pn" id="pop-when" hidden><div class="cal" id="cal-s" data-key="s" data-car="" data-mode="pick"></div><p class="note" id="whenSum" style="margin:8px 0 0"></p></div></div>
+    <div class="seg" data-seg="who" tabindex="0" role="button" aria-haspopup="listbox"><span class="lab" data-i18n="who">Who</span><span class="val" id="whoV"></span>
+      <div class="pop po" id="pop-who" role="listbox" hidden></div></div>
+    <button type="button" class="go" id="asGo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span data-i18n="search">Search</span></button>
+  </div></div>
+  <p class="note farnote" id="farnote" role="status" hidden></p>
+  <div class="sbar-h" hidden><label><span class="lab" data-i18n="where">Where</span><select id="areaSel"></select></label><label><span class="lab" data-i18n="pickup">Pickup</span><input type="date" id="from"></label><label><span class="lab" data-i18n="return">Return</span><input type="date" id="to"></label><label><span class="lab" data-i18n="who">Who</span><select id="seats"><option value="0" data-i18n="anygroup"></option><option value="4" data-i18n="g4"></option><option value="7" data-i18n="g7"></option><option value="10" data-i18n="g10"></option></select></label></div>
 
   <div class="main">
   <section class="step o2" aria-labelledby="s2"><h2 id="s2" data-i18n="s2"></h2>
     <div class="chips" id="kinds" role="group" hidden></div>
-    <div class="chips" id="types" role="group"></div>
+    <div class="subf" id="subf"><span class="lab" data-i18n="sub.type"></span><div class="chips" id="types" role="group"></div></div>
     <div style="margin-bottom:10px"><label class="inl"><span class="lab" data-i18n="service"></span><select id="svc"><option value="any" data-i18n="any"></option><option value="Self-drive" data-i18n="selfdrive"></option><option value="With driver" data-i18n="withdriver"></option></select></label></div>
     <p class="note" id="count" style="margin:0 0 10px"></p>
     <div class="grid" id="grid"></div>
@@ -36,33 +46,33 @@
   </section>
   </div>
   <div class="side">
-  <section class="step o1" aria-labelledby="s1"><h2 id="s1" data-i18n="s1"></h2>
-    <p class="note" style="margin:0 0 8px" id="pininfo"></p>
-    <div id="map" class="map" role="region" data-i18n-aria="map.aria"></div>
-    <div class="stack"><button type="button" class="btn ghost" id="locate" data-i18n="locate"></button></div>
-  </section>
   <section class="step o3" aria-labelledby="s3"><h2 id="s3" data-i18n="s3"></h2>
     <form class="form" id="f" novalidate>
       <div id="chosen"></div>
       <p class="note" id="datesum" style="margin:0"></p>
       <label><span class="lab" data-i18n="f.name"></span><input id="name" autocomplete="name" placeholder="Juan Dela Cruz"></label>
-      <label><span class="lab" data-i18n="f.mobile"></span><input id="phone" inputmode="tel" autocomplete="tel" data-i18n-ph="f.mobile.ph"></label>
-      <label><span class="lab" data-i18n="f.ref"></span><input id="code" autocapitalize="characters" placeholder="e.g. MARIA"></label>
-      <label><span class="lab" data-i18n="f.notes"></span><input id="notes" maxlength="140" data-i18n-ph="f.notes.ph"></label>
+      <label><span class="lab" data-i18n="f.mobile"></span><span class="phone"><select id="cc" aria-label="Country code" autocomplete="tel-country-code"><option value="+63">🇵🇭 +63 Philippines</option><option value="+61">🇦🇺 +61 Australia</option><option value="+1">🇺🇸 +1 US / Canada</option><option value="+44">🇬🇧 +44 United Kingdom</option><option value="+64">🇳🇿 +64 New Zealand</option><option value="+82">🇰🇷 +82 South Korea</option><option value="+81">🇯🇵 +81 Japan</option><option value="+86">🇨🇳 +86 China</option><option value="+886">🇹🇼 +886 Taiwan</option><option value="+852">🇭🇰 +852 Hong Kong</option><option value="+65">🇸🇬 +65 Singapore</option><option value="+60">🇲🇾 +60 Malaysia</option><option value="+66">🇹🇭 +66 Thailand</option><option value="+84">🇻🇳 +84 Vietnam</option><option value="+62">🇮🇩 +62 Indonesia</option><option value="+91">🇮🇳 +91 India</option><option value="+49">🇩🇪 +49 Germany</option><option value="+33">🇫🇷 +33 France</option><option value="+31">🇳🇱 +31 Netherlands</option><option value="+34">🇪🇸 +34 Spain</option><option value="+39">🇮🇹 +39 Italy</option><option value="+41">🇨🇭 +41 Switzerland</option><option value="+46">🇸🇪 +46 Sweden</option><option value="+7">🇷🇺 +7 Russia</option><option value="+971">🇦🇪 +971 UAE</option><option value="+966">🇸🇦 +966 Saudi Arabia</option><option value="+972">🇮🇱 +972 Israel</option><option value="">Other (type +code)</option></select><input id="phone" inputmode="tel" autocomplete="tel-national" data-i18n-ph="f.mobile.ph"></span></label>
+      <label><span class="lab" data-i18n="f.email"></span><input id="email" type="email" inputmode="email" autocomplete="email" data-i18n-ph="f.email.ph"></label>
+      <details class="more"><summary data-i18n="more.sum"></summary><label><span class="lab" data-i18n="f.ref"></span><input id="code" autocapitalize="characters" placeholder="e.g. MARIA"></label>
+      <label><span class="lab" data-i18n="f.notes"></span><input id="notes" maxlength="140" data-i18n-ph="f.notes.ph"></label></details>
+      <details class="spot" id="spotd"><summary data-i18n="spot.sum"></summary>
+        <p class="note" style="margin:8px 0" id="pininfo"></p>
+        <div id="map" class="map" role="region" data-i18n-aria="map.aria"></div>
+        <div class="stack"><button type="button" class="btn ghost" id="locate" data-i18n="locate"></button></div>
+      </details>
+      
       <div class="q" id="quote" aria-live="polite"></div>
       <label class="ck"><input type="checkbox" id="ack"><span><span data-i18n="ack.pre"></span><button type="button" class="lnk" data-notice="renter" data-i18n="ack.link"></button><span data-i18n="ack.and"></span><a href="#terms" target="_blank" rel="noopener" data-i18n="ack.terms"></a><span data-i18n="ack.post"></span></span></label>
       <p class="err" id="err" role="alert"></p>
-      <button class="btn" type="submit" data-i18n="f.submit"></button>
+      <button class="btn" type="submit" id="subbtn" data-i18n="f.submit"></button>
     </form>
   </section>
   <section class="step o4" id="out" aria-labelledby="s4" hidden><h2 id="s4" data-i18n="s4"></h2>
-    <p class="note" style="margin:0 0 8px" data-i18n="s4note"></p>
-    <div class="msgbox" id="msg"></div>
-    <div class="stack">
-      <button class="btn" type="button" id="copy" data-i18n="copy"></button>
-      <a class="btn ghost" id="fb" href="#" target="_blank" rel="noopener" aria-disabled="true" data-i18n="messenger"></a>
-    </div>
+    <ol class="rules" id="next"><li data-i18n="next.1"></li><li data-i18n="next.2"></li><li data-i18n="next.3"></li><li data-i18n="next.4"></li></ol>
     <p class="note" id="fbnote"></p>
+    <div class="stack"><a class="btn" id="fb" href="#" target="_blank" rel="noopener" aria-disabled="true" data-i18n="messenger"></a></div>
+    <details class="more"><summary data-i18n="msg.sum"></summary><div class="msgbox" id="msg"></div><div class="stack"><button class="btn ghost" type="button" id="copy" data-i18n="copy"></button></div></details>
+    
     <p class="note" id="reqnote"></p>
   </section>
   </div>
@@ -73,7 +83,8 @@
 <div class="wrap" id="v-admin" hidden></div>
 <div class="wrap" id="v-terms" hidden></div>
 <div class="wrap" id="v-privacy" hidden></div>
-<footer class="foot"><div class="fwrap"><div class="fcols"><div><b class="fname" id="fname"></b><p class="note" id="ftag" style="margin:2px 0 0"></p></div><div><span class="lab" data-i18n="foot.follow"></span><div class="soc" id="soc"></div></div></div><p class="note" data-i18n="foot.note"></p><p class="note"><button type="button" class="lnk" data-notice="renter" data-i18n="nt.rlink"></button> · <button type="button" class="lnk" data-notice="host" data-i18n="nt.hlink"></button> · <a href="#terms" data-i18n="ack.terms"></a> · <a href="#privacy" data-i18n="nt.privacy"></a></p></div></footer>
+<div class="sbarb" id="sbarb" hidden><div><b id="sbt"></b><small id="sbs"></small></div><button type="button" class="btn" id="sbgo" data-i18n="bar.go"></button></div>
+<footer class="foot"><div class="fwrap"><div class="fcols"><div><b class="fname" id="fname"></b><p class="note" id="ftag" style="margin:2px 0 0"></p></div><div><span class="lab" data-i18n="foot.follow"></span><div class="soc" id="soc"></div></div></div><p class="note" data-i18n="foot.note"></p><p class="note" data-i18n="foot.mail"></p><p class="note"><button type="button" class="lnk" data-notice="renter" data-i18n="nt.rlink"></button> · <button type="button" class="lnk" data-notice="host" data-i18n="nt.hlink"></button> · <a href="#terms" data-i18n="ack.terms"></a> · <a href="#privacy" data-i18n="nt.privacy"></a></p></div></footer>
 <a class="fab" id="fab" href="#" target="_blank" rel="noopener" hidden aria-label="Chat on Messenger"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.4 2 2 6.1 2 11.3c0 2.9 1.4 5.4 3.6 7.1V22l3.3-1.8c.9.2 1.9.4 3.1.4 5.6 0 10-4.1 10-9.3S17.6 2 12 2zm1 12.5-2.6-2.7L5.4 14.5l5.5-5.8 2.6 2.7 5-2.7-5.5 5.8z"/></svg><span>Chat</span></a>
 <dialog id="sdlg" class="mini" aria-labelledby="stitle"><button type="button" class="x" data-sclose aria-label="Close">×</button><div id="sbody" style="padding:18px"></div></dialog>
 <dialog id="ndlg" aria-labelledby="ntitle"><button type="button" class="x" data-nclose aria-label="Close">×</button><div id="nbody" style="padding:18px"></div></dialog>
@@ -81,11 +92,11 @@
 <dialog id="ldlg" class="mini" aria-labelledby="ltitle"><button type="button" class="x" data-lclose aria-label="Close">×</button><div id="lbody" style="padding:18px"></div></dialog>
 <dialog id="dlg" aria-labelledby="dtitle"><button type="button" class="x" data-close aria-label="Close">×</button><div id="dbody"></div></dialog>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-<script src="config.js?v=13"></script>
-<script src="store.js?v=13"></script>
-<script src="i18n.js?v=13"></script>
-<script src="app.js?v=13"></script>
-<script src="legal.js?v=13"></script>
-<script src="views.js?v=13"></script>
+<script src="config.js?v=26"></script>
+<script src="store.js?v=26"></script>
+<script src="i18n.js?v=26"></script>
+<script src="app.js?v=26"></script>
+<script src="legal.js?v=26"></script>
+<script src="views.js?v=26"></script>
 </body>
 </html>

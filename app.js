@@ -2,6 +2,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const $=s=>document.querySelector(s);
 const php=n=>'₱'+Math.round(n).toLocaleString('en-PH');
 const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const fmtS=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString(LOCALE[PREF.lang]||'en-PH',{day:'numeric',month:'short'})};
 const fmt=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString(LOCALE[PREF.lang]||'en-PH',{day:'numeric',month:'short',year:'numeric'})};
 const fmtEn=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('en-PH',{day:'numeric',month:'short',year:'numeric'})};
 const days=(a,b)=>{const [y1,m1,d1]=a.split('-').map(Number),[y2,m2,d2]=b.split('-').map(Number);return Math.round((new Date(y2,m2-1,d2)-new Date(y1,m1-1,d1))/864e5)};
@@ -30,7 +31,9 @@ function helmetSVG(c){const h=(x,col)=>`<g><path d="M${x} 112 Q${x} 56 ${x+42} 5
 const imgsOf=c=>(c.images&&c.images.length)?c.images.map((u,i)=>`<img src="${esc(u)}" alt="${esc(c.name)} photo ${i+1}" loading="lazy">`):(isMotor(c)?[motorSVG(c),motorFront(c),helmetSVG(c)]:[carSVG(c),frontSVG(c),interiorSVG(c)]);
 const hasPhotos=c=>c.images&&c.images.length;
 
-const S={kind:'all',type:'All',service:'any',seats:0,sel:null,pin:CENTER.slice(),moved:false,gi:0,gid:null};
+var PARTY={a:0,c:0,i:0,p:0},PMAX={a:12,c:12,i:5,p:5};
+const BMOFF='<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>',BMON='<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>';
+const S={place:null,kind:'all',type:'All',service:'any',seats:0,sel:null,pin:CENTER.slice(),moved:false,gi:0,gid:null};
 const rad=x=>x*Math.PI/180;
 const km=(a,b)=>{const R=6371,dLa=rad(b[0]-a[0]),dLo=rad(b[1]-a[1]),h=Math.sin(dLa/2)**2+Math.cos(rad(a[0]))*Math.cos(rad(b[0]))*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
 const nearestArea=p=>Object.keys(AREAS).reduce((best,k)=>km(p,AREAS[k])<km(p,AREAS[best])?k:best,'City Proper');
@@ -62,15 +65,18 @@ function drawMarkers(list){
   list.forEach(c=>{const p=carPos(c),short=PREF.cur==='PHP'?(c.price>=1000?'₱'+(c.price/1000).toFixed(c.price%1000?1:0)+'k':'₱'+c.price):money(c.price);
     L.marker(p,{title:c.name,icon:L.divIcon({className:'cm',html:`<b>${esc(short)}</b>`,iconSize:[60,22],iconAnchor:[30,11]})}).on('click',()=>openDetail(c.id)).addTo(carLayer)});
 }
-function setPin(p,moved){
-  S.pin=p;if(moved)S.moved=true;
-  const a=nearestArea(p);$('#pininfo').innerHTML=S.moved?t('pin.set',{area:'<b>'+esc(a)+'</b>',lat:p[0].toFixed(4),lng:p[1].toFixed(4)}):esc(t('pin.hint'));
-  $('#areaSel').value=S.moved?a:'';renderGrid();
+function placeName(){return S.place?S.place.name:nearestArea(S.pin)}
+function setPin(p,moved,place){
+  S.pin=p;if(moved)S.moved=true;if(place!==undefined)S.place=place;else if(moved)S.place=null;
+  const a=placeName();$('#pininfo').innerHTML=S.moved?t('pin.set',{area:'<b>'+esc(a)+'</b>',lat:p[0].toFixed(4),lng:p[1].toFixed(4)}):esc(t('pin.hint'));
+  $('#areaSel').value=S.moved?nearestArea(p):'';renderGrid();
+  const fn=$('#farnote');if(fn){const cars=activeCars();const m=cars.length?Math.min(...cars.map(distOf)):0;fn.hidden=!(S.moved&&m>25);if(!fn.hidden)fn.textContent=t('pin.far',{p:a,k:Math.round(m)})}
+  if(typeof syncBar==='function')syncBar();
 }
 $('#areaSel').addEventListener('change',e=>{const a=e.target.value;if(!a)return;const p=AREAS[a];if(map){pinMk.setLatLng(p);map.setView(p,13)}setPin(p.slice(),true)});
 $('#locate').addEventListener('click',()=>{
   if(!navigator.geolocation){toast(t('loc.na'));return}
-  navigator.geolocation.getCurrentPosition(pos=>{const p=[pos.coords.latitude,pos.coords.longitude];if(map){pinMk.setLatLng(p);map.setView(p,14)}setPin(p,true)},()=>toast(t('loc.off')),{timeout:8000});
+  navigator.geolocation.getCurrentPosition(pos=>{const p=[pos.coords.latitude,pos.coords.longitude];if(map){pinMk.setLatLng(p);map.setView(p,14)}setPin(p,true,{name:t('where.cur')})},()=>toast(t('loc.off')),{timeout:8000});
 });
 
 /* ---------- vehicles ---------- */
@@ -82,6 +88,7 @@ function renderTypes(){
   const types=['All',...new Set(pool.map(c=>c.type))];
   if(!types.includes(S.type))S.type='All';
   $('#types').innerHTML=types.map(x=>`<button type="button" class="chip" data-type="${esc(x)}" aria-pressed="${x===S.type}">${esc(x==='All'?t('all'):x)}</button>`).join('');
+  const sf=$('#subf');if(sf){const kb2=$('#kinds'),on=kb2&&!kb2.hidden&&kb2.querySelector('[aria-pressed="true"]');sf.classList.toggle('nonotch',!on);if(on){const r=on.getBoundingClientRect(),w=kb2.getBoundingClientRect();sf.style.setProperty('--nx',Math.round(r.left-w.left+r.width/2)+'px')}}
 }
 function filtered(){
   const l=activeCars().filter(c=>(S.kind==='all'||(S.kind==='motor')===isMotor(c))&&(S.type==='All'||c.type===S.type)&&(S.service==='any'||c.service===S.service)&&c.seats>=S.seats);
@@ -98,15 +105,15 @@ const dayInfo=(id,s)=>{for(const r of busyRanges(id))if(s>=r.from&&s<r.to)return
 const rangeFree=(id,a,b)=>{for(let d=a,n=0;d<b&&n<400;d=addD(d,1),n++)if(dayInfo(id,d))return false;return true};
 const unavailable=c=>{const {a,b}=dateNow();if(!a||!b||days(a,b)<1)return false;return !rangeFree(c.id,a,b)};
 const CAL={};
-function calInner(key,id,mode){
+function calInner(key,id,mode,nm){
   const pick=mode==='pick',a=pick?$('#from').value:'',b=pick?$('#to').value:'',loc=LOCALE[PREF.lang]||'en-PH',tdy=todayIso();
   if(!CAL[key]){const base=a?new Date(a+'T00:00:00'):new Date();CAL[key]={y:base.getFullYear(),m:base.getMonth()}}
   const st=CAL[key];
   let lim='';if(pick&&a&&!b){for(let d=a,n=0;n<400;d=addD(d,1),n++)if(dayInfo(id,d)){lim=d;break}}
-  const first=new Date(st.y,st.m,1),dim=new Date(st.y,st.m+1,0).getDate();
+  const month=(yy,mm)=>{const first=new Date(yy,mm,1),dim=new Date(yy,mm+1,0).getDate();
   let cells='';for(let i=0;i<first.getDay();i++)cells+='<i></i>';
   for(let d=1;d<=dim;d++){
-    const s=st.y+'-'+String(st.m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'),k=dayInfo(id,s);
+    const s=yy+'-'+String(mm+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'),k=dayInfo(id,s);
     let cls='cd',dis=false,lab=fmt(s);
     if(s<tdy){cls+=' past';dis=true}
     else if(pick){
@@ -120,8 +127,13 @@ function calInner(key,id,mode){
     if(pick&&!dis||pick&&cls.includes('off')){if(s===a||s===b)cls+=' sel';else if(a&&b&&s>a&&s<b)cls+=' in'}
     cells+=`<button type="button" class="${cls}" data-cal-day="${s}"${dis?' disabled':''} aria-label="${esc(lab)}">${d}</button>`;
   }
+  return {first,cells}};
+  const N=nm||1,blocks=[];for(let i=0;i<N;i++){const d=new Date(st.y,st.m+i,1);blocks.push(month(d.getFullYear(),d.getMonth()))}
+  const first=blocks[0].first,cells=blocks[0].cells;
   const wk=[0,1,2,3,4,5,6].map(i=>`<span>${esc(new Date(2023,0,1+i).toLocaleDateString(loc,{weekday:'short'}))}</span>`).join('');
   const leg=pick?`<span><i class="lf"></i>${esc(t('cal.free'))}</span><span><i class="lo"></i>${esc(t('cal.off'))}</span><span><i class="ls"></i>${esc(t('cal.sel'))}</span>`:`<span><i class="lf"></i>${esc(t('cal.free'))}</span><span><i class="lb"></i>${esc(t('cal.booked'))}</span><span><i class="lh"></i>${esc(t('cal.hostblock'))}</span><span><i class="la"></i>${esc(t('cal.arkblock'))}</span>`;
+  if(N>1){const now=new Date(),atNow=pick&&st.y===now.getFullYear()&&st.m===now.getMonth();
+    return `<div class="calx"><button type="button" class="cnav prev" data-cal-nav="-1" aria-label="${esc(t('cal.prev'))}"${atNow?' disabled':''}>‹</button><button type="button" class="cnav next" data-cal-nav="1" aria-label="${esc(t('cal.next'))}">›</button><div class="calmm">${blocks.map(bk=>`<div class="calmo"><b class="cmt">${esc(bk.first.toLocaleDateString(loc,{month:'long',year:'numeric'}))}</b><div class="calw">${wk}</div><div class="calg">${bk.cells}</div></div>`).join('')}</div></div><div class="calleg">${leg}${pick?`<button type="button" class="chip" data-cal-clear style="margin-left:auto;padding:2px 10px;font-size:12px">${esc(t('cal.clear'))}</button>`:''}</div>`}
   return `<div class="calh"><button type="button" data-cal-nav="-1" aria-label="${esc(t('cal.prev'))}">‹</button><b>${esc(first.toLocaleDateString(loc,{month:'long',year:'numeric'}))}</b><button type="button" data-cal-nav="1" aria-label="${esc(t('cal.next'))}">›</button></div><div class="calw">${wk}</div><div class="calg">${cells}</div><div class="calleg">${leg}${pick?`<button type="button" class="chip" data-cal-clear style="margin-left:auto;padding:2px 10px;font-size:12px">${esc(t('cal.clear'))}</button>`:''}</div>`;
 }
 function setDates(a,b){const f=$('#from'),r=$('#to');f.value=a;r.value=b;[f,r].forEach(x=>x.dispatchEvent(new Event('change',{bubbles:true})))}
@@ -133,7 +145,7 @@ document.addEventListener('click',e=>{
   else if(b.dataset.calClear!==undefined){setDates('','')}
   else if(mode==='pick'){const s=b.dataset.calDay,a=$('#from').value,r=$('#to').value;if(!a||r||s<=a)setDates(s,'');else setDates(a,s)}
   else if(typeof hostDay==='function')hostDay(id,b.dataset.calDay);
-  el.innerHTML=calInner(key,id,mode);if(mode==='pick')calSum();
+  el.innerHTML=calInner(key,id,mode,+el.dataset.n||1);if(mode==='pick')calSum();
 });
 function cardHtml(c){
   const {d}=dateNow(),rt=ratingOf(c),un=unavailable(c),fav=ST.favs.includes(c.id);
@@ -141,8 +153,8 @@ function cardHtml(c){
     <div class="tile">${imgsOf(c)[0]}<span class="area">${esc(c.area)}</span><span class="svc">${esc(svcT(c.service))}</span>${S.sel===c.id?'<span class="chosen">'+esc(t('card.chosen'))+'</span>':''}${un?'<span class="chosen" style="background:var(--ink);color:var(--bg)">'+esc(t('card.booked'))+'</span>':''}</div>
     <div class="cb"><div class="row2" style="align-items:baseline"><h3>${esc(c.name)}</h3><span class="rt">${rt?'★ '+rt.avg.toFixed(1)+' <small>('+rt.n+')</small>':'<small>'+esc(t('card.new'))+'</small>'}</span></div>
     <p class="sub">${esc(c.type)} · ${esc(seatsLabel(c))}${S.moved?' · '+esc(t('card.km',{k:distOf(c).toFixed(1)})):''}</p>
-    <p class="pr">${d>=1?`<b>${esc(money(c.price*d))}</b><span>${esc(t(d===1?'card.for1':'card.forN',{d,p:money(c.price)}))}</span>`:`<b>${esc(money(c.price))}</b><span>${esc(t('card.perday'))}</span>`}</p></div></button>
-    <button type="button" class="heart${fav?' on':''}" data-fav="${esc(c.id)}" aria-pressed="${fav}" aria-label="${esc(t(fav?'card.unsave':'card.save'))} ${esc(c.name)}">${fav?'♥':'♡'}</button></article>`;
+    <p class="pr">${d>=1?`<b>${esc(money(c.price))}</b><span>${esc(t(d===1?'card.pd1':'card.pdN',{d,tot:money(c.price*d)}))}</span>`:`<b>${esc(money(c.price))}</b><span>${esc(t('card.perday'))}</span>`}</p></div></button>
+    <button type="button" class="heart${fav?' on':''}" data-fav="${esc(c.id)}" aria-pressed="${fav}" aria-label="${esc(t(fav?'card.unsave':'card.save'))} ${esc(c.name)}">${fav?BMON:BMOFF}</button></article>`;
 }
 function renderGrid(){
   const list=filtered();
@@ -193,39 +205,63 @@ document.addEventListener('click',e=>{
   if(kd){S.kind=kd.dataset.kind;S.type='All';renderTypes();renderGrid();return}
   if(x){S.type=x.dataset.type;renderTypes();renderGrid()}else if(o)openDetail(o.dataset.open);
 });
+let LASTQ=null;
 function quote(){
   const c=allCars().find(x=>x.id===S.sel),a=$('#from').value,b=$('#to').value;
   $('#datesum').textContent=(a&&b&&days(a,b)>=1)?t('datesum',{a:fmt(a),b:fmt(b),d:days(a,b)}):t('datesum.none');
   $('#chosen').innerHTML=c?`<span class="lab">${esc(t('chosenlab'))}</span><div class="row2"><b>${esc(c.name)}</b><button type="button" class="chip" data-open="${esc(c.id)}">${esc(t('viewd'))}</button></div>`:'<span class="note">'+esc(t('pickfirst'))+'</span>';
-  if(!c||!a||!b||days(a,b)<1){$('#quote').innerHTML=c?'<span class="note">'+esc(t('retbefore'))+'</span>':'';return null}
+  if(!c||!a||!b||days(a,b)<1){$('#quote').innerHTML=c?'<span class="note">'+esc(t('retbefore'))+'</span>':'';LASTQ=null;setTimeout(updateBar,0);return null}
   const d=days(a,b),total=c.price*d,dep=depositOf(c);
   $('#quote').innerHTML=`<div><span>${esc(t('q.line',{p:money(c.price),d}))}</span><span>${esc(money(total))}</span></div><div><span>${esc(t('q.dep'))}</span><span>${esc(money(dep))}</span></div><div class="t"><span>${esc(t('q.tot'))}</span><span>${esc(money(total+dep))}</span></div><p class="note" style="margin:6px 0 0">${esc(t('q.note'))}</p>`;
-  return {c,a,b,d,total,dep};
+  LASTQ={c,a,b,d,total,dep};setTimeout(updateBar,0);return LASTQ;
 }
 ['from','to'].forEach(id=>$('#'+id).addEventListener('change',()=>{const a=$('#from').value;if(a)$('#to').min=a;renderGrid()}));
 let MSG='';
 $('#f').addEventListener('submit',e=>{
   e.preventDefault();const err=$('#err');err.textContent='';
   if(!ST.me()){openLogin(t('l.needreq'));return}
-  const q=quote(),name=$('#name').value.trim(),phone=$('#phone').value.trim().replace(/[^\d+]/g,''),code=$('#code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,''),notes=$('#notes').value.trim();
+  const q=quote(),name=$('#name').value.trim(),phone=fullPhone(),email=$('#email').value.trim(),code=$('#code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,''),notes=$('#notes').value.trim();
   if(!q){err.textContent=t('e.pick');return}
   if(unavailable(q.c)){err.textContent=t('e.unavail');return}
   if(!name){err.textContent=t('e.name');return}
   if(!/^\+?\d{8,15}$/.test(phone)){err.textContent=t('e.phone');return}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){err.textContent=t('e.email');return}
   if(!$('#ack').checked){err.textContent=t('e.ack');return}
-  const area=nearestArea(S.pin),spot=S.moved?`near ${area}, https://www.google.com/maps?q=${S.pin[0].toFixed(5)},${S.pin[1].toFixed(5)}`:'not set';
-  MSG=`Hi ${BRAND.name}, I would like to request a vehicle.\n\nVehicle: ${q.c.name} (${q.c.service}, ${q.c.area})\nDates: ${fmtEn(q.a)} to ${fmtEn(q.b)} (${q.d} day${q.d>1?'s':''})\nPickup spot: ${spot}\nRental fee: ${php(q.total)}\nRefundable security deposit: ${php(q.dep)}\nTotal to pay online after the owner confirms: ${php(q.total+q.dep)}\nName: ${name}\nMobile: ${phone}${code?'\nReferral code: '+code:''}${notes?'\nNotes: '+notes:''}\nI have read and agree to the renter notice.\n\nRequest ref: ${q.c.id}|${q.a}|${q.b}|${phone}${code?'|'+code:''}`;
-  const rq=saveRequest(q,name,phone,notes,spot,MSG);
+  const area=placeName(),spot=S.moved?`near ${area}, https://www.google.com/maps?q=${S.pin[0].toFixed(5)},${S.pin[1].toFixed(5)}`:'to be agreed on chat';
+  MSG=`Hi ${BRAND.name}, I would like to request a vehicle.\n\nVehicle: ${q.c.name} (${q.c.service}, ${q.c.area})\nDates: ${fmtEn(q.a)} to ${fmtEn(q.b)} (${q.d} day${q.d>1?'s':''})\nPickup spot: ${spot}\nRental fee: ${php(q.total)}\nRefundable security deposit: ${php(q.dep)}\nTotal to pay online after the owner confirms: ${php(q.total+q.dep)}${partyText()?'\nGuests: '+partyText():''}\nName: ${name}\nMobile: ${phone}\nEmail (for the invoice and booking confirmation): ${email}${code?'\nReferral code: '+code:''}${notes?'\nNotes: '+notes:''}\nI have read and agree to the renter notice.\n\nRequest ref: ${q.c.id}|${q.a}|${q.b}|${phone}${code?'|'+code:''}`;
+  const rq=saveRequest(q,name,phone,notes,spot,MSG,email);
+  lss('contact',{name,phone,email});
   $('#msg').textContent=MSG;$('#out').hidden=false;$('#reqnote').textContent=t('reqnote',{id:rq.id});$('#out').scrollIntoView({behavior:'smooth',block:'start'});
-  const fb=$('#fb');
-  if(BRAND.fb){fb.href='https://m.me/'+encodeURIComponent(BRAND.fb);fb.setAttribute('aria-disabled','false');$('#fbnote').textContent=t('fb.on')}
-  else{fb.setAttribute('aria-disabled','true');$('#fbnote').textContent=BRAND.phone?t('fb.offc',{c:BRAND.phone}):t('fb.off')}
+  const fb=$('#fb');let copied=false;
+  try{if(navigator.clipboard)navigator.clipboard.writeText(MSG).catch(()=>{});copied=!!navigator.clipboard}catch(x){}
+  if(BRAND.fb){const u='https://m.me/'+encodeURIComponent(BRAND.fb);fb.href=u;fb.setAttribute('aria-disabled','false');$('#fbnote').textContent=copied?t('fb.auto'):t('fb.on');try{window.open(u,'_blank','noopener')}catch(x){}}
+  else{fb.setAttribute('aria-disabled','true');fb.removeAttribute('href');$('#fbnote').textContent=BRAND.phone?t('fb.offc',{c:BRAND.phone}):t('fb.off')}
+  updateBar()
 });
 $('#copy').addEventListener('click',()=>{
   (navigator.clipboard?navigator.clipboard.writeText(MSG):Promise.reject()).then(()=>toast(t('copied'))).catch(()=>{const r=document.createRange();r.selectNodeContents($('#msg'));const s=getSelection();s.removeAllRanges();s.addRange(r);toast(t('copyfail'))});
 });
 initMap();renderTypes();setPin(CENTER.slice(),false);
-function refreshHome(){renderTypes();renderGrid();const me=ST.me();if(me&&!$('#name').value)$('#name').value=me.name}
+function refreshHome(){renderTypes();renderGrid();prefill();setSubmitLabel();updateBar()}
+function fullPhone(){const d=$('#phone').value.trim().replace(/[^\d+]/g,'');if(d.startsWith('+'))return d;return ($('#cc').value||'+')+d.replace(/^0+/,'')}
+function splitPhone(p){const cc=[...$('#cc').options].map(o=>o.value).filter(Boolean).sort((a,b)=>b.length-a.length).find(c=>p.startsWith(c));return cc?[cc,p.slice(cc.length)]:['',p]}
+/* country code select: short label when closed, full names when open */
+(function(){const sel=$('#cc');[...sel.options].forEach(o=>{o.dataset.long=o.textContent;o.dataset.short=o.value?o.textContent.split(' ').slice(0,2).join(' '):'+ …'});
+  const short=()=>[...sel.options].forEach(o=>o.textContent=o.dataset.short),long=()=>[...sel.options].forEach(o=>o.textContent=o.dataset.long);
+  short();sel.addEventListener('mousedown',long);sel.addEventListener('focus',long);sel.addEventListener('change',()=>{short();$('#phone').focus()});sel.addEventListener('blur',short);})();
+function prefill(){const me=ST.me(),c=lsg('contact',{});if(c&&typeof c==='object'&&!Array.isArray(c)){if(!$('#name').value)$('#name').value=c.name||'';if(!$('#phone').value&&c.phone){const [cc,n]=splitPhone(c.phone);$('#cc').value=cc;$('#phone').value=n}if(!$('#email').value)$('#email').value=c.email||''}if(me&&!$('#name').value)$('#name').value=me.name}
+function setSubmitLabel(){const b=$('#subbtn');if(b)b.textContent=t(BRAND.fb?'f.submit.fb':'f.submit')}
+/* sticky bottom bar on small screens: total and a jump to the form */
+let formSeen=false;
+function updateBar(){const bar=$('#sbarb');if(!bar)return;const q=LASTQ;
+  const show=!!q&&!formSeen&&$('#out').hidden&&location.hash.slice(1)==='';
+  bar.hidden=!show;document.body.classList.toggle('hasbar',show);
+  if(q){$('#sbt').textContent=money(q.total+q.dep);$('#sbs').textContent=t('bar.sub',{d:q.d})}}
+try{new IntersectionObserver(es=>{formSeen=es[0].isIntersecting;updateBar()}).observe($('#f'))}catch(x){}
+$('#sbgo').addEventListener('click',()=>$('#f').scrollIntoView({behavior:'smooth',block:'start'}));
+['name','phone','email'].forEach(i=>$('#'+i).addEventListener('input',()=>{}));
+document.addEventListener('toggle',e=>{if(e.target&&e.target.id==='spotd'&&e.target.open&&map){setTimeout(()=>map.invalidateSize(),50)}},true);
+window.addEventListener('hashchange',updateBar);
 
 function reviewBlock(c){
   const rs=reviewsOf(c).slice().reverse(),rt=ratingOf(c);
@@ -242,3 +278,101 @@ function openNotice(kind,ctx){
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-notice]');if(b){e.preventDefault();let ctx=null;if(b.dataset.notice==='renter'&&b.closest('#f')){const q=quote();if(q)ctx={c:q.c,total:q.total,dep:q.dep}}openNotice(b.dataset.notice,ctx)}});
 ndlg.addEventListener('click',e=>{if(e.target===ndlg||e.target.closest('[data-nclose]'))ndlg.close()});
+
+
+/* ---------- Airbnb-style search bar: Where / When / Who, each opens a panel ---------- */
+const PINSVG='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg>';
+const asb=$('#asb');
+function openSeg(k){
+  asb.querySelectorAll('.seg').forEach(sg=>{const on=sg.dataset.seg===k;sg.classList.toggle('on',on);const p=sg.querySelector('.pop');if(p)p.hidden=!on});
+  asb.classList.toggle('open',!!k);$('#whereIn').setAttribute('aria-expanded',String(k==='where'));
+  if(k==='where')renderWherePop();
+  if(k==='when')renderWhenCal()
+  if(k==='who')renderWhoPop();
+}
+function closeSeg(){openSeg('')}
+function renderWhenCal(){const two=innerWidth>=900,el=$('#cal-s');el.dataset.n=two?2:1;$('#pop-when').classList.toggle('two',two);el.innerHTML=calInner('s','','pick',two?2:1);whenSum()}
+function whenSum(){const a=$('#from').value,b=$('#to').value;$('#whenSum').textContent=(a&&b&&days(a,b)>=1)?fmt(a)+' → '+fmt(b)+' · '+t(days(a,b)===1?'cal.d1':'cal.dn',{d:days(a,b)}):a?t('cal.pickret'):t('cal.pickstart')}
+let PL=[],PH_TIMER=0,PH_ABORT=null,PH_STATE='',PH_CACHE={};
+const norm=x=>String(x||'').toLowerCase();
+function localPlaces(){const extra=Object.keys(AREAS).filter(k=>k!=='Airport').map(k=>({n:k,s:'Puerto Princesa, Palawan',p:AREAS[k]}));const seen=new Set(),out=[];[...PLACES,...extra].forEach(x=>{const k=norm(x.n);if(!seen.has(k)){seen.add(k);out.push(x)}});return out}
+function renderWherePop(){
+  const raw=$('#whereIn').value.trim(),q=norm(raw),cur=S.moved?norm(placeName()):'';
+  const shown=(q&&q!==cur)?q:'';
+  const loc=localPlaces();let list;
+  if(!shown)list=loc.slice(0,8);else list=loc.filter(x=>norm(x.n).includes(shown)).sort((a,b)=>(norm(b.n).startsWith(shown))-(norm(a.n).startsWith(shown)));
+  const have=new Set(list.map(x=>norm(x.n)));
+  const web=shown?(PH_CACHE[shown]||[]).filter(x=>!have.has(norm(x.n))):[];
+  PL=[...list,...web];
+  const hl=n=>{if(!shown)return esc(n);const i=norm(n).indexOf(shown);if(i<0)return esc(n);return esc(n.slice(0,i))+'<b>'+esc(n.slice(i,i+shown.length))+'</b>'+esc(n.slice(i+shown.length))};
+  const row=(x,i)=>`<button type="button" class="opt" role="option" data-pl="${i}"><span class="ic">${PINSVG}</span><span class="tx"><span class="nm">${hl(x.n)}</span>${x.s?`<small>${esc(x.s)}</small>`:''}</span></button>`;
+  let h='';
+  if(!shown)h+=`<button type="button" class="opt" data-loc><span class="ic">${LOCSVG}</span><span class="tx"><span class="nm">${esc(t('where.here'))}</span></span></button><p class="phd">${esc(t('where.pop'))}</p>`;
+  h+=PL.map(row).join('');
+  if(shown&&PH_STATE==='loading'&&!web.length)h+=`<p class="note" style="margin:10px 14px">${esc(t('where.searching'))}</p>`;
+  else if(shown&&!PL.length)h+=`<p class="note" style="margin:10px 14px">${esc(t('where.none'))}</p>`;
+  if(shown)h+=`<p class="phd ft">${esc(t('where.credit'))}</p>`;
+  $('#pop-where').innerHTML=h;
+}
+const LOCSVG='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+function searchWeb(raw){
+  const q=norm(raw);clearTimeout(PH_TIMER);if(PH_ABORT){try{PH_ABORT.abort()}catch(x){}}
+  if(q.length<3||PH_CACHE[q]){PH_STATE='';return}
+  PH_STATE='loading';
+  PH_TIMER=setTimeout(()=>{
+    let ctl=null;try{ctl=new AbortController()}catch(x){}PH_ABORT=ctl;
+    fetch('https://photon.komoot.io/api/?limit=7&lang=en&lat=9.74&lon=118.73&bbox=116.9,8.2,120.6,12.6&q='+encodeURIComponent(raw),ctl?{signal:ctl.signal}:{})
+      .then(r=>r.ok?r.json():Promise.reject()).then(j=>{
+        PH_CACHE[q]=(j.features||[]).filter(f=>f.properties&&f.properties.countrycode==='PH'&&f.geometry).map(f=>{const p=f.properties;return {n:p.name||p.street||'',s:[p.district||p.city||p.county,p.state].filter(x=>x&&x!==p.name).join(', '),p:[f.geometry.coordinates[1],f.geometry.coordinates[0]]}}).filter(x=>x.n);
+        PH_STATE='';if(norm($('#whereIn').value.trim())===q&&!$('#pop-where').hidden)renderWherePop()})
+      .catch(()=>{if(PH_ABORT===ctl){PH_CACHE[q]=[];PH_STATE='';if(!$('#pop-where').hidden&&norm($('#whereIn').value.trim())===q)renderWherePop()}});
+  },350);
+}
+function pickPlace(x){
+  const p=x.p.slice();if(map){pinMk.setLatLng(p);map.setView(p,13)}
+  setPin(p,true,{name:x.n});$('#whereIn').value=x.n;syncBar();openSeg('when');
+}
+function partySeats(){return PARTY.a+PARTY.c}
+function partyLabel(){const g=partySeats(),parts=[];if(g)parts.push(t(g===1?'who.g1':'who.gn',{n:g}));if(PARTY.i)parts.push(t(PARTY.i===1?'who.i1':'who.in',{n:PARTY.i}));if(PARTY.p)parts.push(t(PARTY.p===1?'who.p1':'who.pn',{n:PARTY.p}));return parts.join(' · ')}
+function partyText(){const o=[];if(PARTY.a)o.push(PARTY.a+' adult'+(PARTY.a>1?'s':''));if(PARTY.c)o.push(PARTY.c+' child'+(PARTY.c>1?'ren':''));if(PARTY.i)o.push(PARTY.i+' baby'+(PARTY.i>1?'ies':''));if(PARTY.p)o.push(PARTY.p+' pet'+(PARTY.p>1?'s':''));return o.join(', ')}
+function renderWhoPop(){
+  const rows=[['a','who.adults','who.adults.s'],['c','who.kids','who.kids.s'],['i','who.babies','who.babies.s'],['p','who.pets','who.pets.s']];
+  $('#pop-who').innerHTML=rows.map(r=>{const k=r[0],v=PARTY[k],minA=(k==='a'&&(PARTY.c||PARTY.i))?1:0;return `<div class="stp"><div><b>${esc(t(r[1]))}</b><small>${esc(t(r[2]))}</small></div><div class="ctl"><button type="button" class="rb" data-step="${k}" data-d="-1" aria-label="${esc(t(r[1]))} −"${v<=minA?' disabled':''}>−</button><span aria-live="polite">${v}</span><button type="button" class="rb" data-step="${k}" data-d="1" aria-label="${esc(t(r[1]))} +"${v>=PMAX[k]?' disabled':''}>+</button></div></div>`}).join('')+`<p class="note" style="margin:10px 4px 2px">${esc(t('who.note'))}</p>`+(partyLabel()?`<button type="button" class="chip" data-party-clear style="margin:8px 4px 0">${esc(t('cal.clear'))}</button>`:'');
+}
+function stepParty(k,d){
+  const n=PARTY[k]+d;if(n<0||n>PMAX[k])return;PARTY[k]=n;
+  if((k==='c'||k==='i')&&d>0&&PARTY.a===0)PARTY.a=1;
+  if(k==='a'&&PARTY.a===0&&(PARTY.c||PARTY.i))PARTY.a=1;
+  S.seats=partySeats();renderGrid();syncBar();renderWhoPop();
+}
+function syncBar(){
+  const wi=$('#whereIn');if(document.activeElement!==wi)wi.value=S.moved?placeName():'';
+  $('#whereClr').hidden=!wi.value;
+  const a=$('#from').value,b=$('#to').value,d=(a&&b)?days(a,b):0;
+  $('#whenV').textContent=(a&&b&&d>=1)?fmtS(a)+' → '+fmtS(b):a?fmtS(a)+' → …':t('when.any');
+  const pl=partyLabel();$('#whoV').textContent=pl||t('who.add');
+  $('#whoV').classList.toggle('set',!!pl);$('#whenV').classList.toggle('set',!!(a&&b));
+}
+asb.addEventListener('click',e=>{
+  const pl=e.target.closest('[data-pl]');if(pl){pickPlace(PL[+pl.dataset.pl]);return}
+  if(e.target.closest('[data-loc]')){closeSeg();$('#locate').click();return}
+  const st=e.target.closest('[data-step]');
+  if(st){stepParty(st.dataset.step,+st.dataset.d);return}
+  if(e.target.closest('[data-party-clear]')){PARTY.a=PARTY.c=PARTY.i=PARTY.p=0;S.seats=0;renderGrid();syncBar();renderWhoPop();return}
+  if(e.target.closest('#whereClr')){$('#whereIn').value='';S.moved=false;S.place=null;$('#areaSel').value='';setPin(CENTER.slice(),false);syncBar();openSeg('where');$('#whereIn').focus();return}
+  if(e.target.closest('#asGo')){closeSeg();const g=$('#s2');if(g)g.scrollIntoView({behavior:'smooth',block:'start'});return}
+  if(e.target.closest('.pop'))return;
+  const sg=e.target.closest('.seg');if(sg){const k=sg.dataset.seg;if(sg.classList.contains('on')&&k!=='where')closeSeg();else{openSeg(k);if(k==='where')$('#whereIn').focus()}}
+});
+asb.addEventListener('keydown',e=>{const sg=e.target.closest('.seg');if((e.key==='Enter'||e.key===' ')&&sg&&sg.dataset.seg!=='where'&&e.target===sg){e.preventDefault();openSeg(sg.dataset.seg)}
+  if(e.key==='Enter'&&e.target.id==='whereIn'){e.preventDefault();if(PL.length)pickPlace(PL[0])}});
+$('#whereIn').addEventListener('input',()=>{$('#whereClr').hidden=!$('#whereIn').value;searchWeb($('#whereIn').value.trim());renderWherePop();if($('#pop-where').hidden)openSeg('where')});
+$('#whereIn').addEventListener('focus',()=>{if($('#pop-where').hidden)openSeg('where')});
+document.addEventListener('click',e=>{if(asb.classList.contains('open')&&!e.composedPath().includes(asb))closeSeg()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSeg()});
+['from','to'].forEach(id=>$('#'+id).addEventListener('change',()=>{syncBar();if(!$('#pop-when').hidden){renderWhenCal();if($('#from').value&&$('#to').value)setTimeout(()=>{if(!$('#pop-when').hidden)openSeg('who')},350)}}));
+syncBar();
+
+/* measure header and search bar heights for the pinned layout */
+function measureBars(){const h=document.querySelector('.hdr'),b=$('#asw'),r=document.documentElement.style;if(h)r.setProperty('--hh',h.offsetHeight+'px');if(b)r.setProperty('--asbh',b.offsetHeight+'px')}
+measureBars();window.addEventListener('resize',measureBars);window.addEventListener('load',measureBars);
