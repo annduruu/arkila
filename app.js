@@ -100,16 +100,71 @@ let TIME='',PTL='';
 const tl=v=>{if(!v)return '';const [h,m]=v.split(':').map(Number);return ((h%12)||12)+':'+String(m).padStart(2,'0')+' '+(h<12?'AM':'PM')};
 const TSLOTS=(()=>{const o=[];for(let h=0;h<24;h++)for(const m of [0,30])o.push(String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'));return o})();
 const GAP=(SETTINGS.turnaroundHours||3)*60,mins=v=>{const [h,m]=v.split(':').map(Number);return h*60+m};
-/* a vehicle needs a break between two rentals: pickup at least GAP after the last return, return at least GAP before the next pickup */
-function gapIssue(id,a,b,time){
-  if(!id||!a||!b||!time)return null;const m=mins(time);
+const XRATE=SETTINGS.extraHourRate||0.2,XMAX=SETTINGS.maxExtraHours||4;
+let EXTRA=0;
+const fromMin=n=>String(Math.floor(n/60)%24).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
+const hourlyOf=c=>c?(+c.hourly>0?Math.round(+c.hourly):Math.round(c.price*XRATE)):0;
+const extraFee=(c,h)=>c&&h?Math.min(c.price,hourlyOf(c)*h):0;
+const durTxt=d=>t(d===1?'cal.d1':'cal.dn',{d})+(EXTRA?' + '+EXTRA+' h · '+t('time.total',{h:d*24+EXTRA}):'');
+const endTime=(time,h)=>time?fromMin(mins(time)+(h||0)*60):'';
+const tlx=()=>tl(TIME)+(EXTRA?' +'+EXTRA+' h':'');
+/* a vehicle needs a break between two rentals: pickup at least GAP after the last return (including its extra hours), return at least GAP before the next pickup */
+function gapIssue(id,a,b,time,extra){
+  extra=extra||0;if(!id||!a||!b||!time)return null;const m=mins(time);
+  if(m+extra*60>=1440)return {k:'mid'};
   for(const r of ST.requests){if(r.carId!==id||!r.time||!(r.status==='confirmed'||r.status==='completed'))continue;
-    if(r.to===a){const e=mins(r.time)+GAP;if(m<e)return e>=1440?{k:'none'}:{k:'early',t:tl(String(Math.floor(e/60)).padStart(2,'0')+':'+String(e%60).padStart(2,'0'))}}
-    if(r.from===b){const l=mins(r.time)-GAP;if(m>l)return l<0?{k:'none'}:{k:'late',t:tl(String(Math.floor(l/60)).padStart(2,'0')+':'+String(l%60).padStart(2,'0'))}}}
+    if(r.to===a){const e=mins(r.time)+(r.extraH||0)*60+GAP;if(m<e)return e>=1440?{k:'none'}:{k:'early',t:tl(fromMin(e))}}
+    if(r.from===b){const l=mins(r.time)-GAP;if(m+extra*60>l)return l<0?{k:'none'}:{k:'late',t:tl(fromMin(l))}}}
   return null}
 const gapMsg=g=>g?t('gap.'+g.k,{t:g.t||'',h:SETTINGS.turnaroundHours||3}):'';
-const timeOpts=id=>{const a=$('#from').value,b=$('#to').value;return '<option value="">'+esc(t('time.sel'))+'</option>'+TSLOTS.map(v=>`<option value="${v}"${v===TIME?' selected':''}${gapIssue(id,a,b,v)?' disabled':''}>${tl(v)}</option>`).join('')};
-function setTime(v){TIME=v||'';const f=$('#ptime');if(f)f.value=TIME;const d=$('#dtime');if(d)d.value=TIME;syncBar();if(typeof calSum==='function')calSum();renderGrid();if(!$('#pop-time').hidden)renderTimePop()}
+/* ---------- shared pickup time + extra hours boxes: type, or pick from a small dropdown ---------- */
+function parseTime(s){s=String(s||'').trim().toLowerCase().replace(/\./g,'');if(!s)return '';
+  const m=s.match(/^(\d{1,2}):?(\d{2})?\s*(a|p|am|pm)?$/);if(!m)return null;
+  let h=+m[1],mi=m[2]?+m[2]:0;const ap=m[3];
+  if(mi!==0&&mi!==30)return null;
+  if(ap){if(h<1||h>12)return null;h=h%12+(ap[0]==='p'?12:0)}else if(h>23)return null;
+  return String(h).padStart(2,'0')+':'+String(mi).padStart(2,'0')}
+function parseExtra(s){s=String(s||'').trim().toLowerCase().replace(/\s*h(rs?|ours?)?$/,'');if(!s||s==='none'||s==='wala')return 0;if(!/^\d+$/.test(s))return null;const n=+s;return n>XMAX?null:n}
+const teId=sc=>sc==='d'?S.gid:S.sel;
+const teInner=()=>`<div class="terow"><label class="tefld"><span class="lab">${esc(t('f.time'))}</span><input class="tin" data-tin="time" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="${esc(t('tin.time.ph'))}"><div class="tdd" hidden role="listbox"></div></label><label class="tefld"><span class="lab">${esc(t('f.extra'))}</span><input class="tin" data-tin="extra" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="${esc(t('extra.none'))}"><div class="tdd" hidden role="listbox"></div></label></div><p class="note terr" role="status" hidden></p><p class="note tenote"></p><p class="note tetot"></p>`;
+const teBox=sc=>`<div class="tebox" data-te="${sc}" data-lang="${PREF.lang}">${teInner()}</div>`;
+function teSync(){
+  const a=$('#from').value,b=$('#to').value,d=(a&&b)?days(a,b):0;
+  document.querySelectorAll('.tebox').forEach(bx=>{
+    if(bx.dataset.lang!==PREF.lang){bx.innerHTML=teInner();bx.dataset.lang=PREF.lang}
+    const id=teId(bx.dataset.te),c=allCars().find(x=>x.id===id),ti=bx.querySelector('[data-tin=time]'),xi=bx.querySelector('[data-tin=extra]');
+    if(document.activeElement!==ti){ti.value=TIME?tl(TIME):'';ti.classList.remove('bad')}
+    if(document.activeElement!==xi){xi.value=EXTRA?EXTRA+' h':'';xi.classList.remove('bad')}
+    const gm=(TIME&&mins(TIME)+EXTRA*60>=1440)?gapMsg({k:'mid'}):(id&&d>=1&&TIME)?gapMsg(gapIssue(id,a,b,TIME,EXTRA)):'',er=bx.querySelector('.terr'),msg=bx.dataset.bad||gm;
+    er.hidden=!msg;er.textContent=msg;
+    bx.querySelector('.tenote').textContent=c?t('time.xnote2',{p:money(hourlyOf(c))}):t('time.xnote',{p:Math.round(XRATE*100),n:Math.round(1/XRATE)});
+    bx.querySelector('.tetot').textContent=(d>=1&&TIME)?t('time.ex',{a:fmtS(a),b:fmtS(b),t:tl(TIME),r:tl(endTime(TIME,EXTRA))})+(EXTRA?' · '+durTxt(d):''):t('time.rule')})}
+function teDD(inp){
+  const bx=inp.closest('.tebox'),dd=inp.nextElementSibling,id=teId(bx.dataset.te),a=$('#from').value,b=$('#to').value,dated=id&&a&&b&&days(a,b)>=1,q=inp.value.trim().toLowerCase().replace(/[\s:.]/g,'');
+  let opts=[];
+  if(inp.dataset.tin==='time'){
+    opts=TSLOTS.filter(v=>!q||tl(v).toLowerCase().replace(/[\s:]/g,'').startsWith(q)||v.replace(':','').startsWith(q)).map(v=>({v,l:tl(v),on:v===TIME,off:dated&&!!gapIssue(id,a,b,v,EXTRA)}));
+  }else{for(let x=0;x<=XMAX;x++)opts.push({v:String(x),l:x?x+' h':t('extra.none'),on:x===EXTRA,off:!!(x&&dated&&TIME&&gapIssue(id,a,b,TIME,x))})}
+  dd.innerHTML=opts.length?opts.map(o=>`<button type="button" class="tdo${o.on?' on':''}" role="option" data-tpick="${inp.dataset.tin}" data-v="${o.v}"${o.off?' disabled':''}>${esc(o.l)}</button>`).join(''):`<p class="note" style="margin:6px 10px">${esc(t('tin.time.bad'))}</p>`;
+  dd.hidden=false;const on=dd.querySelector('.tdo.on');if(on&&!q)dd.scrollTop=Math.max(0,on.offsetTop-60)}
+function teHide(inp){const dd=inp.nextElementSibling;if(dd)dd.hidden=true}
+function teCommit(inp){
+  const bx=inp.closest('.tebox'),k=inp.dataset.tin;let ok=true;delete bx.dataset.bad;inp.classList.remove('bad');
+  if(k==='time'){const v=parseTime(inp.value);if(v===null){ok=false;bx.dataset.bad=t('tin.time.bad');setTime('')}else setTime(v)}
+  else{const h=parseExtra(inp.value);if(h===null){ok=false;bx.dataset.bad=t('tin.extra.over',{n:XMAX})}else setExtra(h)}
+  if(!ok)inp.classList.add('bad');teSync();return ok}
+document.addEventListener('focusin',e=>{const i=e.target.closest&&e.target.closest('.tin');if(i){i.select&&i.select();teDD(i)}});
+document.addEventListener('input',e=>{const i=e.target.closest&&e.target.closest('.tin');if(i)teDD(i)});
+document.addEventListener('focusout',e=>{const i=e.target.closest&&e.target.closest('.tin');if(i){teHide(i);teCommit(i)}});
+document.addEventListener('keydown',e=>{const i=e.target.closest&&e.target.closest('.tin');if(!i)return;
+  if(e.key==='Enter'){e.preventDefault();const first=i.nextElementSibling.querySelector('.tdo:not(:disabled)');if(i.value.trim()&&parseTime(i.value)===null&&i.dataset.tin==='time'&&first)i.value=first.textContent;teHide(i);teCommit(i);if(i.dataset.tin==='time'){const x=i.closest('.tebox').querySelector('[data-tin=extra]');if(x)x.focus()}else i.blur()}
+  else if(e.key==='Escape')teHide(i)});
+document.addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('.tdd'))e.preventDefault()});
+document.addEventListener('click',e=>{const p=e.target.closest&&e.target.closest('[data-tpick]');if(!p||p.disabled)return;
+  const bx=p.closest('.tebox');delete bx.dataset.bad;if(p.dataset.tpick==='time')setTime(TSLOTS.includes(p.dataset.v)?p.dataset.v:'');else setExtra(+p.dataset.v);
+  const i=p.closest('.tefld').querySelector('.tin');i.value=p.textContent;i.classList.remove('bad');p.parentElement.hidden=true;i.blur();teSync()});
+function setExtra(h){EXTRA=Math.max(0,Math.min(XMAX,+h||0));syncBar();calSum();renderGrid()}
+function setTime(v){TIME=v||'';syncBar();calSum();renderGrid()}
 const dateNow=()=>{const a=$('#from').value,b=$('#to').value;return {a,b,d:(a&&b)?days(a,b):0}};
 /* ---------- availability calendar ---------- */
 const addD=(s,n)=>{const [y,m,d]=s.split('-').map(Number);return iso(new Date(y,m-1,d+n))};
@@ -151,7 +206,7 @@ function calInner(key,id,mode,nm){
   return `<div class="calh"><button type="button" data-cal-nav="-1" aria-label="${esc(t('cal.prev'))}">‹</button><b>${esc(first.toLocaleDateString(loc,{month:'long',year:'numeric'}))}</b><button type="button" data-cal-nav="1" aria-label="${esc(t('cal.next'))}">›</button></div><div class="calw">${wk}</div><div class="calg">${cells}</div><div class="calleg">${leg}${pick?`<button type="button" class="chip" data-cal-clear style="margin-left:auto;padding:2px 10px;font-size:12px">${esc(t('cal.clear'))}</button>`:''}</div>`;
 }
 function setDates(a,b){const f=$('#from'),r=$('#to');f.value=a;r.value=b;[f,r].forEach(x=>x.dispatchEvent(new Event('change',{bubbles:true})))}
-function calSum(){const el=$('#calsum');if(!el)return;const a=$('#from').value,b=$('#to').value;el.textContent=(a&&b&&days(a,b)>=1)?fmt(a)+' → '+fmt(b)+' · '+t(days(a,b)===1?'cal.d1':'cal.dn',{d:days(a,b)})+(TIME?' · '+tl(TIME):''):a?t('cal.pickret'):t('cal.pickstart')}
+function calSum(){teSync();const dt=$('#dtot');if(dt){const a0=$('#from').value,b0=$('#to').value,d0=(a0&&b0)?days(a0,b0):0;dt.textContent=d0>=1?durTxt(d0)+(EXTRA?' · '+money(extraFee(allCars().find(x=>x.id===S.gid),EXTRA))+' '+t('time.forx'):''):''}const el=$('#calsum');if(!el)return;const a=$('#from').value,b=$('#to').value;el.textContent=(a&&b&&days(a,b)>=1)?fmt(a)+' → '+fmt(b)+' · '+t(days(a,b)===1?'cal.d1':'cal.dn',{d:days(a,b)})+(EXTRA?' + '+EXTRA+' h':''):a?t('cal.pickret'):t('cal.pickstart')}
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-cal-day],[data-cal-nav],[data-cal-clear]');if(!b)return;
   const el=b.closest('.cal');if(!el)return;const key=el.dataset.key,id=el.dataset.car,mode=el.dataset.mode;
@@ -167,7 +222,7 @@ function cardHtml(c){
     <div class="tile">${imgsOf(c)[0]}<span class="area">${esc(c.area)}</span><span class="svc">${esc(svcT(c.service))}</span>${S.sel===c.id?'<span class="chosen">'+esc(t('card.chosen'))+'</span>':''}${un?'<span class="chosen" style="background:var(--ink);color:var(--bg)">'+esc(t('card.booked'))+'</span>':''}</div>
     <div class="cb"><div class="row2" style="align-items:baseline"><h3>${esc(c.name)}</h3><span class="rt">${rt?'★ '+rt.avg.toFixed(1)+' <small>('+rt.n+')</small>':'<small>'+esc(t('card.new'))+'</small>'}</span></div>
     <p class="sub">${esc(c.type)} · ${esc(seatsLabel(c))}${S.moved?' · '+esc(t('card.km',{k:distOf(c).toFixed(1)})):''}</p>
-    <p class="pr">${d>=1?`<b>${esc(money(c.price))}</b><span>${esc(t(d===1?'card.pd1':'card.pdN',{d,tot:money(c.price*d)}))}</span>`:`<b>${esc(money(c.price))}</b><span>${esc(t('card.perday'))}</span>`}</p></div></button>
+    <p class="pr">${d>=1?`<b>${esc(money(c.price))}</b><span>${esc(t(d===1?'card.pd1':'card.pdN',{d,tot:money(c.price*d+extraFee(c,EXTRA))}))}</span>`:`<b>${esc(money(c.price))}</b><span>${esc(t('card.perday'))}</span>`}</p><p class="xh">${esc(t('card.xhr',{p:money(hourlyOf(c))}))}</p></div></button>
     <button type="button" class="heart${fav?' on':''}" data-fav="${esc(c.id)}" aria-pressed="${fav}" aria-label="${esc(t(fav?'card.unsave':'card.save'))} ${esc(c.name)}">${fav?BMON:BMOFF}</button></article>`;
 }
 function renderGrid(){
@@ -180,24 +235,23 @@ $('#svc').addEventListener('change',e=>{S.service=e.target.value;renderGrid()});
 $('#seats').addEventListener('change',e=>{S.seats=+e.target.value;renderGrid()});
 
 /* ---------- detail dialog ---------- */
-const dlg=$('#dlg');let AVOPEN=false;
+const dlg=$('#dlg');
 function openDetail(id){
-  if(!dlg.open)AVOPEN=false;
   const c=allCars().find(x=>x.id===id);if(!c)return;S.gid=id;S.gi=0;
   delete CAL.d;const sp=c.specs||{},mo=isMotor(c),rows=(mo?[['sp.year',sp.year],['sp.trans',sp.transmission],['sp.cc',sp.cc?sp.cc+' cc':''],['sp.fuel',sp.fuel],['sp.riders',c.seats],['sp.helmets',sp.helmets],['sp.mileage',sp.mileage],['sp.secdep',sp.deposit?money(sp.deposit):''],['sp.service',svcT(c.service)],['sp.area',c.area]]:[['sp.year',sp.year],['sp.trans',sp.transmission],['sp.fuel',sp.fuel],['sp.seats',c.seats],['sp.lug',sp.bags!=null?t('bags',{n:sp.bags}):''],['sp.aircon',sp.aircon],['sp.service',svcT(c.service)],['sp.area',c.area]]).filter(r=>r[1]!==''&&r[1]!=null);
-  const good=`<h3 class="h3">${esc(t('d.good'))}</h3><ul class="rules"><li>${esc(t('r.hours'))}</li><li>${esc(t('r.gap',{h:SETTINGS.turnaroundHours||3}))}</li><li>${esc(t('r.deposit'))}</li><li>${esc(t('r.secdep',{amt:money(depositOf(c))}))}</li>${mo?`<li>${esc(t('r.mlicense'))}</li><li>${esc(t('r.helmet'))}</li>`:`<li>${esc(t(c.service==='Self-drive'?'r.license':'r.driver'))}</li>`}<li>${esc(t('r.fuel'))}</li><li>${esc(SETTINGS.cancellation)}</li></ul>`;
-  const avail=c.status==='approved'?`<details class="more avd" id="avd"${AVOPEN?' open':''}><summary><span>${esc(t('cal.title'))}</span><small id="calsum"></small></summary><div class="cal" id="cal-d" data-key="d" data-car="${esc(c.id)}" data-mode="pick">${calInner('d',c.id,'pick')}</div><label class="tsel"><span class="lab">${esc(t('f.time'))}</span><select id="dtime">${timeOpts(c.id)}</select></label><p class="note" style="margin:6px 0 0">${esc(t('time.rule'))}</p></details>`:'';
+  const good=`<details class="more gtk"${innerWidth>=900?' open':''}><summary><span>${esc(t('d.good'))}</span></summary><ul class="rules"><li>${esc(t('r.hours'))}</li><li>${esc(t('r.gap',{h:SETTINGS.turnaroundHours||3}))}</li><li>${esc(t('r.extra',{n:XMAX,p:Math.round(XRATE*100)}))}</li><li>${esc(t('r.deposit'))}</li><li>${esc(t('r.secdep',{amt:money(depositOf(c))}))}</li>${mo?`<li>${esc(t('r.mlicense'))}</li><li>${esc(t('r.helmet'))}</li>`:`<li>${esc(t(c.service==='Self-drive'?'r.license':'r.driver'))}</li>`}<li>${esc(t('r.fuel'))}</li><li>${esc(SETTINGS.cancellation)}</li></ul></details>`;
+  const avail=c.status==='approved'?`<div class="avd2"><button type="button" class="avbtn" data-avopen aria-haspopup="dialog"><span class="avt">${esc(t('cal.title'))}</span><small id="calsum"></small><span class="chev" aria-hidden="true">▾</span></button><div class="avpop" id="avpop" hidden role="dialog" aria-label="${esc(t('cal.title'))}"><button type="button" class="x" data-avx aria-label="Close">×</button><h3 class="h3" style="margin-top:0">${esc(t('cal.title'))}</h3><div class="cal" id="cal-d" data-key="d" data-car="${esc(c.id)}" data-mode="pick">${calInner('d',c.id,'pick')}</div>${teBox('d')}<p class="note" id="dtot" style="margin:8px 0 0"></p><button type="button" class="btn" data-avx style="width:100%;margin-top:10px">${esc(t('time.done'))}</button></div></div>`:'';
   const cta=c.status!=='approved'?'<p class="note">'+esc(t('d.preview'))+'</p>':unavailable(c)?'<p class="err">'+esc(gapMsg(gapIssue(c.id,$('#from').value,$('#to').value,TIME))||t('d.booked'))+'</p>':`<div class="stack"><button type="button" class="btn" data-choose="${esc(c.id)}">${esc(t('d.choose'))}</button></div>`;
   $('#dbody').innerHTML=`<div class="dhero"><div class="gal"><div class="stage" id="stage"></div><button type="button" class="nav prev" data-g="-1" aria-label="${esc(t('g.prev'))}">‹</button><button type="button" class="nav next" data-g="1" aria-label="${esc(t('g.next'))}">›</button></div>
   <div class="thumbs" id="thumbs"></div><p class="gnote" id="galnote"></p></div>
-  <div class="dmain">${c.ownerName?`<p class="note" style="margin:0">${esc(t('d.hosted',{name:c.ownerName}))}</p>`:''}<div class="dhead"><div><h2 id="dtitle">${esc(c.name)}</h2><p class="sub">${esc(c.type)} · ${esc(seatsLabel(c))} · ${esc(svcT(c.service))}${S.moved?' · '+esc(t('kmpin',{k:distOf(c).toFixed(1)})):''}</p></div><div><p class="pr big"><b>${esc(money(c.price))}</b><span>${esc(t('card.perday'))}</span></p><button type="button" class="chip" data-fav="${esc(c.id)}" style="margin-top:6px">${esc(t(ST.favs.includes(c.id)?'d.saved':'d.save'))}</button></div></div>
+  <div class="dmain">${c.ownerName?`<p class="note" style="margin:0">${esc(t('d.hosted',{name:c.ownerName}))}</p>`:''}<div class="dhead"><div><h2 id="dtitle">${esc(c.name)}</h2><p class="sub">${esc(c.type)} · ${esc(seatsLabel(c))} · ${esc(svcT(c.service))}${S.moved?' · '+esc(t('kmpin',{k:distOf(c).toFixed(1)})):''}</p></div><div><p class="pr big"><b>${esc(money(c.price))}</b><span>${esc(t('card.perday'))}</span></p><p class="xh">${esc(t('card.xhr',{p:money(hourlyOf(c))}))}</p><button type="button" class="chip" data-fav="${esc(c.id)}" style="margin-top:6px">${esc(t(ST.favs.includes(c.id)?'d.saved':'d.save'))}</button></div></div>
   <div class="dcols"><div class="dleft">
-  ${c.description?`<h3 class="h3">${esc(t('d.desc'))}</h3><p class="desc">${esc(c.description)}</p>`:''}
+  ${c.description?`<h3 class="h3">${esc(t('d.desc'))}</h3><div class="descw"><p class="desc clamp" id="dtxt">${esc(c.description)}</p><button type="button" class="lnk" data-descmore id="dmore" hidden>${esc(t('d.more'))}</button><div class="dpop" id="dpop" hidden role="dialog" aria-label="${esc(t('d.desc'))}"><button type="button" class="x" data-descx aria-label="Close">×</button><h3 class="h3" style="margin-top:0">${esc(c.name)}</h3><p class="desc">${esc(c.description)}</p></div></div>`:''}
   <h3 class="h3">${esc(t('d.details'))}</h3><dl class="specs">${rows.map(r=>`<div><dt>${esc(t(r[0]))}</dt><dd>${esc(r[1])}</dd></div>`).join('')}</dl>
   ${(c.features&&c.features.length)?`<h3 class="h3">${esc(t('d.features'))}</h3><div class="feat">${c.features.map(f=>`<span class="pill">${esc(f)}</span>`).join('')}</div>`:''}
   <h3 class="h3">${esc(t('d.reviews'))}</h3>${reviewBlock(c)}</div>
   <div class="dright">${avail}${good}${cta}</div></div></div>`;
-  renderGallery();calSum();if(!dlg.open)dlg.showModal();
+  renderGallery();calSum();if(!dlg.open)dlg.showModal();{const tx=$('#dtxt'),mb=$('#dmore');if(tx&&mb)mb.hidden=!(tx.scrollHeight>tx.clientHeight+1)}
 }
 function renderGallery(){
   const c=allCars().find(x=>x.id===S.gid),im=imgsOf(c);S.gi=(S.gi+im.length)%im.length;
@@ -208,13 +262,18 @@ function renderGallery(){
 dlg.addEventListener('click',e=>{
   if(e.target===dlg){dlg.close();return}
   const g=e.target.closest('[data-g]'),th=e.target.closest('[data-gi]'),ch=e.target.closest('[data-choose]');
+  if(e.target.closest('[data-avopen]')){const p=$('#avpop');p.hidden=!p.hidden;if(!p.hidden)teSync();return}
+  if(e.target.closest('[data-avx]')){$('#avpop').hidden=true;return}
+  {const p=$('#avpop');if(p&&!p.hidden&&!e.target.closest('#avpop'))p.hidden=true}
+  if(e.target.closest('[data-descmore]')){const p=$('#dpop');p.hidden=!p.hidden;return}
+  if(e.target.closest('[data-descx]')){$('#dpop').hidden=true;return}
+  {const p=$('#dpop');if(p&&!p.hidden&&!e.target.closest('#dpop'))p.hidden=true}
   if(e.target.closest('[data-close]')){dlg.close();return}
   if(g){S.gi+=+g.dataset.g;renderGallery()}
   else if(th){S.gi=+th.dataset.gi;renderGallery()}
   else if(ch){S.sel=ch.dataset.choose;dlg.close();renderGrid();$('#s3').scrollIntoView({behavior:'smooth',block:'start'})}
 });
-dlg.addEventListener('change',e=>{if(e.target.id==='dtime')setTime(e.target.value)});
-dlg.addEventListener('toggle',e=>{if(e.target.id==='avd')AVOPEN=e.target.open},true);
+dlg.addEventListener('cancel',e=>{for(const id of ['#avpop','#dpop']){const p=$(id);if(p&&!p.hidden){e.preventDefault();p.hidden=true;return}}});
 dlg.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'){S.gi--;renderGallery()}else if(e.key==='ArrowRight'){S.gi++;renderGallery()}});
 
 /* ---------- filters, request ---------- */
@@ -229,13 +288,13 @@ let GAPMSG='';
 function quote(){
   GAPMSG='';
   const c=allCars().find(x=>x.id===S.sel),a=$('#from').value,b=$('#to').value;
-  $('#datesum').textContent=(a&&b&&days(a,b)>=1)?t('datesum',{a:fmt(a),b:fmt(b),d:days(a,b)})+(TIME?' · '+t('time.at',{t:tl(TIME)}):''):t('datesum.none');
+  $('#datesum').textContent=(a&&b&&days(a,b)>=1)?t('datesum',{a:fmt(a),b:fmt(b),d:days(a,b)}):t('datesum.none');
   $('#chosen').innerHTML=c?`<span class="lab">${esc(t('chosenlab'))}</span><div class="row2"><b>${esc(c.name)}</b><button type="button" class="chip" data-open="${esc(c.id)}">${esc(t('viewd'))}</button></div>`:'<span class="note">'+esc(t('pickfirst'))+'</span>';
   if(!c||!a||!b||days(a,b)<1||a<iso(new Date())){$('#quote').innerHTML=c?'<span class="note">'+esc(t(a&&a<iso(new Date())?'retpast':'retbefore'))+'</span>':'';LASTQ=null;setTimeout(updateBar,0);return null}
-  const gi=gapIssue(c.id,a,b,TIME);if(gi){GAPMSG=gapMsg(gi);$('#quote').innerHTML='<span class="note">'+esc(GAPMSG)+'</span>';LASTQ=null;setTimeout(updateBar,0);return null}
-  const d=days(a,b),total=c.price*d,dep=depositOf(c);
-  $('#quote').innerHTML=`<div><span>${esc(t('q.line',{p:money(c.price),d}))}</span><span>${esc(money(total))}</span></div>${TIME?`<div><span>${esc(t('q.time'))}</span><span>${esc(tl(TIME))}</span></div>`:''}<div><span>${esc(t('q.dep'))}</span><span>${esc(money(dep))}</span></div><div class="t"><span>${esc(t('q.tot'))}</span><span>${esc(money(total+dep))}</span></div><p class="note" style="margin:6px 0 0">${esc(t('q.note'))}</p>`;
-  LASTQ={c,a,b,d,total,dep,time:TIME};setTimeout(updateBar,0);return LASTQ;
+  const gi=gapIssue(c.id,a,b,TIME,EXTRA);if(gi){GAPMSG=gapMsg(gi);$('#quote').innerHTML='<span class="note">'+esc(GAPMSG)+'</span>';LASTQ=null;setTimeout(updateBar,0);return null}
+  const d=days(a,b),xf=extraFee(c,EXTRA),total=c.price*d+xf,dep=depositOf(c);
+  $('#quote').innerHTML=`<div><span>${esc(t('q.line',{p:money(c.price),d}))}</span><span>${esc(money(c.price*d))}</span></div>${xf?`<div><span>${esc(t('q.extra',{h:EXTRA}))}</span><span>${esc(money(xf))}</span></div>`:''}${TIME?`<div><span>${esc(t('q.time'))}</span><span>${esc(tl(TIME))}${EXTRA?' / '+esc(tl(endTime(TIME,EXTRA))):''}</span></div>`:''}<div><span>${esc(t('q.dep'))}</span><span>${esc(money(dep))}</span></div><div class="t"><span>${esc(t('q.tot'))}</span><span>${esc(money(total+dep))}</span></div><p class="note" style="margin:6px 0 0">${esc(t('q.note'))}</p>`;
+  LASTQ={c,a,b,d,total,dep,time:TIME,extra:EXTRA,xfee:xf};setTimeout(updateBar,0);return LASTQ;
 }
 ['from','to'].forEach(id=>$('#'+id).addEventListener('change',()=>{const a=$('#from').value;if(a)$('#to').min=a;renderGrid()}));
 let MSG='';
@@ -244,7 +303,7 @@ $('#f').addEventListener('submit',e=>{
   if(!ST.me()){openLogin(t('l.needreq'));return}
   const q=quote(),name=$('#name').value.trim(),phone=fullPhone(),email=$('#email').value.trim(),code=$('#code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,''),notes=$('#notes').value.trim();
   if(!q){err.textContent=GAPMSG||t('e.pick');return}
-  if(!TIME){err.textContent=t('e.time');$('#ptime').focus();return}
+  if(!TIME){err.textContent=t('e.time');const ti=$('#tebox-f [data-tin=time]');if(ti)ti.focus();return}
   if(unavailable(q.c)){err.textContent=t('e.unavail');return}
   if(name.length<2){err.textContent=t('e.name');return}
   if(ST.requests.some(r=>r.guestId===ST.me().id&&r.carId===q.c.id&&r.from===q.a&&r.to===q.b&&(r.status==='new'||r.status==='confirmed'))){err.textContent=t('e.dup');return}
@@ -252,7 +311,7 @@ $('#f').addEventListener('submit',e=>{
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){err.textContent=t('e.email');return}
   if(!$('#ack').checked){err.textContent=t('e.ack');return}
   const area=placeName(),spot=S.moved?`near ${area}, https://www.google.com/maps?q=${S.pin[0].toFixed(5)},${S.pin[1].toFixed(5)}`:'to be agreed on chat';
-  MSG=`Hi ${BRAND.name}, I would like to request a vehicle.\n\nVehicle: ${q.c.name} (${q.c.service}, ${q.c.area})\nPickup: ${fmtEn(q.a)}, ${tl(TIME)}\nReturn: ${fmtEn(q.b)}, ${tl(TIME)} (${q.d} day${q.d>1?'s':''} of 24 hours)\nPickup spot: ${spot}\nRental fee: ${php(q.total)}\nRefundable security deposit: ${php(q.dep)}\nTotal to pay online after the owner confirms: ${php(q.total+q.dep)}${partyText()?'\nGuests: '+partyText():''}\nName: ${name}\nMobile: ${phone}\nEmail (for the invoice and booking confirmation): ${email}${code?'\nReferral code: '+code:''}${notes?'\nNotes: '+notes:''}\nI have read and agree to the renter notice.\n\nRequest ref: ${q.c.id}|${q.a}|${q.b}|${phone}${code?'|'+code:''}`;
+  MSG=`Hi ${BRAND.name}, I would like to request a vehicle.\n\nVehicle: ${q.c.name} (${q.c.service}, ${q.c.area})\nPickup: ${fmtEn(q.a)}, ${tl(TIME)}\nReturn: ${fmtEn(q.b)}, ${tl(endTime(TIME,q.extra))} (${q.d} day${q.d>1?'s':''} of 24 hours${q.extra?' + '+q.extra+' extra hour'+(q.extra>1?'s':''):''})\nPickup spot: ${spot}\nRental fee: ${php(q.total)}${q.xfee?' (includes '+php(q.xfee)+' for extra hours)':''}\nRefundable security deposit: ${php(q.dep)}\nTotal to pay online after the owner confirms: ${php(q.total+q.dep)}${partyText()?'\nGuests: '+partyText():''}\nName: ${name}\nMobile: ${phone}\nEmail (for the invoice and booking confirmation): ${email}${code?'\nReferral code: '+code:''}${notes?'\nNotes: '+notes:''}\nI have read and agree to the renter notice.\n\nRequest ref: ${q.c.id}|${q.a}|${q.b}|${phone}${code?'|'+code:''}`;
   const rq=saveRequest(q,name,phone,notes,spot,MSG,email);
   lss('contact',{name,phone,email});
   $('#msg').textContent=MSG;$('#out').hidden=false;$('#reqnote').textContent=t('reqnote',{id:rq.id});$('#out').scrollIntoView({behavior:'smooth',block:'start'});
@@ -320,16 +379,10 @@ function openSeg(k){
   if(k==='where')renderWherePop();
   if(k==='when')renderWhenCal()
   if(k==='who')renderWhoPop();
-  if(k==='time')renderTimePop();
 }
 function closeSeg(){openSeg('')}
-function renderTimePop(){
-  const a=$('#from').value,b=$('#to').value,ex=(a&&b&&days(a,b)>=1)?t('time.ex',{a:fmtS(a),b:fmtS(b),t:TIME?tl(TIME):'9:00 AM'}):t('time.rule');
-  $('#pop-time').innerHTML=`<p class="note" style="margin:0 0 10px">${esc(ex)}</p><div class="tgrid" role="listbox">${TSLOTS.map(v=>`<button type="button" class="tb${v===TIME?' on':''}"${S.sel&&gapIssue(S.sel,a,b,v)?' disabled':''} role="option" aria-selected="${v===TIME}" data-time="${v}">${tl(v)}</button>`).join('')}</div>`;
-  const on=$('#pop-time .tb.on')||$('#pop-time [data-time="08:00"]');if(on)setTimeout(()=>{const g=$('#pop-time .tgrid');if(g&&on)g.scrollTop=Math.max(0,on.offsetTop-60)},0)
-}
-function renderWhenCal(){const two=innerWidth>=900,el=$('#cal-s');el.dataset.n=two?2:1;$('#pop-when').classList.toggle('two',two);el.innerHTML=calInner('s','','pick',two?2:1);whenSum()}
-function whenSum(){const a=$('#from').value,b=$('#to').value;$('#whenSum').textContent=(a&&b&&days(a,b)>=1)?fmt(a)+' → '+fmt(b)+' · '+t(days(a,b)===1?'cal.d1':'cal.dn',{d:days(a,b)})+(TIME?' · '+tl(TIME):''):a?t('cal.pickret'):t('cal.pickstart')}
+function renderWhenCal(){const two=innerWidth>=900,el=$('#cal-s');if(!$('#tebox-s').firstChild)$('#tebox-s').innerHTML=teBox('s');el.dataset.n=two?2:1;$('#pop-when').classList.toggle('two',two);el.innerHTML=calInner('s','','pick',two?2:1);whenSum()}
+function whenSum(){teSync();const a=$('#from').value,b=$('#to').value;$('#whenSum').textContent=(a&&b&&days(a,b)>=1)?(TIME?'':t('time.sel')):a?t('cal.pickret'):t('cal.pickstart')}
 let PL=[],PH_TIMER=0,PH_ABORT=null,PH_STATE='',PH_CACHE={};
 const norm=x=>String(x||'').toLowerCase();
 function localPlaces(){const extra=Object.keys(AREAS).filter(k=>k!=='Airport').map(k=>({n:k,s:'Puerto Princesa, Palawan',p:AREAS[k]}));const seen=new Set(),out=[];[...PLACES,...extra].forEach(x=>{const k=norm(x.n);if(!seen.has(k)){seen.add(k);out.push(x)}});return out}
@@ -386,12 +439,10 @@ function syncBar(){
   const wi=$('#whereIn');if(document.activeElement!==wi)wi.value=S.moved?placeName():'';
   $('#whereClr').hidden=!wi.value;
   const a=$('#from').value,b=$('#to').value,d=(a&&b)?days(a,b):0;
-  $('#whenV').textContent=(a&&b&&d>=1)?fmtS(a)+' → '+fmtS(b):a?fmtS(a)+' → …':t('when.any');
-  {const pk=[S.sel,$('#from').value,$('#to').value,ST.requests.length,PREF.lang].join('|');if(pk!==PTL){PTL=pk;$('#ptime').innerHTML=timeOpts(S.sel)}}$('#ptime').value=TIME;
-  $('#timeV').textContent=TIME?tl(TIME):t('time.add');$('#timeV').classList.toggle('set',!!TIME);
+  $('#whenV').textContent=((a&&b&&d>=1)?fmtS(a)+' → '+fmtS(b):a?fmtS(a)+' → …':t('when.any'))+(TIME?' · '+tlx():'');
   const pl=partyLabel();$('#whoV').textContent=pl||t('who.add');
   $('#whoV').classList.toggle('set',!!pl);$('#whenV').classList.toggle('set',!!(a&&b));
-  const mt=$('#asminiT');if(mt)mt.textContent=[S.moved?placeName():t('mini.any'),(a&&b&&d>=1)?fmtS(a)+' → '+fmtS(b):t('when.any'),...(TIME?[tl(TIME)]:[]),pl||t('who.add')].join(' · ');
+  const mt=$('#asminiT');if(mt)mt.textContent=[S.moved?placeName():t('mini.any'),(a&&b&&d>=1)?fmtS(a)+' → '+fmtS(b):t('when.any'),...(TIME?[tlx()]:[]),pl||t('who.add')].join(' · ');
   const sv=$('#spotv');if(sv)sv.textContent=S.moved?placeName():t('spot.drop');
 }
 let MVR=0;function miniVis(){if(MVR)return;MVR=requestAnimationFrame(()=>{MVR=0;miniVisNow()})}
@@ -401,7 +452,7 @@ document.addEventListener('click',e=>{if(e.target.closest('#asmini')){const w=$(
 asb.addEventListener('click',e=>{
   const pl=e.target.closest('[data-pl]');if(pl){pickPlace(PL[+pl.dataset.pl]);return}
   if(e.target.closest('[data-loc]')){closeSeg();$('#locate').click();return}
-  const tm=e.target.closest('[data-time]');if(tm){setTime(tm.dataset.time);setTimeout(()=>{if(!$('#pop-time').hidden)openSeg('who')},220);return}
+  if(e.target.closest('[data-whendone]')){openSeg('who');return}
   const st=e.target.closest('[data-step]');
   if(st){stepParty(st.dataset.step,+st.dataset.d);return}
   if(e.target.closest('[data-party-clear]')){PARTY.a=PARTY.c=PARTY.i=PARTY.p=0;S.seats=0;renderGrid();syncBar();renderWhoPop();return}
@@ -416,9 +467,9 @@ $('#whereIn').addEventListener('input',()=>{$('#whereClr').hidden=!$('#whereIn')
 $('#whereIn').addEventListener('focus',()=>{if($('#pop-where').hidden)openSeg('where')});
 document.addEventListener('click',e=>{if(asb.classList.contains('open')&&!e.composedPath().includes(asb))closeSeg()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSeg()});
-['from','to'].forEach(id=>$('#'+id).addEventListener('change',()=>{syncBar();if(!$('#pop-when').hidden){renderWhenCal();if($('#from').value&&$('#to').value)setTimeout(()=>{if(!$('#pop-when').hidden)openSeg('time')},350)}}));
-$('#ptime').addEventListener('change',e=>setTime(e.target.value));
-syncBar();
+['from','to'].forEach(id=>$('#'+id).addEventListener('change',()=>{syncBar();if(!$('#pop-when').hidden)renderWhenCal()}));
+$('#tebox-f').innerHTML=teBox('f');
+syncBar();teSync();
 
 /* measure header and search bar heights for the pinned layout */
 function measureBars(){const h=document.querySelector('.hdr'),b=$('#asw'),r=document.documentElement.style;if(h)r.setProperty('--hh',h.offsetHeight+'px');if(b)r.setProperty('--asbh',b.offsetHeight+'px')}

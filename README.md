@@ -72,4 +72,11 @@ Note: when pickup and return dates are set, vehicles already booked or blocked f
 
 ## Pickup time and admin
 - Rentals are 24-hour days from the pickup time the renter picks (Time tab in the search bar, the availability panel and the request form). Return is the same time on the last day.
-- The admin screen has tabs: Overview, Vehicles, Bookings, Users, Payouts, Settings. Log in with "Admin demo login" to open it.
+- The admin screen is a backoffice: Overview, Vehicles, Bookings, Users, Payouts, Settings. Tables have search, sorting, tick-box bulk actions and CSV export. Vehicles can be imported from CSV (Import CSV, then "Use the template"). Log in with "Admin demo login" to open it.
+
+## Dates & time picker, dashboards and test data (latest)
+- One shared "Dates & time" picker (search bar, vehicle page popup, booking form). Pickup time and extra hours can be typed ("9:30 am", "930", "21:00", "2") or picked from a small dropdown. The code lives in app.js under "shared pickup time + extra hours boxes".
+- Admin has a Dashboard tab (KPIs, monthly value and commission, weekly bookings, busiest days, outcomes, areas, types, top vehicles and owners). Owners get their own dashboard on the Owner screen; the admin can open any owner's view from Users. Charts are plain SVG/CSS in dash.js, no library.
+- Admin, Settings, Test load: loads about 40 owners, 60 renters, 120 vehicles and 600 bookings (demo.js), tagged demo and removable with Clear demo data.
+- Safety nets: damaged saved data is tidied on load (store.js), a reload bar appears if the page errors, and Admin, Settings has Download backup / Restore.
+- Still demo only: anyone can edit browser data. Real logins, payments and shared data need the Phase 2 backend.

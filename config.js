@@ -12,6 +12,8 @@ const BRAND={
 const SETTINGS={
   damageCap:{car:50000,motor:30000}, // most a renter pays for damage in one rental (placeholder amounts: decide)
   deposit:{car:5000,motor:2000}, // refundable security deposit, paid online to Arkila and held until the return check (placeholder amounts: decide)
+  extraHourRate:0.2, // each extra hour costs this share of the daily rate (placeholder: decide)
+  maxExtraHours:4,   // more than this, book another day instead
   turnaroundHours:3, // break between two rentals of the same vehicle (cleaning, checks, fuel)
   commission:0.12,  // Arkila share of each trip total (shown on the admin screen)
   cancellation:"Free if you cancel 14 or more days before pickup. After that the owner may keep part of the rental fee: 20% from 7 to 13 days before, 50% from 2 to 6 days before, and up to 100% (at most 3 days' rental) with less than 48 hours' notice or if you do not show up. Your security deposit is always refunded.", // placeholder, matches the Terms draft. Edit to your real policy

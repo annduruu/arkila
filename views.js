@@ -1,7 +1,7 @@
 /* Login, owner, trips and admin screens. Demo only: no real Facebook or Google yet. */
 const ROUTES=['home','saved','host','trips','account','admin','terms','privacy'];
 const STATUS={new:['Requested','w'],confirmed:['Paid and confirmed','b'],completed:['Completed','g'],cancelled:['Cancelled','r'],declined:['Declined by owner','r'],pending:['Waiting for approval','w'],approved:['Live','g'],rejected:['Not approved','r'],paused:['Paused','']};
-const dr=r=>r.time?fmt(r.from)+', '+tl(r.time)+' to '+fmt(r.to)+', '+tl(r.time):fmt(r.from)+' to '+fmt(r.to);
+const dr=r=>r.time?fmt(r.from)+', '+tl(r.time)+' to '+fmt(r.to)+', '+tl(endTime(r.time,r.extraH))+(r.extraH?' (+'+r.extraH+' h)':''):fmt(r.from)+' to '+fmt(r.to);
 const pill=k=>{const s=STATUS[k]||[k,''];return `<span class="pill ${s[1]}">${esc(t('st.'+k)===('st.'+k)?s[0]:t('st.'+k))}</span>`};
 const has=(u,r)=>!!(u&&u.roles.includes(r));
 const first=n=>String(n||'').split(' ')[0];
@@ -9,7 +9,7 @@ const first=n=>String(n||'').split(' ')[0];
 /* ---- requests ---- */
 function saveRequest(q,name,phone,notes,spot,msg,email){
   const me=ST.me();let id;do{id='REQ-'+(1000+Math.floor(Math.random()*9000))}while(ST.requests.some(r=>r.id===id));
-  const r={id,carId:q.c.id,carName:q.c.name,hostId:q.c.ownerId,hostName:q.c.ownerName,guestId:me.id,guestName:name,guestPhone:phone,guestEmail:email||'',from:q.a,to:q.b,time:q.time||'',days:q.d,total:q.total,deposit:q.dep,spot,notes,msg,status:'new',ack:{renterNotice:Date.now(),v:'2026-11-03'},createdAt:Date.now()};
+  const r={id,carId:q.c.id,carName:q.c.name,hostId:q.c.ownerId,hostName:q.c.ownerName,guestId:me.id,guestName:name,guestPhone:phone,guestEmail:email||'',from:q.a,to:q.b,time:q.time||'',extraH:q.extra||0,extraFee:q.xfee||0,days:q.d,total:q.total,deposit:q.dep,spot,notes,msg,status:'new',ack:{renterNotice:Date.now(),v:'2026-11-03'},createdAt:Date.now()};
   ST.requests.unshift(r);ST.save();renderNav();return r;
 }
 const setReq=(id,status)=>{const r=ST.requests.find(x=>x.id===id);if(r){r.status=status;ST.save()}};
@@ -132,7 +132,7 @@ function renderHost(){
   const me=ST.me(),el=$('#v-host');
   if(!has(me,'host')){el.innerHTML=`<h1>Earn from your vehicle</h1><p class="lead">List a car, van or motorbike. Arkila handles the renter checks, the paperwork and the payment. The renter pays Arkila online up front, and Arkila pays you after the handover, less its fee.</p>${hostSteps()}<button class="btn" data-becomehost>List your vehicle</button>`;trFil(el);return}
   const mine=ST.listings.filter(l=>l.ownerId===me.id),reqs=ST.requests.filter(r=>r.hostId===me.id);
-  el.innerHTML=`<h1>Owner dashboard</h1><p class="lead">New vehicles are checked by the Arkila team before renters can see them.</p>${hostSteps()}
+  el.innerHTML=`<h1>Owner dashboard</h1><p class="lead">New vehicles are checked by the Arkila team before renters can see them.</p>${ownDash(me.id,false)}${hostSteps()}
   <section class="step"><h2>Your vehicles</h2>${mine.length?mine.map(l=>{const k=l.status==='approved'&&l.active===false?'paused':l.status;return `<div class="lrow"><div class="lthumb">${imgsOf(l)[0]}</div><div class="lmain"><b>${esc(l.name)}</b> ${pill(k)}<p class="sub">${esc(l.type)} · ${l.seats} ${l.kind==='motor'?'riders':'seats'} · ${esc(l.service)} · ${esc(l.area)} · ${php(l.price)}/day</p></div><div class="row2" style="gap:6px"><button class="chip" data-open="${esc(l.id)}">View</button>${l.status==='approved'?`<button class="chip" data-hcal="${esc(l.id)}">${HCAL.has(l.id)?'Hide calendar':'Calendar'}</button><button class="chip" data-hpause="${esc(l.id)}">${l.active===false?'Resume':'Pause'}</button>`:''}<button class="chip" data-hdel="${esc(l.id)}">Delete</button></div></div>${l.status==='approved'?`<div class="calwrap">${HCAL.has(l.id)?`<div class="cal" id="cal-h-${esc(l.id)}" data-key="h-${esc(l.id)}" data-car="${esc(l.id)}" data-mode="host">${calInner('h-'+l.id,l.id,'host')}</div><p class="note">Tap a free day to block it, tap again to unblock. Booked days update by themselves when Arkila confirms a booking.</p>`:''}</div>`:''}`}).join(''):'<div class="empty">No vehicles yet. Add your first one below.</div>'}</section>
   <section class="step"><h2>Add a vehicle</h2><form class="form" id="hf" novalidate>
     <label><span class="lab">Category</span><select id="hk"><option value="car">Car, van or pickup</option><option value="motor">Motorbike or scooter</option></select></label>
@@ -143,6 +143,7 @@ function renderHost(){
     <div class="ppick"><span class="lab" id="hpl-l">Pickup location</span><div class="ppw"><input id="hpl" role="combobox" aria-labelledby="hpl-l" aria-expanded="false" aria-controls="hpop" autocomplete="off" placeholder="Search a town, airport or place" value="${esc(HF.place?HF.place.n:'')}"><div class="ppop" id="hpop" role="listbox" hidden></div></div><p class="note" id="hpn" style="margin:4px 0 0">${HF.place?'Pinned: '+esc(HF.place.n)+(HF.place.s?', '+esc(HF.place.s):''):'Pick one from the list so renters can find you on the map.'}</p></div></div>
     <div class="f2"><label><span class="lab">Price per day (PHP)</span><input id="hp" type="number" min="300" step="50" placeholder="1800"></label>
     <label><span class="lab">Color</span><select id="hc">${COLORS.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join('')}</select></label></div>
+    <label><span class="lab">Price per extra hour, PHP (optional)</span><input id="hph" type="number" min="0" step="10" placeholder="Leave empty: ${Math.round(XRATE*100)}% of the daily price"></label>
     <label><span class="lab">Description</span><textarea id="hd" rows="4" maxlength="600" placeholder="Tell renters about the vehicle: its condition, what is included, and tips for the trip"></textarea></label>
     <div class="f2"><label><span class="lab">Year</span><input id="hy" type="number" min="1995" max="2030" value="2021"></label>
     <label class="ca"><span class="lab">Luggage (bags)</span><input id="hb" type="number" min="0" max="20" value="3"></label>
@@ -207,7 +208,7 @@ async function addHostListing(){
   if(!(price>=300)){err.textContent='Enter a price per day, at least ₱300.';return}
   const mo=v('hk')==='motor';
   if(!(seats>=1)||(mo&&seats>2)){err.textContent=mo?'Riders must be 1 or 2.':'Enter the number of seats.';return}
-  const l={id:'u-'+Date.now().toString(36),kind:mo?'motor':'car',name,type:v('ht'),seats,service:v('hv'),area:HF.place.n,pos:HF.place.p,place:{n:HF.place.n,s:HF.place.s||''},price,color:v('hc'),active:true,description:v('hd'),
+  const l={id:'u-'+Date.now().toString(36),kind:mo?'motor':'car',name,type:v('ht'),seats,service:v('hv'),area:HF.place.n,pos:HF.place.p,place:{n:HF.place.n,s:HF.place.s||''},price,hourly:Math.max(0,+v('hph')||0),color:v('hc'),active:true,description:v('hd'),
     specs:mo?{year:+v('hy')||'',transmission:v('hm'),cc:+v('hcc')||'',fuel:v('hfu'),helmets:Math.max(0,Math.min(2,+v('hhel')||0)),mileage:v('hmi')||'',deposit:Math.max(0,+v('hsd')||0)}:{year:+v('hy')||'',transmission:v('hm'),fuel:v('hfu'),bags:+v('hb')||0,aircon:'Yes',deposit:Math.max(0,+v('hsd')||0)},features:v('hft').split(',').map(s=>s.trim()).filter(Boolean),images:HF.photos.slice(),
     ownerId:me.id,ownerName:me.name,status:'pending',ack:{hostDeclaration:Date.now(),v:'2026-11-03'},createdAt:Date.now()};
   ST.listings.unshift(l);
@@ -258,68 +259,209 @@ const b=e.target.closest('[data-copyreq]');if(!b)return;const r=ST.requests.find
   (navigator.clipboard?navigator.clipboard.writeText(r.msg):Promise.reject()).then(()=>toast(t('copied'))).catch(()=>toast(t('copyfail')))});
 
 /* ---- admin ---- */
-let ADT='overview',ADF='all',ADV='all';
-const ADTABS=[['overview','Overview'],['vehicles','Vehicles'],['bookings','Bookings'],['users','Users'],['payouts','Payouts'],['settings','Settings']];
+let ADLIM=100,ADT='dashboard',ADFLT='all',ADQ='',ADS={k:'',d:1},ADSEL=new Set();
+const ADTABS=[['dashboard','Dashboard'],['overview','Tasks'],['vehicles','Vehicles'],['bookings','Bookings'],['users','Users'],['payouts','Payouts'],['settings','Settings']];
 const commOf=r=>Math.round(r.total*SETTINGS.commission),ownerGets=r=>r.total-commOf(r);
+const csvCell=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+const toCSV=rows=>'﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n');
+function parseCSV(text){
+  text=String(text||'').replace(/^﻿/,'');const rows=[];let row=[],cur='',q=false;
+  for(let i=0;i<text.length;i++){const ch=text[i];
+    if(q){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch}
+    else if(ch==='"')q=true;
+    else if(ch===','){row.push(cur);cur=''}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cur);cur='';if(row.some(x=>x.trim()!==''))rows.push(row);row=[]}
+    else cur+=ch}
+  row.push(cur);if(row.some(x=>x.trim()!==''))rows.push(row);return rows}
+const lkind=l=>l.status==='approved'&&l.active===false?'paused':l.status;
+const D8=ts=>iso(new Date(ts||Date.now()));
+/* table definitions: one place describes the columns, filters, bulk actions and CSV of each tab */
+function adDef(tab){
+  const me=ST.me()||{},acts=(a)=>`<div class="ract">${a}</div>`,b=(attr,label,on)=>`<button class="chip${on?' on':''}" ${attr}>${label}</button>`;
+  if(tab==='vehicles')return{name:'vehicles',id:l=>l.id,rows:()=>ST.listings,
+    filters:[['all','All'],['pending','Waiting'],['approved','Live'],['rejected','Not approved'],['paused','Paused']],fit:(l,f)=>f==='all'||lkind(l)===f,
+    cols:[{h:'Vehicle',v:l=>`<b>${esc(l.name)}</b><small>${esc(l.id)}</small>`,s:l=>l.name.toLowerCase(),c:l=>l.name},
+      {h:'Type',v:l=>esc(l.type),s:l=>l.type,c:l=>l.type},{h:'Area',v:l=>esc(l.area),s:l=>l.area,c:l=>l.area},
+      {h:'Price/day',v:l=>php(l.price),s:l=>l.price,c:l=>l.price,num:1},{h:'Status',v:l=>pill(lkind(l)),s:l=>lkind(l),c:l=>lkind(l)},
+      {h:'Owner',v:l=>esc(l.ownerName),s:l=>(l.ownerName||'').toLowerCase(),c:l=>l.ownerName},{h:'Added',v:l=>fmt(D8(l.createdAt)),s:l=>l.createdAt||0,c:l=>D8(l.createdAt)}],
+    extra:[['id',l=>l.id],['kind',l=>l.kind],['seats',l=>l.seats],['service',l=>l.service],['deposit',l=>(l.specs&&l.specs.deposit)||''],['lat',l=>l.pos?l.pos[0]:''],['lng',l=>l.pos?l.pos[1]:''],['color',l=>l.color||''],['description',l=>l.description||''],['features',l=>(l.features||[]).join('; ')],['year',l=>(l.specs&&l.specs.year)||''],['transmission',l=>(l.specs&&l.specs.transmission)||'']],
+    act:l=>{const k=lkind(l);return acts(`<button class="chip" data-open="${esc(l.id)}">View</button>${k==='pending'?b(`data-lapp="${esc(l.id)}"`,'Approve',1)+b(`data-lrej="${esc(l.id)}"`,'Reject'):''}${k==='rejected'?b(`data-lapp="${esc(l.id)}"`,'Approve',1):''}${k==='approved'?b(`data-lact="${esc(l.id)}|pause"`,'Pause'):''}${k==='paused'?b(`data-lact="${esc(l.id)}|resume"`,'Resume',1):''}${b(`data-ldel="${esc(l.id)}"`,'Delete')}`)},
+    bulk:[['approve','Approve'],['reject','Reject'],['pause','Pause'],['resume','Resume'],['delete','Delete']]};
+  if(tab==='bookings')return{name:'bookings',id:r=>r.id,rows:()=>ST.requests,
+    filters:[['all','All'],['new','Requested'],['confirmed','Paid'],['completed','Completed'],['cancelled','Cancelled'],['declined','Declined']],fit:(r,f)=>f==='all'||r.status===f,
+    cols:[{h:'Booking',v:r=>`<b>${esc(r.id)}</b><small>${esc(r.carName)}</small>`,s:r=>r.id,c:r=>r.id},{h:'Vehicle',v:r=>esc(r.carName),s:r=>r.carName,c:r=>r.carName},
+      {h:'Guest',v:r=>`${esc(r.guestName)}<small>${esc(r.guestPhone||'')}</small>`,s:r=>(r.guestName||'').toLowerCase(),c:r=>r.guestName},
+      {h:'Pickup',v:r=>fmt(r.from)+(r.time?`<small>${tl(r.time)}</small>`:''),s:r=>r.from+(r.time||''),c:r=>r.from},{h:'Return',v:r=>fmt(r.to),s:r=>r.to,c:r=>r.to},
+      {h:'Rental',v:r=>php(r.total),s:r=>r.total,c:r=>r.total,num:1},{h:'Deposit',v:r=>php(r.deposit),s:r=>r.deposit,c:r=>r.deposit,num:1},
+      {h:'Status',v:r=>pill(r.status)+(r.status==='new'?`<small>${r.avail==='yes'?'owner confirmed':'owner pending'}</small>`:''),s:r=>r.status,c:r=>r.status},{h:'Owner',v:r=>esc(r.hostName),s:r=>(r.hostName||'').toLowerCase(),c:r=>r.hostName}],
+    extra:[['pickup_time',r=>r.time||''],['extra_hours',r=>r.extraH||0],['extra_fee',r=>r.extraFee||0],['days',r=>r.days],['guest_phone',r=>r.guestPhone],['guest_email',r=>r.guestEmail],['pickup_spot',r=>r.spot||''],['created',r=>D8(r.createdAt)]],
+    act:r=>acts(`${r.status==='new'?b(`data-rset="${esc(r.id)}|confirmed"`,'Payment received',1):''}${r.status==='confirmed'?b(`data-rset="${esc(r.id)}|completed"`,'Mark completed',1):''}${(r.status==='new'||r.status==='confirmed')?b(`data-rset="${esc(r.id)}|cancelled"`,'Cancel'):''}${b(`data-rdel="${esc(r.id)}"`,'Delete')}`),
+    bulk:[['confirmed','Payment received'],['completed','Mark completed'],['cancelled','Cancel'],['delete','Delete']]};
+  if(tab==='users')return{name:'users',id:u=>u.id,rows:()=>ST.users,
+    filters:[['all','All'],['admin','Admins'],['host','Owners'],['suspended','Suspended']],fit:(u,f)=>f==='all'||(f==='suspended'?!!u.suspended:has(u,f)),
+    cols:[{h:'Name',v:u=>`<b>${esc(u.name)}</b>${u.id===me.id?' (you)':''}<small>${esc(u.id)}</small>`,s:u=>u.name.toLowerCase(),c:u=>u.name},{h:'Login',v:u=>esc(u.provider||'demo'),s:u=>u.provider||'',c:u=>u.provider},
+      {h:'Roles',v:u=>(has(u,'admin')?'<span class="pill b">Admin</span>':'')+(has(u,'host')?'<span class="pill g">Owner</span>':'')+(u.suspended?'<span class="pill r">Suspended</span>':'')||'Renter',s:u=>u.roles.join(),c:u=>u.roles.join(' ')+(u.suspended?' suspended':'')},
+      {h:'Vehicles',v:u=>ST.listings.filter(l=>l.ownerId===u.id).length,s:u=>ST.listings.filter(l=>l.ownerId===u.id).length,c:u=>ST.listings.filter(l=>l.ownerId===u.id).length,num:1},
+      {h:'Requests',v:u=>ST.requests.filter(r=>r.guestId===u.id).length,s:u=>ST.requests.filter(r=>r.guestId===u.id).length,c:u=>ST.requests.filter(r=>r.guestId===u.id).length,num:1},
+      {h:'Joined',v:u=>fmt(D8(u.createdAt)),s:u=>u.createdAt||0,c:u=>D8(u.createdAt)}],
+    extra:[['email',u=>u.email||''],['phone',u=>u.phone||'']],
+    act:u=>u.id===me.id?'':acts(`${has(u,'host')?b(`data-ownview="${esc(u.id)}"`,'Dashboard'):''}${b(`data-uadm="${esc(u.id)}"`,has(u,'admin')?'Remove admin':'Make admin')}${b(`data-usus="${esc(u.id)}"`,u.suspended?'Reactivate':'Suspend')}${b(`data-udel="${esc(u.id)}"`,'Delete')}`),
+    bulk:[['makeadmin','Make admin'],['rmadmin','Remove admin'],['suspend','Suspend'],['reactivate','Reactivate'],['delete','Delete']],skip:u=>u.id===me.id};
+  if(tab==='payouts')return{name:'payouts',id:r=>r.id,rows:()=>ST.requests.filter(r=>r.status==='confirmed'||r.status==='completed'),
+    filters:[['all','All'],['owe','Owner unpaid'],['paid','Owner paid'],['held','Deposit held'],['back','Deposit returned']],fit:(r,f)=>f==='all'||(f==='owe'?!r.paid:f==='paid'?!!r.paid:f==='held'?!r.depBack:!!r.depBack),
+    cols:[{h:'Booking',v:r=>`<b>${esc(r.id)}</b><small>${esc(r.carName)}</small>`,s:r=>r.id,c:r=>r.id},{h:'Owner',v:r=>esc(r.hostName),s:r=>(r.hostName||'').toLowerCase(),c:r=>r.hostName},
+      {h:'Pickup',v:r=>fmt(r.from)+(r.time?`<small>${tl(r.time)}</small>`:''),s:r=>r.from,c:r=>r.from},{h:'Payout due',v:r=>fmt(addD(r.from,1)),s:r=>r.from,c:r=>addD(r.from,1)},
+      {h:'Rental',v:r=>php(r.total),s:r=>r.total,c:r=>r.total,num:1},{h:'Commission',v:r=>php(commOf(r)),s:r=>commOf(r),c:r=>commOf(r),num:1},{h:'Owner gets',v:r=>`<b>${php(ownerGets(r))}</b>`,s:r=>ownerGets(r),c:r=>ownerGets(r),num:1},
+      {h:'Deposit',v:r=>php(r.deposit),s:r=>r.deposit,c:r=>r.deposit,num:1},{h:'Owner paid',v:r=>r.paid?'<span class="pill g">Paid</span>':'<span class="pill w">To pay</span>',s:r=>r.paid?1:0,c:r=>r.paid?'yes':'no'},
+      {h:'Deposit',v:r=>r.depBack?'<span class="pill g">Returned</span>':'<span class="pill w">Held</span>',s:r=>r.depBack?1:0,c:r=>r.depBack?'returned':'held'}],extra:[],
+    act:r=>acts(`${b(`data-rpay="${esc(r.id)}"`,r.paid?'Undo payout':'Mark owner paid',!r.paid)}${b(`data-rdep="${esc(r.id)}"`,r.depBack?'Undo deposit':'Deposit returned',!r.depBack)}`),
+    bulk:[['paid','Mark owner paid'],['unpaid','Undo owner paid'],['depback','Deposit returned'],['depheld','Undo deposit']]};
+  return null}
+function adRows(def){
+  const q=ADQ.trim().toLowerCase();let rows=def.rows().filter(r=>def.fit(r,ADFLT));
+  if(q)rows=rows.filter(r=>def.cols.some(c=>String(c.c(r)==null?'':c.c(r)).toLowerCase().includes(q))||String(def.id(r)).toLowerCase().includes(q));
+  if(ADS.k!==''){const c=def.cols[+ADS.k];if(c)rows=rows.slice().sort((a,b)=>{const x=c.s(a),y=c.s(b);return (x>y?1:x<y?-1:0)*ADS.d})}
+  return rows}
+function adTable(){
+  const def=adDef(ADT);if(!def)return;const rows=adRows(def),box=$('#adtbl');if(!box)return;
+  const ids=new Set(def.rows().map(def.id));ADSEL.forEach(i=>{if(!ids.has(i))ADSEL.delete(i)});
+  const all=rows.length&&rows.every(r=>ADSEL.has(def.id(r)));
+  box.innerHTML=`${ADSEL.size?`<div class="bulkbar"><b>${ADSEL.size} selected</b>${def.bulk.map(x=>`<button type="button" class="chip${x[0]==='delete'?'':' on'}" data-adbulk="${x[0]}">${x[1]}</button>`).join('')}<button type="button" class="chip" data-adclr>Clear</button></div>`:''}
+  <div class="tw"><table class="at"><thead><tr><th class="ck"><input type="checkbox" data-adall aria-label="Select all"${all?' checked':''}></th>${def.cols.map((c,i)=>`<th${c.num?' class="num"':''}><button type="button" data-adsort="${i}">${c.h}${ADS.k===String(i)?(ADS.d>0?' ▲':' ▼'):''}</button></th>`).join('')}<th></th></tr></thead>
+  <tbody>${rows.length?rows.slice(0,ADLIM).map(r=>{const id=def.id(r),sk=def.skip&&def.skip(r);return `<tr class="${ADSEL.has(id)?'sel':''}"><td class="ck">${sk?'':`<input type="checkbox" data-adck="${esc(id)}"${ADSEL.has(id)?' checked':''} aria-label="Select ${esc(id)}">`}</td>${def.cols.map(c=>`<td${c.num?' class="num"':''}>${c.v(r)}</td>`).join('')}<td class="ra">${def.act(r)}</td></tr>`}).join(''):`<tr><td colspan="${def.cols.length+2}" class="emp">Nothing here.</td></tr>`}</tbody></table></div>
+  <p class="note">${Math.min(rows.length,ADLIM)} of ${def.rows().length} shown${ADQ?' for "'+esc(ADQ)+'"':''}.${rows.length>ADLIM?' <button type="button" class="chip" data-admore>Show 100 more</button>':''}</p>`;
+}
 function renderAdmin(){
   const pend=ST.listings.filter(l=>l.status==='pending'),rs=ST.requests,booked=rs.filter(r=>r.status==='confirmed'||r.status==='completed');
-  const val=booked.reduce((s,r)=>s+r.total,0),me=ST.me()||{};
-  const head=`<h1>Arkila admin</h1><p class="lead">Everything in one place: vehicles, bookings, users and payouts. Only admin logins can open this screen.</p>
+  const val=booked.reduce((s,r)=>s+r.total,0);
+  const head=`<h1>Arkila admin</h1><p class="lead">Backoffice for vehicles, bookings, users and payouts. Search, sort, bulk edit and CSV in and out. Only admin logins can open this screen.</p>
   <div class="chips adtabs" role="tablist">${ADTABS.map(x=>`<button type="button" class="chip" role="tab" data-adtab="${x[0]}" aria-pressed="${ADT===x[0]}">${x[1]}${x[0]==='vehicles'&&pend.length?` (${pend.length})`:''}</button>`).join('')}</div>`;
   let body='';
-  if(ADT==='overview'){
+  if(ADT==='dashboard'){body=adDash()}
+  else if(ADT==='ownerdash'){body=ownDash(ADOWN,true)}
+  else if(ADT==='overview'){
     const liveN=ST.listings.filter(l=>l.status==='approved'&&l.active!==false).length,due=booked.filter(r=>r.status==='completed'&&!r.paid),soon=booked.filter(r=>r.status==='confirmed'&&r.from<=addD(todayIso(),2)&&r.from>=todayIso()),payReq=rs.filter(r=>r.status==='new'&&r.avail==='yes');
     const item=(txt,tab,btn)=>`<div class="lrow"><div class="lmain">${txt}</div><button class="chip on" data-adtab="${tab}">${btn}</button></div>`;
     const todo=[pend.length?item(`<b>${pend.length}</b> vehicle${pend.length>1?'s':''} waiting for approval`,'vehicles','Review'):'',payReq.length?item(`<b>${payReq.length}</b> request${payReq.length>1?'s':''} where the owner confirmed the dates. Waiting for the renter to pay`,'bookings','Open'):'',soon.length?item(`<b>${soon.length}</b> paid pickup${soon.length>1?'s':''} in the next 2 days`,'bookings','Open'):'',due.length?item(`<b>${due.length}</b> completed trip${due.length>1?'s':''} with the owner payout still to send`,'payouts','Open'):''].join('');
     body=`<div class="stats"><div class="stat"><span>Users</span><b>${ST.users.length}</b></div><div class="stat"><span>Owners</span><b>${ST.users.filter(u=>has(u,'host')).length}</b></div><div class="stat"><span>Live vehicles</span><b>${liveN+CARS.length}</b></div><div class="stat"><span>Waiting approval</span><b>${pend.length}</b></div><div class="stat"><span>Requests</span><b>${rs.length}</b></div><div class="stat"><span>Paid bookings</span><b>${booked.length}</b></div><div class="stat"><span>Booking value</span><b>${php(val)}</b></div><div class="stat"><span>Commission (${Math.round(SETTINGS.commission*100)}%)</span><b>${php(val*SETTINGS.commission)}</b></div></div>
     <section class="step"><h2>Needs your attention</h2>${todo||'<div class="empty">All clear.</div>'}</section>
+    <section class="step"><h2>CSV</h2><p class="note" style="margin:0 0 8px">Export any list to open in Excel or Google Sheets. Vehicles can also be imported in bulk.</p><div class="chips"><button class="chip" data-adexp="vehicles">Export vehicles</button><button class="chip" data-adexp="bookings">Export bookings</button><button class="chip" data-adexp="users">Export users</button><button class="chip" data-adexp="payouts">Export payouts</button><button class="chip on" data-adimp>Import vehicles</button></div></section>
     <section class="step"><h2>Latest requests</h2>${rs.slice(0,5).map(r=>`<div class="lrow"><div class="lmain"><b>${esc(r.carName)}</b> ${pill(r.status)}<p class="sub">${esc(r.id)} · ${dr(r)} · ${php(r.total)} · ${esc(r.guestName)}</p></div></div>`).join('')||'<div class="empty">No requests yet.</div>'}</section>`;
-  }
-  if(ADT==='vehicles'){
-    const fl={all:'All',pending:'Waiting',approved:'Live',rejected:'Not approved',paused:'Paused'},kind=l=>l.status==='approved'&&l.active===false?'paused':l.status,list=ST.listings.filter(l=>ADV==='all'||kind(l)===ADV);
-    body=`<div class="chips">${Object.keys(fl).map(k=>`<button type="button" class="chip" data-adv="${k}" aria-pressed="${ADV===k}">${fl[k]}</button>`).join('')}</div>
-    <section class="step"><h2>Owner vehicles (${list.length})</h2>${list.length?list.map(l=>{const k=kind(l);return `<div class="lrow"><div class="lthumb">${imgsOf(l)[0]}</div><div class="lmain"><b>${esc(l.name)}</b> ${pill(k)}<p class="sub">${esc(l.type)} · ${l.seats} ${l.kind==='motor'?'riders':'seats'} · ${esc(l.area)} · ${php(l.price)}/day · owner ${esc(l.ownerName)}</p></div><div class="row2" style="gap:6px"><button class="chip" data-open="${esc(l.id)}">View</button>${k==='pending'?`<button class="chip on" data-lapp="${esc(l.id)}">Approve</button><button class="chip" data-lrej="${esc(l.id)}">Reject</button>`:''}${k==='rejected'?`<button class="chip on" data-lapp="${esc(l.id)}">Approve</button>`:''}${k==='approved'?`<button class="chip" data-lact="${esc(l.id)}|pause">Pause</button>`:''}${k==='paused'?`<button class="chip on" data-lact="${esc(l.id)}|resume">Resume</button>`:''}<button class="chip" data-ldel="${esc(l.id)}">Delete</button></div></div>`}).join(''):'<div class="empty">No vehicles here.</div>'}<p class="note">The ${CARS.length} sample vehicles come from config.js and are not listed here.</p></section>`;
-  }
-  if(ADT==='bookings'){
-    const fl=['all','new','confirmed','completed','cancelled','declined'],list=rs.filter(r=>ADF==='all'||r.status===ADF);
-    body=`<div class="chips">${fl.map(k=>`<button type="button" class="chip" data-adf="${k}" aria-pressed="${ADF===k}">${k==='all'?'All':(STATUS[k]||[k])[0]}</button>`).join('')}<button type="button" class="chip" data-adcsv>Export CSV</button></div>
-    <section class="step"><h2>Bookings (${list.length})</h2>${list.length?list.map(r=>`<div class="lrow"><div class="lmain"><b>${esc(r.carName)}</b> ${pill(r.status)}<p class="sub">${esc(r.id)} · ${dr(r)} · ${php(r.total)} · deposit ${php(r.deposit)} · to pay ${php(r.total+r.deposit)}</p><p class="sub">Guest ${esc(r.guestName)} ${esc(r.guestPhone)}${r.guestEmail?' · '+esc(r.guestEmail):''} · owner ${esc(r.hostName)}${r.status==='new'?(r.avail==='yes'?' · owner confirmed dates':' · owner not confirmed yet'):''}${r.spot&&r.spot!=='not set'?' · pickup '+esc(r.spot.split(',')[0]):''}</p></div><div class="row2" style="gap:6px">${r.status==='new'?`<button class="chip on" data-rset="${esc(r.id)}|confirmed">Payment received</button>`:''}${r.status==='confirmed'?`<button class="chip on" data-rset="${esc(r.id)}|completed">Mark completed</button>`:''}${(r.status==='new'||r.status==='confirmed')?`<button class="chip" data-rset="${esc(r.id)}|cancelled">Cancel</button>`:''}<button class="chip" data-rdel="${esc(r.id)}">Delete</button></div></div>`).join(''):'<div class="empty">No bookings here.</div>'}</section>`;
-  }
-  if(ADT==='users'){
-    body=`<section class="step"><h2>Users (${ST.users.length})</h2>${ST.users.length?ST.users.map(u=>{const self=u.id===me.id,nl=ST.listings.filter(l=>l.ownerId===u.id).length,nt=ST.requests.filter(r=>r.guestId===u.id).length;return `<div class="lrow"><div class="lmain"><b>${esc(u.name)}</b>${self?' (you)':''} ${has(u,'admin')?'<span class="pill b">Admin</span>':''}${has(u,'host')?'<span class="pill g">Owner</span>':''}${u.suspended?'<span class="pill r">Suspended</span>':''}<p class="sub">${esc(u.provider||'demo')} · joined ${fmt(iso(new Date(u.createdAt||Date.now())))} · ${nl} vehicle${nl===1?'':'s'} · ${nt} request${nt===1?'':'s'}${u.email?' · '+esc(u.email):''}${u.phone?' · '+esc(u.phone):''}</p></div>${self?'':`<div class="row2" style="gap:6px"><button class="chip" data-uadm="${esc(u.id)}">${has(u,'admin')?'Remove admin':'Make admin'}</button><button class="chip" data-usus="${esc(u.id)}">${u.suspended?'Reactivate':'Suspend'}</button><button class="chip" data-udel="${esc(u.id)}">Delete</button></div>`}</div>`}).join(''):'<div class="empty">No users yet.</div>'}</section>`;
-  }
-  if(ADT==='payouts'){
-    const list=booked,owed=list.filter(r=>!r.paid&&r.status==='completed').reduce((s,r)=>s+ownerGets(r),0),held=list.filter(r=>!r.depBack).reduce((s,r)=>s+r.deposit,0);
-    body=`<div class="stats"><div class="stat"><span>Owner payouts to send</span><b>${php(owed)}</b></div><div class="stat"><span>Deposits held</span><b>${php(held)}</b></div></div>
-    <section class="step"><h2>Owner payouts and deposits</h2><p class="note" style="margin:0 0 8px">Owners are paid ${SETTINGS.commission?'the rental fee minus the '+Math.round(SETTINGS.commission*100)+'% commission':''} 24 hours after pickup. Deposits go back after the return check.</p>${list.length?list.map(r=>`<div class="lrow"><div class="lmain"><b>${esc(r.carName)}</b> ${pill(r.status)}${r.paid?'<span class="pill g">Owner paid</span>':''}${r.depBack?'<span class="pill g">Deposit returned</span>':''}<p class="sub">${esc(r.id)} · pickup ${fmt(r.from)}${r.time?', '+tl(r.time):''} · payout due ${fmt(addD(r.from,1))}</p><p class="sub">Owner ${esc(r.hostName)} gets ${php(ownerGets(r))} (rental ${php(r.total)} − commission ${php(commOf(r))}) · deposit ${php(r.deposit)}</p></div><div class="row2" style="gap:6px"><button class="chip${r.paid?'':' on'}" data-rpay="${esc(r.id)}">${r.paid?'Undo payout':'Mark owner paid'}</button><button class="chip${r.depBack?'':' on'}" data-rdep="${esc(r.id)}">${r.depBack?'Undo deposit':'Deposit returned'}</button></div></div>`).join(''):'<div class="empty">No paid bookings yet.</div>'}</section>`;
-  }
-  if(ADT==='settings'){
+  }else if(ADT==='settings'){
     const row=(k,v)=>`<div class="lrow"><div class="lmain"><b>${esc(k)}</b><p class="sub">${esc(typeof v==='object'?JSON.stringify(v):String(v)||'not set')}</p></div></div>`;
     body=`<section class="step"><h2>Settings</h2><p class="note" style="margin:0 0 8px">These come from config.js. Change them there and re-upload the file. The real site will get editable settings in Phase 2.</p>${Object.entries(SETTINGS).map(([k,v])=>row(k,v)).join('')}<h2 style="margin-top:16px">Brand</h2>${Object.entries(BRAND).map(([k,v])=>row(k,v===''?'not set':v)).join('')}</section>
-    <section class="step"><h2>Demo data</h2><p class="note">Clears every account, vehicle and request saved on this device.</p><button class="chip" data-areset>Reset demo data</button></section>`;
+    <section class="step"><h2>Test load</h2><p class="note" style="margin:0 0 8px">Fills the site with about 40 owners, 60 renters, 120 vehicles and 600 bookings over the past year so you can see the dashboards. Demo records are tagged and removed by Clear. Real records are never touched. Now loaded: ${dmDemoCount().users} users, ${dmDemoCount().listings} vehicles, ${dmDemoCount().requests} bookings.</p><div class="chips"><button class="chip on" data-demoload>${dmDemoCount().requests?'Reload':'Load'} demo data</button>${dmDemoCount().requests?'<button class="chip" data-democlear>Clear demo data</button>':''}</div></section>
+    <section class="step"><h2>Backup</h2><p class="note" style="margin:0 0 8px">Download everything saved on this device (accounts, vehicles, bookings, reviews) as one file. Restore it later or on another device.</p><div class="chips"><button class="chip on" data-bkdl>Download backup</button><button class="chip" data-bkrs>Restore from file</button></div><input type="file" id="bkin" accept="application/json,.json" hidden></section>
+    <section class="step"><h2>Reset</h2><p class="note">Clears every account, vehicle and request saved on this device.</p><button class="chip" data-areset>Reset demo data</button></section>`;
+  }else{
+    const def=adDef(ADT);
+    body=`<div class="adbar"><input id="adq" type="search" placeholder="Search ${def.name}" value="${esc(ADQ)}" aria-label="Search"><div class="chips">${def.filters.map(f=>`<button type="button" class="chip" data-adf="${f[0]}" aria-pressed="${ADFLT===f[0]}">${f[1]}</button>`).join('')}</div><div class="chips"><button type="button" class="chip" data-adexp="${def.name}">Export CSV</button>${ADT==='vehicles'?'<button type="button" class="chip on" data-adimp>Import CSV</button>':''}</div></div><div id="adtbl"></div>`;
   }
-  $('#v-admin').innerHTML=head+body;
+  $('#v-admin').innerHTML=head+body;if(!['dashboard','ownerdash','overview','settings'].includes(ADT))adTable();
 }
+/* ---- CSV dialogs ---- */
+const xdlg=$('#xdlg');
+function adExport(name){
+  const def=adDef(name);if(!def)return;const rows=adRows(def);
+  let head=def.cols.map(c=>c.h).concat(def.extra.map(x=>x[0])),body=rows.map(r=>def.cols.map(c=>c.c(r)).concat(def.extra.map(x=>x[1](r))));
+  if(name==='vehicles'){/* same columns as the import, so an export can be edited and imported back */
+    const G={id:l=>l.id,name:l=>l.name,kind:l=>l.kind,type:l=>l.type,seats:l=>l.seats,service:l=>l.service,area:l=>l.area,lat:l=>l.pos?l.pos[0]:'',lng:l=>l.pos?l.pos[1]:'',price:l=>l.price,hourly:l=>hourlyOf(l),deposit:l=>(l.specs&&l.specs.deposit)||'',color:l=>l.color||'',description:l=>l.description||'',features:l=>(l.features||[]).join('; '),year:l=>(l.specs&&l.specs.year)||'',transmission:l=>(l.specs&&l.specs.transmission)||'',status:l=>l.status,owner:l=>l.ownerName||''};
+    head=IMPCOLS;body=rows.map(r=>IMPCOLS.map(k=>G[k](r)))}
+  const csv=toCSV([head].concat(body));
+  const file='arkila-'+name+'-'+todayIso()+'.csv';
+  $('#xbody').innerHTML=`<h2 id="xtitle">Export ${name}</h2><p class="note">${rows.length} row${rows.length===1?'':'s'}${ADQ||ADFLT!=='all'?' (current search and filter)':''}. Open the file in Excel or Google Sheets.</p><textarea class="xta" readonly rows="8" id="xta">${esc(csv.replace(/^﻿/,''))}</textarea><div class="crow"><button type="button" class="lnk" data-xcopy>Copy</button><button type="button" class="btn" data-xdl="${esc(file)}">Download ${esc(file)}</button></div><p class="note" id="xnote"></p>`;
+  xdlg.dataset.csv=csv;if(!xdlg.open)xdlg.showModal()}
+const IMPCOLS=['id','name','kind','type','seats','service','area','lat','lng','price','hourly','deposit','color','description','features','year','transmission','status','owner'];
+const IMPEX=[['','Toyota Vios 2021','car','Sedan',5,'Self-drive','City Proper','','',1800,360,5000,'#C0392B','Clean and cool. Good for a family.','Air conditioning; Bluetooth audio',2021,'Automatic','approved','Arkila'],['','Honda Click 125i','motor','Scooter',2,'Self-drive','Sabang','10.1578','118.8369',600,120,2000,'#2E86DE','Easy to ride.','Helmet included',2022,'Automatic','approved','Arkila']];
+let IMPPLAN=[];
+function adImportOpen(){
+  $('#xbody').innerHTML=`<h2 id="xtitle">Import vehicles from CSV</h2><p class="note">Upload a file or paste rows. Columns: ${IMPCOLS.join(', ')}. Leave <b>id</b> empty to add a new vehicle, or use an existing id to update it. Features are separated with a semicolon. Area can be one of ${Object.keys(AREAS).join(', ')}, or any name with lat and lng.</p>
+  <div class="crow" style="justify-content:flex-start;gap:8px;flex-wrap:wrap"><label class="chip" style="cursor:pointer">Choose file<input type="file" id="xfile" accept=".csv,text/csv" hidden></label><button type="button" class="chip" data-xtpl>Use the template</button></div>
+  <textarea class="xta" id="xin" rows="8" placeholder="Paste CSV here"></textarea><div id="xprev"></div><div class="crow"><button type="button" class="lnk" data-xcheck>Check</button><button type="button" class="btn" id="xgo" data-xgo disabled>Import</button></div>`;
+  IMPPLAN=[];if(!xdlg.open)xdlg.showModal()}
+function adImportCheck(){
+  const rows=parseCSV($('#xin').value),prev=$('#xprev'),go=$('#xgo');IMPPLAN=[];go.disabled=true;
+  if(rows.length<2){prev.innerHTML='<p class="err">Add a header row and at least one vehicle.</p>';return}
+  const head=rows[0].map(h=>h.trim().toLowerCase()),ix=k=>head.indexOf(k),errs=[];
+  ['name','price'].forEach(k=>{if(ix(k)<0)errs.push('Missing column: '+k)});if(errs.length){prev.innerHTML=errs.map(e=>`<p class="err">${esc(e)}</p>`).join('');return}
+  const motorT=KIND_OPTS.motor.types,carT=KIND_OPTS.car.types;let add=0,upd=0;
+  rows.slice(1).forEach((r,n)=>{
+    const g=k=>{const i=ix(k);return i<0?'':String(r[i]==null?'':r[i]).trim()},line='Row '+(n+2)+': ',e=[];
+    const name=g('name'),price=+g('price'),type=g('type'),kind=(g('kind')||(motorT.includes(type)?'motor':'car')).toLowerCase();
+    if(name.length<3)e.push('name needs 3+ letters');if(!(price>=300))e.push('price must be 300 or more');
+    if(kind!=='car'&&kind!=='motor')e.push('kind must be car or motor');
+    const tl2=(kind==='motor'?motorT:carT),tt=tl2.find(x=>x.toLowerCase()===type.toLowerCase());if(!tt)e.push('type must be one of '+tl2.join(', '));
+    const seats=+g('seats')||(kind==='motor'?2:5);if(kind==='motor'&&seats>2)e.push('riders must be 1 or 2');
+    const area=g('area');let pos=null;const ak=Object.keys(AREAS).find(a=>a.toLowerCase()===area.toLowerCase());
+    if(ak)pos=AREAS[ak].slice();else if(g('lat')&&g('lng')&&!isNaN(+g('lat'))&&!isNaN(+g('lng')))pos=[+g('lat'),+g('lng')];
+    if(!area)e.push('area is required');else if(!pos)e.push('area "'+area+'" needs lat and lng');
+    const svc=g('service')||'Self-drive';if(svc!=='Self-drive'&&svc!=='With driver')e.push('service must be Self-drive or With driver');
+    const st=(g('status')||'approved').toLowerCase();if(!['approved','pending','rejected'].includes(st))e.push('status must be approved, pending or rejected');
+    const id=g('id'),ex=id?ST.listings.find(l=>l.id===id):null;if(id&&!ex)e.push('id "'+id+'" not found (leave empty to add)');
+    if(e.length){errs.push(line+e.join('; '));return}
+    const dep=Math.max(0,+g('deposit')||0),mo=kind==='motor';
+    const l={id:ex?ex.id:'u-'+Date.now().toString(36)+n,kind,name,type:tt,seats,service:svc,area:ak||area,pos,place:{n:ak||area,s:''},price,hourly:Math.max(0,+g('hourly')||0),color:g('color')||'#2E86DE',active:true,description:g('description'),
+      specs:mo?{year:+g('year')||'',transmission:g('transmission')||'Automatic',cc:'',fuel:'Gasoline',helmets:1,mileage:'',deposit:dep}:{year:+g('year')||'',transmission:g('transmission')||'Automatic',fuel:'Gasoline',bags:2,aircon:'Yes',deposit:dep},
+      features:g('features').split(';').map(s=>s.trim()).filter(Boolean),images:ex?ex.images||[]:[],ownerId:ex?ex.ownerId:'arkila',ownerName:g('owner')||(ex?ex.ownerName:'Arkila'),status:st,createdAt:ex?ex.createdAt:Date.now()};
+    if(ex)upd++;else add++;IMPPLAN.push({l,ex});
+  });
+  prev.innerHTML=`<p class="note"><b>${IMPPLAN.length}</b> ready (${add} new, ${upd} updated)${errs.length?', <b>'+errs.length+'</b> with problems':''}.</p>${errs.slice(0,8).map(e=>`<p class="err" style="margin:2px 0">${esc(e)}</p>`).join('')}${errs.length>8?`<p class="note">…and ${errs.length-8} more.</p>`:''}`;
+  go.disabled=!IMPPLAN.length;go.textContent=IMPPLAN.length?`Import ${IMPPLAN.length} vehicle${IMPPLAN.length>1?'s':''}`:'Import'}
+xdlg.addEventListener('click',e=>{
+  if(e.target===xdlg||e.target.closest('[data-xclose]')){xdlg.close();return}
+  const dl=e.target.closest('[data-xdl]');
+  if(dl){try{const u=URL.createObjectURL(new Blob([xdlg.dataset.csv||''],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=u;a.download=dl.dataset.xdl;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);$('#xnote').textContent='If nothing downloaded, use Copy and paste into a spreadsheet.'}catch(x){$('#xnote').textContent='Download is not available here. Use Copy and paste into a spreadsheet.'}return}
+  if(e.target.closest('[data-xcopy]')){const t0=$('#xta');t0.select();(navigator.clipboard?navigator.clipboard.writeText(t0.value):Promise.reject()).then(()=>toast('Copied.')).catch(()=>{try{document.execCommand('copy');toast('Copied.')}catch(x){toast('Select the text and copy.')}});return}
+  if(e.target.closest('[data-xtpl]')){$('#xin').value=toCSV([IMPCOLS].concat(IMPEX)).replace(/^﻿/,'');adImportCheck();return}
+  if(e.target.closest('[data-xcheck]')){adImportCheck();return}
+  if(e.target.closest('[data-xgo]')){if(!IMPPLAN.length)return;const n=IMPPLAN.length;IMPPLAN.forEach(p=>{if(p.ex){const i=ST.listings.indexOf(p.ex);ST.listings[i]=Object.assign({},p.ex,p.l)}else ST.listings.unshift(p.l)});ST.save();IMPPLAN=[];xdlg.close();ADT='vehicles';ADFLT='all';ADQ='';renderAdmin();refreshHome();toast(n+' vehicle'+(n>1?'s':'')+' imported.');return}
+});
+xdlg.addEventListener('change',e=>{if(e.target.id==='xfile'&&e.target.files[0]){const fr=new FileReader();fr.onload=()=>{$('#xin').value=String(fr.result||'');adImportCheck()};fr.readAsText(e.target.files[0])}});
+/* ---- admin actions ---- */
+function adApply(tab,act,ids){
+  const me=ST.me();let n=0;
+  ids.forEach(id=>{
+    if(tab==='vehicles'){const l=ST.listings.find(x=>x.id===id);if(!l)return;n++;
+      if(act==='approve'){l.status='approved';delete l.active}else if(act==='reject')l.status='rejected';else if(act==='pause'){if(l.status==='approved')l.active=false}else if(act==='resume')l.active=true}
+    else if(tab==='bookings'){const r=ST.requests.find(x=>x.id===id);if(!r)return;n++;r.status=act}
+    else if(tab==='users'){const u=ST.users.find(x=>x.id===id);if(!u||(me&&u.id===me.id))return;n++;
+      if(act==='makeadmin'&&!has(u,'admin'))u.roles.push('admin');else if(act==='rmadmin')u.roles=u.roles.filter(r=>r!=='admin');else if(act==='suspend')u.suspended=true;else if(act==='reactivate')u.suspended=false}
+    else if(tab==='payouts'){const r=ST.requests.find(x=>x.id===id);if(!r)return;n++;if(act==='paid')r.paid=true;else if(act==='unpaid')r.paid=false;else if(act==='depback')r.depBack=true;else if(act==='depheld')r.depBack=false}
+  });
+  ST.save();return n}
+function adDelete(tab,ids){
+  if(tab==='vehicles'){ST.listings=ST.listings.filter(x=>!ids.includes(x.id));ST.favs=ST.favs.filter(x=>!ids.includes(x))}
+  else if(tab==='bookings')ST.requests=ST.requests.filter(x=>!ids.includes(x.id));
+  else if(tab==='users'){const me=ST.me();ids=ids.filter(i=>!me||i!==me.id);ST.users=ST.users.filter(x=>!ids.includes(x.id));ST.listings=ST.listings.filter(x=>!ids.includes(x.ownerId))}
+  ST.save();ADSEL.clear();renderAdmin();renderNav();refreshHome()}
+$('#v-admin').addEventListener('input',e=>{if(e.target.id==='adq'){ADQ=e.target.value;adTable()}});
+$('#v-admin').addEventListener('change',e=>{
+  if(e.target.matches('[data-adck]')){e.target.checked?ADSEL.add(e.target.dataset.adck):ADSEL.delete(e.target.dataset.adck);adTable()}
+  else if(e.target.matches('[data-adall]')){const def=adDef(ADT);adRows(def).forEach(r=>{const id=def.id(r);if(def.skip&&def.skip(r))return;e.target.checked?ADSEL.add(id):ADSEL.delete(id)});adTable()}});
 $('#v-admin').addEventListener('click',e=>{
-  const a=e.target.closest('[data-adtab],[data-adf],[data-adv],[data-lapp],[data-lrej],[data-lact],[data-ldel],[data-rset],[data-rdel],[data-rpay],[data-rdep],[data-uadm],[data-usus],[data-udel],[data-adcsv],[data-areset]');if(!a)return;
+  const a=e.target.closest('[data-adtab],[data-adf],[data-adsort],[data-adbulk],[data-adclr],[data-adexp],[data-adimp],[data-lapp],[data-lrej],[data-lact],[data-ldel],[data-rset],[data-rdel],[data-rpay],[data-rdep],[data-uadm],[data-usus],[data-udel],[data-areset]');if(!a)return;
   const d=a.dataset,me=ST.me();
-  if(d.adtab){ADT=d.adtab;renderAdmin();window.scrollTo({top:0});return}
-  if(d.adf){ADF=d.adf;renderAdmin();return}
-  if(d.adv){ADV=d.adv;renderAdmin();return}
-  if(d.adcsv){const rows=[['id','status','vehicle','guest','guest phone','guest email','owner','pickup date','return date','time','days','rental','deposit']].concat(ST.requests.map(r=>[r.id,r.status,r.carName,r.guestName,r.guestPhone,r.guestEmail,r.hostName,r.from,r.to,tl(r.time),r.days,r.total,r.deposit]));
-    const csv=rows.map(x=>x.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\n');try{const u=URL.createObjectURL(new Blob([csv],{type:'text/csv'})),l=document.createElement('a');l.href=u;l.download='arkila-bookings.csv';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);toast('Exported.')}catch(x){toast('Could not export here.')}return}
+  if(d.adtab){ADLIM=100;ADT=d.adtab;ADFLT='all';ADQ='';ADS={k:'',d:1};ADSEL.clear();renderAdmin();window.scrollTo({top:0});return}
+  if(d.adf){ADFLT=d.adf;ADSEL.clear();renderAdmin();return}
+  if(d.adsort!==undefined){ADS=ADS.k===d.adsort?{k:d.adsort,d:-ADS.d}:{k:d.adsort,d:1};adTable();return}
+  if(d.adclr!==undefined){ADSEL.clear();adTable();return}
+  if(d.adexp){adExport(d.adexp);return}
+  if(d.adimp!==undefined){adImportOpen();return}
+  if(d.adbulk){const ids=[...ADSEL],act=d.adbulk;
+    if(act==='delete'){confirmBox({title:'Delete '+ids.length+' selected?',text:'They will be removed for everyone. This cannot be undone.',go:'Delete',back:'Keep them',ok:()=>{adDelete(ADT,ids);toast('Deleted.')}});return}
+    const n=adApply(ADT,act,ids);ADSEL.clear();renderAdmin();refreshHome();renderNav();toast(n+' updated.');return}
   if(d.areset){confirmBox({title:'Reset demo data?',text:'This clears every account, vehicle and request saved on this device. It cannot be undone.',go:'Reset everything',back:'Keep my data',ok:()=>{Object.keys(localStorage).filter(k=>k.startsWith('arkila2-')).forEach(k=>localStorage.removeItem(k));location.hash='home';location.reload()}});return}
-  if(d.lapp||d.lrej){const l=ST.listings.find(x=>x.id===(d.lapp||d.lrej));if(l){l.status=d.lapp?'approved':'rejected';if(d.lapp)delete l.active;ST.save();toast(d.lapp?'Approved. It is now live.':'Rejected.')}}
-  else if(d.lact){const [id,act]=d.lact.split('|'),l=ST.listings.find(x=>x.id===id);if(l){l.active=act==='resume';ST.save();toast(act==='pause'?'Paused.':'Resumed.')}}
-  else if(d.ldel){const l=ST.listings.find(x=>x.id===d.ldel);if(l){confirmBox({title:'Delete this vehicle?',text:l.name+' will be removed from the site. Existing requests are kept.',go:'Delete vehicle',back:'Keep it',ok:()=>{ST.listings=ST.listings.filter(x=>x.id!==l.id);ST.favs=ST.favs.filter(x=>x!==l.id);ST.save();renderAdmin();refreshHome();toast('Vehicle deleted.')}})}return}
-  else if(d.rdel){confirmBox({title:'Delete this booking?',text:d.rdel+' will be removed for everyone. This cannot be undone.',go:'Delete booking',back:'Keep it',ok:()=>{ST.requests=ST.requests.filter(x=>x.id!==d.rdel);ST.save();renderAdmin();renderNav();refreshHome();toast('Booking deleted.')}});return}
-  else if(d.rpay){const r=ST.requests.find(x=>x.id===d.rpay);if(r){r.paid=!r.paid;ST.save();toast(r.paid?'Marked as paid to the owner.':'Payout undone.')}}
-  else if(d.rdep){const r=ST.requests.find(x=>x.id===d.rdep);if(r){r.depBack=!r.depBack;ST.save();toast(r.depBack?'Deposit marked as returned.':'Deposit undone.')}}
+  if(d.lapp||d.lrej){adApply('vehicles',d.lapp?'approve':'reject',[d.lapp||d.lrej]);toast(d.lapp?'Approved. It is now live.':'Rejected.')}
+  else if(d.lact){const [id,act]=d.lact.split('|');adApply('vehicles',act,[id]);toast(act==='pause'?'Paused.':'Resumed.')}
+  else if(d.ldel){const l=ST.listings.find(x=>x.id===d.ldel);if(l)confirmBox({title:'Delete this vehicle?',text:l.name+' will be removed from the site. Existing requests are kept.',go:'Delete vehicle',back:'Keep it',ok:()=>{adDelete('vehicles',[l.id]);toast('Vehicle deleted.')}});return}
+  else if(d.rdel){confirmBox({title:'Delete this booking?',text:d.rdel+' will be removed for everyone. This cannot be undone.',go:'Delete booking',back:'Keep it',ok:()=>{adDelete('bookings',[d.rdel]);toast('Booking deleted.')}});return}
+  else if(d.rpay){const r=ST.requests.find(x=>x.id===d.rpay);if(r){adApply('payouts',r.paid?'unpaid':'paid',[r.id]);toast(r.paid?'Marked as paid to the owner.':'Payout undone.')}}
+  else if(d.rdep){const r=ST.requests.find(x=>x.id===d.rdep);if(r){adApply('payouts',r.depBack?'depheld':'depback',[r.id]);toast(r.depBack?'Deposit marked as returned.':'Deposit undone.')}}
   else if(d.uadm||d.usus||d.udel){const id=d.uadm||d.usus||d.udel,u=ST.users.find(x=>x.id===id);if(!u||(me&&u.id===me.id))return;
-    if(d.uadm){if(has(u,'admin'))u.roles=u.roles.filter(r=>r!=='admin');else u.roles.push('admin');ST.save();toast(has(u,'admin')?u.name+' is now an admin.':'Admin removed.')}
-    else if(d.usus){u.suspended=!u.suspended;ST.save();toast(u.suspended?'Account suspended.':'Account reactivated.')}
-    else{confirmBox({title:'Delete this account?',text:u.name+' and their vehicles will be removed. Their past requests are kept.',go:'Delete account',back:'Keep it',ok:()=>{ST.users=ST.users.filter(x=>x.id!==u.id);ST.listings=ST.listings.filter(x=>x.ownerId!==u.id);ST.save();renderAdmin();refreshHome();toast('Account deleted.')}});return}}
-  else{const [id,st]=d.rset.split('|');setReq(id,st)}
+    if(d.uadm){adApply('users',has(u,'admin')?'rmadmin':'makeadmin',[id]);toast(has(u,'admin')?u.name+' is now an admin.':'Admin removed.')}
+    else if(d.usus){adApply('users',u.suspended?'reactivate':'suspend',[id]);toast(u.suspended?'Account suspended.':'Account reactivated.')}
+    else{confirmBox({title:'Delete this account?',text:u.name+' and their vehicles will be removed. Their past requests are kept.',go:'Delete account',back:'Keep it',ok:()=>{adDelete('users',[u.id]);toast('Account deleted.')}});return}}
+  else if(d.rset){const [id,st]=d.rset.split('|');setReq(id,st)}
   renderAdmin();refreshHome();renderNav();
 });
 
