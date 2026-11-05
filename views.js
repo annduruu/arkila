@@ -21,8 +21,16 @@ function renderNav(){
   const ic=p=>`<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
   const I={rent:'<circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/>',saved:'<path d="M6 3.5h12v17l-6-4.5-6 4.5z"/>',trips:'<path d="M3 13l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5v4H3z"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/>',acct:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-4 3.2-6 7-6s7 2 7 6"/>',admin:'<path d="M12 3l8 3v6c0 4.5-3.4 7.7-8 9-4.6-1.3-8-4.5-8-9V6z"/>'};
   const row=(href,k,label,badge)=>`<a href="${href}" role="menuitem"${on(k)}>${ic(I[k])}<span>${esc(label)}</span>${badge?`<b>${badge}</b>`:''}</a>`;
-  $('#nav').innerHTML=row('#home','rent',t('nav.rent'))+row('#saved','saved',t('nav.saved'),ST.favs.length)+(me?row('#trips','trips',t('nav.trips'),myTrips)+row('#account','acct',t('nav.account')):'')+(has(me,'admin')?row('#admin','admin',t('nav.admin')):'');
+  $('#nav').innerHTML=row('#home','rent',t('nav.rent'))+(me?row('#saved','saved',t('nav.saved'),ST.favs.length):'')+(me?row('#trips','trips',t('nav.trips'),myTrips)+row('#account','acct',t('nav.account')):'')+(has(me,'admin')?row('#admin','admin',t('nav.admin')):'');
   $('#mauth').innerHTML=me?`<div class="who">${esc(me.name)}</div><button type="button" class="mi" data-logout role="menuitem">${esc(t('nav.logout'))}</button>`:`<button type="button" class="mi strong" data-login role="menuitem">${esc(t('nav.login'))}</button>`;
+  const tb=$('#tbar');if(tb){const tl=(href,k,label,n)=>`<a href="${href}"${on(k)}>${ic(I[k]).replace('width="18" height="18"','width="22" height="22"')}<span>${esc(label)}</span>${n?`<b>${n}</b>`:''}</a>`;
+    const dash=(h==='host'&&has(me,'host'))?'o':(h==='admin'&&has(me,'admin'))?'a':'';
+    const tbt=(k,lab,p,cur)=>`<button type="button" data-tbtab="${k}"${cur===k?' class="on"':''}>${ic(p).replace('width="18" height="18"','width="22" height="22"')}<span>${lab}</span></button>`;
+    const PD={dashboard:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',tasks:'<path d="M5 12l4 4 10-10"/>',vehicles:I.trips,payouts:'<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>'};
+    const mnu=`<button type="button" data-tbmenu>${ic('<path d="M4 7h16M4 12h16M4 17h16"/>').replace('width="18" height="18"','width="22" height="22"')}<span>${esc(t('tb.menu'))}</span></button>`;
+    tb.innerHTML=dash==='o'?tbt('o:dashboard','Today',PD.dashboard,'o:'+OT)+tbt('o:tasks','Tasks',PD.tasks,'o:'+OT)+tbt('o:vehicles','Vehicles',PD.vehicles,'o:'+OT)+tbt('o:payouts','Payouts',PD.payouts,'o:'+OT)+mnu
+    :dash==='a'?tbt('a:dashboard','Overview',PD.dashboard,'a:'+ADT)+tbt('a:vehicles','Vehicles',PD.vehicles,'a:'+ADT)+tbt('a:payouts','Payouts',PD.payouts,'a:'+ADT)+mnu
+    :tl('#home','rent',t('nav.rent'))+tl('#saved','saved',t('nav.saved'),me?ST.favs.length:0)+tl('#trips','trips',t('nav.trips'),myTrips)+`<button type="button" data-tbmenu>${ic('<path d="M4 7h16M4 12h16M4 17h16"/>').replace('width="18" height="18"','width="22" height="22"')}<span>${esc(t('tb.menu'))}</span></button>`}
   const hb=$('#hostbtn');if(hb){hb.textContent=has(me,'host')?t('nav.host'):t('nav.become');if(me){hb.setAttribute('href','#host');hb.removeAttribute('data-login');hb.classList.toggle('on',h==='host')}else{hb.setAttribute('href','#host');hb.dataset.login='host'}}
   const av=$('#mav');if(av)av.textContent=me?first(me.name).charAt(0).toUpperCase():'';
   const mb=$('#mbtn');if(mb)mb.classList.toggle('in',!!me);
@@ -304,15 +312,18 @@ $('#v-host').addEventListener('change',async e=>{
 });
 
 /* ---- guest trips ---- */
+function tripPh(r){const c=ST.listings.find(x=>x.id===r.carId);return c?imgsOf(c)[0]:''}
+function tripBar(r){if(r.status==='cancelled'||r.status==='declined')return '';const n=r.status==='completed'?4:r.status==='confirmed'?3:r.avail==='yes'?2:1;
+  return `<ol class="prog" aria-label="Progress">${[1,2,3,4].map(i=>`<li class="${i<n?'done':i===n?'now':''}"><i></i><span>${esc(t('tr.s'+i))}</span></li>`).join('')}</ol>`}
 function renderTrips(){
   const me=ST.me(),mine=ST.requests.filter(r=>r.guestId===me.id);
-  $('#v-trips').innerHTML=`<h1>${esc(t('tr.t'))}</h1><p class="lead">${esc(t('tr.lead'))}</p>`+(mine.length?mine.map(r=>`<section class="step"><div class="row2"><h2>${esc(r.carName)}</h2>${pill(r.status)}</div><p class="sub" style="margin:0">${dr(r).replace(' to ',' → ')} · ${esc(t('tr.days',{d:r.days}))} · ${esc(r.id)}</p>
-    <div class="q"><div><span>${esc(t('tr.total'))}</span><span>${esc(money(r.total))}</span></div><div><span>${esc(t('tr.dep'))}</span><span>${esc(money(r.deposit))}</span></div><div class="t"><span>${esc(t('tr.pay'))}</span><span>${esc(money(r.total+r.deposit))}</span></div></div>
+  $('#v-trips').innerHTML=`<h1>${esc(t('tr.t'))}</h1><p class="lead">${esc(t('tr.lead'))}</p>`+(mine.length?mine.map(r=>`<section class="step trip"><div class="tph">${tripPh(r)}</div><div class="tpm"><div class="row2"><h2>${esc(r.carName)}</h2>${pill(r.status)}</div>${tripBar(r)}<p class="sub" style="margin:0">${dr(r).replace(' to ',' → ')} · ${esc(t('tr.days',{d:r.days}))} · ${esc(r.id)}</p>
+    <details class="tpd"><summary>${esc(t('tr.pay'))} · ${esc(money(r.total+r.deposit))}</summary><div class="q"><div><span>${esc(t('tr.total'))}</span><span>${esc(money(r.total))}</span></div><div><span>${esc(t('tr.dep'))}</span><span>${esc(money(r.deposit))}</span></div><div class="t"><span>${esc(t('tr.pay'))}</span><span>${esc(money(r.total+r.deposit))}</span></div></div></details>
     ${r.status==='new'||r.status==='confirmed'?`<div class="stack"><button class="btn ghost danger" data-cancelreq="${esc(r.id)}">${esc(t('tr.cancel'))}</button></div>`:''}${r.status==='cancelled'||r.status==='declined'?`<div class="stack"><button class="btn ghost danger" data-delreq="${esc(r.id)}">${esc(t('tr.del'))}</button></div>`:''}
     ${r.status==='declined'?`<p class="note">${esc(t('tr.declined'))}</p>`:''}${r.status==='new'&&r.avail==='yes'?`<div class="ok" style="background:color-mix(in srgb,var(--good) 12%,var(--surface));border:1px solid var(--good);border-radius:12px;padding:10px 14px">${esc(t('tr.avail'))}</div>`:''}
     ${r.status==='new'?`<p class="note">${esc(t('tr.send'))}</p>${r.guestEmail?`<p class="note">${esc(t('tr.mail',{email:r.guestEmail}))}</p>`:''}<div class="stack"><button class="btn ghost" data-copyreq="${esc(r.id)}">${esc(t('tr.copy'))}</button></div>`:''}
     ${r.status==='completed'?(ST.reviews.some(x=>x.reqId===r.id)?`<p class="note">${esc(t('rv.thanks'))}</p>`:`<form class="form" data-rvf="${esc(r.id)}"><span class="lab">${esc(t('rv.q'))}</span><select name="rating">${[5,4,3,2,1].map(n=>`<option value="${n}">${esc(t('rv.'+n))}</option>`).join('')}</select><input name="text" maxlength="200" placeholder="${esc(t('rv.ph'))}"><button class="btn" type="submit">${esc(t('rv.post'))}</button></form>`):''}
-    ${r.status==='confirmed'?`<div class="ok" style="background:color-mix(in srgb,var(--good) 12%,var(--surface));border:1px solid var(--good);border-radius:12px;padding:10px 14px">${esc(t('tr.ok',{phone:r.guestPhone}))}</div>`:''}</section>`).join(''):'<div class="empty">'+esc(t('tr.empty'))+'</div>');
+    ${r.status==='confirmed'?`<div class="ok" style="background:color-mix(in srgb,var(--good) 12%,var(--surface));border:1px solid var(--good);border-radius:12px;padding:10px 14px">${esc(t('tr.ok',{phone:r.guestPhone}))}</div>`:''}</div></section>`).join(''):'<div class="empty">'+esc(t('tr.empty'))+'</div>');
 }
 $('#v-trips').addEventListener('submit',e=>{const f=e.target.closest('[data-rvf]');if(!f)return;e.preventDefault();const r=ST.requests.find(x=>x.id===f.dataset.rvf),me=ST.me();if(!r||!me||r.guestId!==me.id||r.status!=='completed')return;const text=f.elements.text.value.trim();if(text.length<3){toast(t('rv.short'));return}
   ST.reviews.push({id:'rv-'+Date.now().toString(36),carId:r.carId,reqId:r.id,guestId:me.id,guestName:me.name,rating:+f.elements.rating.value,text,createdAt:Date.now()});ST.save();toast(t('rv.posted'));renderTrips()});
@@ -553,6 +564,9 @@ function renderSaved(){
 function toggleFav(id){const i=ST.favs.indexOf(id);if(i>=0)ST.favs.splice(i,1);else ST.favs.push(id);ST.save();renderNav();const h=location.hash.slice(1);if(h==='saved')renderSaved();else refreshHome();if(dlg.open&&S.gid===id)openDetail(id)}
 
 /* ---- account menu ---- */
+document.addEventListener('click',e=>{if(e.target.closest('[data-tbmenu]')){scrollTo({top:0});const m=$('#menu');if(m&&m.hidden)$('#mbtn').click()}});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-tbtab]');if(b){const [w,k]=b.dataset.tbtab.split(':');const x=document.querySelector(w==='o'?`#v-host [data-otab="${k}"]`:`#v-admin [data-adtab="${k}"]`);if(x)x.click();scrollTo({top:0});setTimeout(renderNav,0);return}
+  if(e.target.closest('#v-host,#v-admin'))setTimeout(renderNav,0)});
 function closeMenu(){const m=$('#menu');if(m&&!m.hidden){m.hidden=true;$('#mbtn').setAttribute('aria-expanded','false')}}
 document.addEventListener('click',e=>{const mb=e.target.closest('#mbtn'),m=$('#menu');
   if(mb){m.hidden=!m.hidden;mb.setAttribute('aria-expanded',String(!m.hidden));return}
@@ -561,7 +575,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});
 /* ---- shared ---- */
 document.addEventListener('click',e=>{
   const fv=e.target.closest('[data-fav]');
-  if(fv){toggleFav(fv.dataset.fav);return}
+  if(fv){if(!ST.me()){openLogin(t('l.need'));return}toggleFav(fv.dataset.fav);return}
   const lg=e.target.closest('[data-login]');if(lg){if(lg.tagName==='A')e.preventDefault();closeMenu();openLogin(lg.dataset.login==='host'?t('l.hostneed'):undefined,lg.dataset.login==='host'?'host':undefined)}
   else if(e.target.closest('[data-logout]')){closeMenu();ST.sid=null;ST.save();$('#fn').value='';$('#ln').value='';$('#phone').value='';$('#email').value='';renderNav();toast(t('l.out'));if(location.hash.slice(1)!=='home')location.hash='home';else route()}
 });

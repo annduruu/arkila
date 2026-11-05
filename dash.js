@@ -102,7 +102,8 @@ function adDash(){
   const mon=dhSeries(D,(r,m)=>{m.v+=commOf(r);m.w+=ownerGets(r)}).map(m=>({l:m.l,v:m.v,w:m.w,lines:['Booking value '+php(m.v+m.w),'Arkila commission '+php(m.v),'Owners\' share '+php(m.w),dhS(m.n,'paid booking')]}));
   const area=dhGroup(D,r=>{const c=D.cars.get(r.carId);return c?c.area:r.spot},r=>r.total).slice(0,8),type=dhGroup(D,r=>{const c=D.cars.get(r.carId);return c?c.type:''},r=>r.total).slice(0,8);
   const topV=dhGroup(D,r=>r.carName,r=>r.total).slice(0,10),topO=dhGroup(D,r=>r.hostName,r=>r.total).slice(0,10).map(x=>({...x,sub:dhS(x.n,'trip')}));
-  return `<div class="dhead2"><div><h2 style="margin:0">Dashboard</h2><p class="note" style="margin:2px 0 0">Booking value counts paid and completed trips by pickup date. Showing ${esc(rg.custom?rg.label:rg.label.toLowerCase())}.</p></div>${dhRangeBar()}</div>
+  const pend=ST.listings.filter(l=>l.status==='pending').length,adAlert=pend?`<div class="banner own" style="margin:0 0 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span><b>${dhS(pend,'vehicle')}</b> waiting for approval.</span><button class="chip on" data-adtab="vehicles">Review now</button></div>`:'';
+  return adAlert+`<div class="dhead2"><div><h2 style="margin:0">Dashboard</h2><p class="note" style="margin:2px 0 0">Booking value counts paid and completed trips by pickup date. Showing ${esc(rg.custom?rg.label:rg.label.toLowerCase())}.</p></div>${dhRangeBar()}</div>
   <div class="stats kpg">${kpis}</div>
   <div class="dgrid">${dhCard('Booking value by '+per,(rg.custom?(per==='day'?'Each day in your range.':'Months in your range.'):'Last 12 months.')+' The dark blue bottom part is Arkila’s commission, the light blue part is the owners’ share.',chBars(mon,{money:1,fmt:dhK,label:'Booking value by month'}),'wide')}
   ${dhCard('Paid bookings per week',(rg.custom?'Weeks in your range':'Last 26 weeks')+', by pickup date',chLine(dhWeekly(D),{label:'Bookings per week',half:1}))}

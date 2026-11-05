@@ -101,3 +101,53 @@ The range chips (30 days, 90 days, 12 months, All time) now have a **Custom rang
 
 ## Tabs and filters
 Tabs are a grey segmented bar with a white active tab and small count badges (vehicles waiting, bookings to pay, payouts unpaid). Filter chips are filled blue when on and show counts. The old chart colour filter chips were removed (the three blues and hover details cover it).
+
+## Vehicle details bar
+The vehicle details window has a pinned bar: a top ribbon on desktop (name, dates, total, Choose button) and a bottom bar on phones (total, dates, Choose button). Tapping the dates opens the availability calendar. Hearts show for everyone; tapping one while signed out opens sign in.
+
+## Look and feel (Airbnb style)
+- Flat cards, one blue accent, underline tabs for owner and admin, thin-rule KPI tiles (hover details kept).
+- My bookings shows a 4-step progress bar (Requested, Owner OK, Confirmed, Done).
+- On phones a bottom bar gives Rent, Shortlist, My bookings and Menu.
+- Vehicle details keep the pinned dates and Choose button.
+
+## Layout update
+- Search is one round pill on web. On phones it is a single tap bar ("Where are you driving?") that opens the full form and closes after Search.
+- Category tabs keep their blue underline. Type and Service share one row.
+- Vehicle details show key facts on one icon row, then a clean list. Phones show "Show all details".
+- The bottom bar appears on touch devices only.
+
+## Draft match (cards, bookings, bars)
+- Vehicle cards are photo-first: name, rating, type, price. The extra-hour line and service badge are gone (service is still a filter).
+- My bookings cards have a photo; the price breakdown opens from one line.
+- On touch phones the bottom bar changes inside the owner area (Today, Tasks, Vehicles, Payouts) and admin area (Overview, Vehicles, Payouts).
+- Dark mode uses neutral greys; light mode keeps the blue and white.
+
+## Cleanup
+- Removed repeated style rules left from earlier looks and unused style names and text lines. Nothing on screen changed (checked by comparing every element's style on 80 screens before and after).
+
+## Dates and shadows
+- Vehicle details dates open in the same wide two-month window as home (one month on phones).
+- Shadows use two sizes everywhere: one for cards and pills, one for pop-outs.
+- The small search bar shown when scrolling on phones is a floating pill.
+
+## One icon row
+- Browse has one icon row: All, Cars & vans, Motorbikes, then the types for the chosen group. Tap a chosen type again to clear it.
+- Listings rated 4.8 or more with 2+ reviews show a "Top rated" badge.
+- The admin dashboard shows vehicles waiting for approval at the top.
+
+## Phone search
+- On phones the search is the same pill as on web (Pickup, Dates, Passengers, round search button).
+- Scrolling down shrinks it to a small pill under the header. Tapping it opens the full pill in place over a dimmed list, without scrolling to the top. Search, the dimmed area or Esc closes it.
+
+## Vehicle page bar
+- Dates, price and Choose this vehicle are always together in one bar (top on web, bottom on phone). The separate Availability row was removed. Tap the dates in the bar to open the calendar.
+
+## Resize fixes (web <-> phone)
+Window ratio changes now keep everything in step: the "Anywhere" / "Town, airport or place" placeholder, the number of months in the home date pop-out and the vehicle date pop-out (2 on wide, 1 on narrow), and the floating search pill is released when you go back to web width. Checked with a resize fuzz at 13 widths, mouse and touch (0 issues).
+
+## Cleanup (round 3)
+Removed the old Availability-row handler, the old pill styles, unused icon/globe/chart styles and 24 unused text keys (EN and FIL). Checked with a 68-screen style snapshot (0 differences), all regression suites, the resize fuzz and a click-every-button audit on all roles (no dead buttons, no errors).
+
+## Dark mode tweak
+Dark header bar is now `#161618` and the search pill border `#29292D` (new tokens `--hdr` and `--pillb`; light mode unchanged).
