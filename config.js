@@ -9,6 +9,9 @@ const BRAND={
   email:'',      // contact email
   phone:''       // optional contact mobile, e.g. '0917 123 4567'
 };
+/* Phase 1: Arkila lists the vehicles and handles every booking on Messenger. Owner sign-up, the owner area, online deposits and payouts are locked.
+   The code stays in the site. Set to false in Phase 2 to unlock it. */
+const PHASE1=true;
 const SETTINGS={
   damageCap:{car:50000,motor:30000}, // most a renter pays for damage in one rental (placeholder amounts: decide)
   deposit:{car:5000,motor:2000}, // refundable security deposit, paid online to Arkila and held until the return check (placeholder amounts: decide)
