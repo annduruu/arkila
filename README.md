@@ -1,24 +1,21 @@
-# Arkila: renting cars and motorbikes in Puerto Princesa
+# Arkila (Phase 1 beta)
 
-Static site (GitHub Pages). Phase 1: Arkila lists the vehicles, the renter sends a request, we confirm on Messenger, then papers and payment, then pick-up.
-
-## Pages
-- index.html: renter site (English / Filipino, PHP and reference currencies)
-- admin.html: staff dashboard (requests, vehicles, blocked dates, approve owner vehicles)
-- owner.html: owner dashboard, TEST ONLY. Not linked from anywhere. Owner accounts are Phase 2.
+Static site (GitHub Pages). No backend yet: everything is saved in the visitor's browser (localStorage, prefix `arkila2-`).
+Flow: admin lists vehicles, renter sends a request, Arkila confirms on Messenger, renter pays after confirmation, then pick-up.
 
 ## Files
-- config.js: brand, vehicles, areas, rates, blocked dates. Edit here.
-- store.js: browser storage (arkila2-* keys).
-- db.js: the data shell. Fill it in to move to a shared database (Supabase or Firebase). Nothing else needs to change.
-- svgs.js: sample illustrations used when a vehicle has no photos.
-- fil.js: Filipino translation. Needs a Filipino speaker's proofread.
-- legal.js: renter notice, Terms, Privacy. Items in [brackets] are open decisions.
-- Cache busting: asset links use ?v=82. Change all of them together when you update a file.
-- The previous version of the whole site is kept in arkila-site-legacy/.
+- `index.html` renter site. `admin.html` staff dashboard. `owner.html` owner dashboard (TEST ONLY, not linked from the site).
+- `config.js` brand, settings, sample vehicles. `store.js` data layer (`ST`). `db.js` empty database shell for later. `svgs.js` vehicle art. `legal.js` terms, privacy, renter notice. `fil.js` Filipino strings.
+- `dash.js` + `dash.css` Insights tab (charts, hover/tap details, custom date range). Used by admin and owner.
+- `csv.js` CSV export (requests, vehicles) and vehicle import (admin). `cal.js` tap-to-block availability calendar.
+- Script tags use `?v=85`. Bump them all together when a JS or CSS file changes.
 
-## Still open
-- No shared database yet: requests and accounts live in each browser. Staff on another device will not see a renter's request until db.js is filled in.
-- Messenger username (BRAND.fb in config.js) is empty, so the Messenger buttons are hidden.
-- Vehicle descriptions and legal text are English only.
-- Add-on pricing (5 to 6 extra hours both cost a full day) still to be decided.
+## What each screen has
+- Renter: search, filters, sort, map, saved, request flow, "Your requests" with cancel / delete, ratings and reviews after a completed trip.
+- Admin: Overview, Requests (filter, search, bulk select and actions, CSV export), Vehicles (approve, pause, delete, CSV import/export, blocked dates calendar), Insights.
+- Owner: same as admin but only their own vehicles and requests.
+
+## Before launch
+- Set `BRAND.fb` in `config.js` (Messenger buttons stay hidden until then).
+- Lawyer review of `legal.js` and the `[bracketed]` decisions.
+- Move to a shared database through `db.js` (nothing else needs to change).
