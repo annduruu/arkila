@@ -1,6 +1,6 @@
 /* Demo data layer. Everything is saved in this browser only. A real backend (Supabase) replaces this file later. */
 const mem={};
-const lsg=(k,d)=>{const fb=()=>k in mem?mem[k]:d;try{const v=localStorage.getItem('arkila2-'+k);if(!v)return fb();const j=JSON.parse(v);if(Array.isArray(d)&&!Array.isArray(j))return fb();return j}catch(e){return fb()}};
+const lsg=(k,d)=>{const fb=()=>k in mem?mem[k]:d;try{const v=localStorage.getItem('arkila2-'+k);if(!v)return fb();const j=JSON.parse(v);if(Array.isArray(d)&&!Array.isArray(j))return fb();if(d&&typeof d==='object'&&!Array.isArray(d)&&(!j||typeof j!=='object'||Array.isArray(j)))return fb();return j}catch(e){return fb()}};
 const lss=(k,v)=>{mem[k]=v;try{localStorage.setItem('arkila2-'+k,JSON.stringify(v));return true}catch(e){return false}};
 const ST={users:lsg('users',[]),listings:lsg('listings',[]),requests:lsg('requests',[]),sid:lsg('sid',null),favs:lsg('favs',[]),reviews:lsg('reviews',[]),blocks:lsg('blocks',{}),
   save(){return [lss('users',this.users),lss('listings',this.listings),lss('requests',this.requests),lss('sid',this.sid),lss('favs',this.favs),lss('reviews',this.reviews),lss('blocks',this.blocks)].every(Boolean)},

@@ -17,7 +17,7 @@ const DB={
   newToken:_tok,
   /* ---- Supabase plumbing ---- */
   sess:()=>{const s=lsg('sbsession',null);return s&&s.access_token?s:null},
-  staff:()=>!!(_sb()&&DB.sess()),
+  staff:()=>!!(_sb()&&DB.sess()&&/(^|\/)(admin|owner)(\.html)?$/.test(location.pathname)),
   hdr:async(auth)=>{const c=_sb(),h={apikey:c.key,'Content-Type':'application/json'};if(auth){const s=await DB.fresh();if(s)h.Authorization='Bearer '+s.access_token}return h},
   rest:async(path,opt)=>{const c=_sb();opt=opt||{};const h=await DB.hdr(opt.auth);Object.assign(h,opt.h||{});
     const r=await fetch(c.url+'/rest/v1/'+path,{method:opt.m||'GET',headers:h,body:opt.b!==undefined?JSON.stringify(opt.b):undefined});
@@ -40,7 +40,7 @@ const DB={
   /* ---- sending ---- */
   post:async r=>{
     if(_sb()){try{
-      if(DB.staff()){await DB.rest('requests?id=eq.'+encodeURIComponent(r.id),{m:'PATCH',auth:1,b:{status:r.status,paid:!!r.paid,data:r,updated_at:new Date(r.updatedAt||_now()).toISOString()}});return true}
+      if(DB.staff()){const u=await DB.rest('requests?id=eq.'+encodeURIComponent(r.id),{m:'PATCH',auth:1,h:{Prefer:'return=representation'},b:{status:r.status,paid:!!r.paid,data:r,updated_at:new Date(r.updatedAt||_now()).toISOString()}});if(Array.isArray(u)&&!u.length&&r.status==='new')await DB.rpc('submit_request',{p:r});return true}
       if(r.status==='cancelled'){await DB.rpc('cancel_request',{p_id:r.id,p_track:r.track||''});return true}
       await DB.rpc('submit_request',{p:r});return true}catch(e){return false}}
     try{await fetch(_ep(),{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({hp:'',req:r})});return true}catch(e){return false}},
@@ -65,11 +65,12 @@ const DB={
         const ls=await DB.rest('listings?select=id,data,status,active',{auth:1});ch=DB.mergeListings(ls,true)||ch;
       }else{
         const mine=S0.requests.filter(r=>r.track);const tk=[...new Set(mine.map(r=>r.track))];
-        if(tk.length){const rows=await DB.rpc('my_requests',{tokens:tk});(rows||[]).forEach(w=>{const l=mine.find(x=>x.id===w.id);if(l&&!(l.status==='cancelled'&&DB.pending(l.id))&&(l.status!==w.status||!!l.paid!==!!w.paid)){l.status=w.status;l.paid=!!w.paid;ch=true}})}
+        if(tk.length){const rows=await DB.rpc('my_requests',{tokens:tk});(rows||[]).forEach(w=>{const l=mine.find(x=>x.id===w.id);if(l&&!(l.status==='cancelled'&&DB.pending(l.id))&&(l.status!==w.status||!!l.paid!==!!w.paid)){l.status=w.status;l.paid=!!w.paid;ch=true}if(l&&w.reason!=null&&(l.reason||'')!==(w.reason||'')){l.reason=w.reason||'';ch=true}})}
         const ls=await DB.rest('listings?select=id,data,status,active');ch=DB.mergeListings(ls,false)||ch;
       }
       const kv=await DB.rest('kv?select=key,data');(kv||[]).forEach(k=>{
         if(k.key==='blocks'&&k.data&&typeof k.data==='object'&&JSON.stringify(S0.blocks)!==JSON.stringify(k.data)){S0.blocks=k.data;if(typeof ST!=='undefined')ST.blocks=k.data;ch=true}
+        if(k.key==='booked'&&k.data&&typeof k.data==='object'&&JSON.stringify(lsg('booked',{}))!==JSON.stringify(k.data)){lss('booked',k.data);ch=true}
         if(k.key==='vact'&&k.data&&typeof k.data==='object'&&JSON.stringify(lsg('vact',{}))!==JSON.stringify(k.data)){lss('vact',k.data);ch=true}});
       if(ch)S0.save&&S0.save();
     }catch(e){DB.err=String(e&&e.message||e);return false}
@@ -85,6 +86,7 @@ const DB={
     if(r.status==='new'&&!r._in){if(!_ob().includes(r.id))lss('outbox',_ob().concat(r.id));DB.send(r.id)}},
   pushListing:l=>{if(!_sb()||!DB.staff()||!l)return;const d=Object.assign({},l);delete d._r;
     DB.rest('listings',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{id:l.id,data:d,status:l.status||'approved',active:l.active!==false,updated_at:new Date().toISOString()}}).catch(()=>{})},
+  pushBooked:map=>{if(!_sb()||!DB.staff())return;DB.rest('kv',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{key:'booked',data:map,updated_at:new Date().toISOString()}}).catch(()=>{})},
   pushBlocks:(id,days)=>{if(!_sb()||!DB.staff())return;DB.rest('kv',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{key:'blocks',data:_ST().blocks,updated_at:new Date().toISOString()}}).catch(()=>{})},
   delRequests:ids=>{if(!_sb()||!DB.staff()||!ids||!ids.length)return;DB.rest('requests?id=in.('+ids.map(i=>'"'+String(i).replace(/"/g,'')+'"').join(',')+')',{m:'DELETE',auth:1}).catch(()=>{})},
   delListing:id=>{if(!_sb()||!DB.staff())return;DB.rest('listings?id=eq.'+encodeURIComponent(id),{m:'DELETE',auth:1}).catch(()=>{})},

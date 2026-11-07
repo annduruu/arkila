@@ -42,9 +42,11 @@ begin
   return jsonb_build_object('ok', true);
 end $$;
 
-create or replace function my_requests(tokens text[]) returns table (id text, status text, paid boolean, updated_at timestamptz)
+drop function if exists my_requests(text[]);
+create or replace function my_requests(tokens text[]) returns table (id text, status text, paid boolean, updated_at timestamptz, reason text)
 language sql security definer set search_path = public as
-$$ select r.id, r.status, r.paid, r.updated_at from requests r where r.track = any (tokens[1:50]) $$;
+$$ select r.id, r.status, r.paid, r.updated_at, r.data ->> 'reason' from requests r where r.track = any (tokens[1:50]) $$;
+grant execute on function my_requests(text[]) to anon, authenticated;
 
 create or replace function cancel_request(p_id text, p_track text) returns jsonb language plpgsql security definer set search_path = public as $$
 begin
