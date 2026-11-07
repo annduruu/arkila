@@ -14,7 +14,7 @@ const dhRefresh=()=>{if(typeof renderView==='function')renderView()};
    One data function (dhData) feeds both. To add a chart: write a function that returns HTML and put it in a dhCard(). */
 let DR=90,DRC=null;                                  /* range in days: 30, 90, 365, or 0 for all time */
 const DC={good:'#0E9F8E',amber:'#F59E0B',red:'#E5484D',grey:'#9AA5B1',violet:'#7C3AED',blue:'#1B4DDB'};
-const DSTAT={completed:['Completed',DC.good],confirmed:['Paid, upcoming',DC.blue],new:['Requested',DC.amber],cancelled:['Cancelled',DC.grey],declined:['Declined',DC.red]};
+const DSTAT={completed:['Returned',DC.good],confirmed:['Paid, upcoming',DC.blue],new:['Requested',DC.amber],cancelled:['Cancelled',DC.grey],declined:['Declined',DC.red]};
 const DRANGES=[[30,'30 days'],[90,'90 days'],[365,'12 months'],[0,'All time']];
 const dhPaid=r=>r.status==='confirmed'||r.status==='completed';
 const dhW=half=>{const el=document.querySelector('#view'),cw=(el&&el.clientWidth)||600,w=(half&&cw>=900)?(cw-110)/2:cw-70;return Math.round(Math.max(280,Math.min(1100,w)))};

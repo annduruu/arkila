@@ -161,3 +161,6 @@ const REQUEST_ENDPOINT='';
 /* Backend (Supabase, free). After running arkila-supabase.sql, paste your Project URL and the public "anon" key here.
    Leave both '' for test mode (requests stay in the browser, or go to the Google Sheet if REQUEST_ENDPOINT is set). */
 const SUPABASE={url:'https://uqiiowgidsjruwlviddm.supabase.co',key:'sb_publishable_foCsX8iSK2HwlXfVmlvECA_PTZc8nLg'};
+
+/* Social login: set to true only after the provider is switched on in Supabase (Authentication > Providers). */
+const SOCIAL={google:false,facebook:false};

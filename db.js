@@ -26,6 +26,12 @@ const DB={
   login:async(email,pw)=>{const c=_sb();const r=await fetch(c.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:c.key,'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
     const j=await r.json().catch(()=>({}));if(!r.ok||!j.access_token)throw new Error(r.status===400||r.status===401?'bad':'net');
     lss('sbsession',{access_token:j.access_token,refresh_token:j.refresh_token,exp:_now()+(j.expires_in||3600)*1000,email});return true},
+  oauth:p=>{const c=_sb();if(!c)return;location.href=c.url+'/auth/v1/authorize?provider='+encodeURIComponent(p)+'&redirect_to='+encodeURIComponent(location.origin+location.pathname)},
+  fromHash:async()=>{const m=/access_token=([^&]+).*?refresh_token=([^&]+)/.exec(location.hash)||/refresh_token=([^&]+).*?access_token=([^&]+)/.exec(location.hash);if(!m||!_sb())return false;
+    const hp=new URLSearchParams(location.hash.slice(1)),at=hp.get('access_token'),rt=hp.get('refresh_token'),ex=+(hp.get('expires_in')||3600);history.replaceState(null,'',location.pathname+location.search);if(!at)return false;
+    let em='';try{const c=_sb(),r=await fetch(c.url+'/auth/v1/user',{headers:{apikey:c.key,Authorization:'Bearer '+at}});em=(await r.json()).email||''}catch(e){}
+    lss('sbsession',{access_token:at,refresh_token:rt,exp:_now()+ex*1000,email:em});return true},
+  isStaff:async()=>{try{const r=await DB.rest('staff?select=email',{auth:true});return Array.isArray(r)&&r.length>0}catch(e){return false}},
   logout:()=>{lss('sbsession',null)},
   fresh:async()=>{const s=DB.sess();if(!s)return null;if(s.exp-_now()>60000)return s;const c=_sb();
     try{const r=await fetch(c.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:c.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});

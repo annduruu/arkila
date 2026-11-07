@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-<script>try{var _p=JSON.parse(localStorage.getItem('arkila2-pref')||'{}');if(_p.theme==='light'||_p.theme==='dark')document.documentElement.setAttribute('data-theme',_p.theme)}catch(e){}</script><link rel="stylesheet" href="dash.css?v=98"><style>
+<script>try{var _p=JSON.parse(localStorage.getItem('arkila2-pref')||'{}');if(_p.theme==='light'||_p.theme==='dark')document.documentElement.setAttribute('data-theme',_p.theme)}catch(e){}</script><link rel="stylesheet" href="dash.css?v=100"><style>
 :root{--bg:#F1F4F8;--surface:#fff;--ink:#101B2B;--muted:#576579;--line:#DCE3EB;--accent:#1B4DDB;--accent-ink:#fff;--sun:#FFC72C;--sun-ink:#1B1500;--good:#15774A;--bad:#B3261E;--tile1:#E3EAF3;--tile2:#CFD9E6;--sh1:0 2px 10px rgba(15,26,43,.12);--f-display:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;--f-body:'DM Sans',system-ui,sans-serif}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0F0F10;--surface:#18181A;--ink:#F2F2F2;--muted:#9A9A9F;--line:#2D2D31;--accent:#6E95FF;--accent-ink:#0A1220;--good:#4CC38A;--bad:#FF8A80;--tile1:#26262B;--tile2:#1C1C20;color-scheme:dark}}:root[data-theme=dark]{--bg:#0F0F10;--surface:#18181A;--ink:#F2F2F2;--muted:#9A9A9F;--line:#2D2D31;--accent:#6E95FF;--accent-ink:#0A1220;--good:#4CC38A;--bad:#FF8A80;--tile1:#26262B;--tile2:#1C1C20;color-scheme:dark}:root[data-theme=light]{color-scheme:light}#thb{position:fixed;bottom:14px;right:14px;z-index:25;height:34px;min-width:34px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:700 12px var(--f-body);box-shadow:var(--sh1)}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
@@ -100,7 +100,7 @@ td small{display:block;color:var(--muted)}.tw{background:var(--surface);border:1
 </div>
 <nav class="tbar" id="tbar"></nav>
 <div id="ov"><div class="bk" data-act="close"></div><div class="sheet" id="sh"></div></div><div id="toast"></div>
-<script src="config.js?v=98"></script><script src="store.js?v=98"></script><script src="svgs.js?v=98"></script><script src="db.js?v=98"></script><script src="dash.js?v=98"></script><script src="csv.js?v=98"></script><script src="cal.js?v=98"></script>
+<script src="config.js?v=100"></script><script src="store.js?v=100"></script><script src="svgs.js?v=100"></script><script src="db.js?v=100"></script><script src="dash.js?v=100"></script><script src="csv.js?v=100"></script><script src="cal.js?v=100"></script>
 <script>
 const OSID=lsg('osid',null),ME=ST.users.find(u=>u.id===OSID&&(u.roles||[]).includes('owner'))||null;
 const VO=lsg('vact',{});
@@ -120,16 +120,16 @@ const sync=(id,fn)=>{const r=ST.requests.find(x=>x.id===id);if(r){fn(r);saveR();
 loadR();
 const byV=n=>V.find(v=>v.name===n)||{svg:'',area:''};
 let view='overview',filter='all',q='';
-const LBL={new:'Request sent',confirmed:'Confirmed',declined:'Not available',completed:'Completed',cancelled:'Cancelled'};
+const LBL={new:'Request sent',confirmed:'Confirmed',declined:'Not available',completed:'Returned',cancelled:'Cancelled'};
 const chip=r=>r.status==='confirmed'&&r.pay?'<span class="chip s-paid">Paid</span>':`<span class="chip s-${r.status}">${LBL[r.status]}</span>`;
 const th=v=>`<div class="th">${byV(v).svg}</div>`;
 function actions(r,full){const a=[];
  if(r.status==='new'){a.push(`<button class="btn ok sm" data-act="set" data-arg="${r.id}|confirmed">${ic('check')}Confirm</button>`,`<button class="btn bad sm" data-act="set" data-arg="${r.id}|declined">Not available</button>`)}
- if(r.status==='confirmed'){a.push(`<button class="btn sm ${r.pay?'g':''}" data-act="pay" data-arg="${r.id}">${r.pay?'Undo paid':'Payment received'}</button>`,`<button class="btn ok sm" data-act="set" data-arg="${r.id}|completed">Mark completed</button>`);if(full)a.push(`<button class="btn bad sm" data-act="set" data-arg="${r.id}|cancelled">Cancel</button>`)}
+ if(r.status==='confirmed'){a.push(`<button class="btn sm ${r.pay?'g':''}" data-act="pay" data-arg="${r.id}">${r.pay?'Undo paid':'Payment received'}</button>`,`<button class="btn ok sm" data-act="set" data-arg="${r.id}|completed">Mark returned</button>`);if(full)a.push(`<button class="btn bad sm" data-act="set" data-arg="${r.id}|cancelled">Cancel</button>`)}
  if(full&&(r.status==='declined'||r.status==='cancelled'||r.status==='completed'))a.push(`<button class="btn bad sm" data-act="del" data-arg="${r.id}">Delete</button>`);
  return a.join('')}
-const step=r=>r.status==='completed'?4:r.pay?3:r.status==='confirmed'?2:1;
-const STEPS=['Request sent','Confirm on Messenger','Papers and payment','Pick-up'];
+const step=r=>r.status==='completed'?5:r.pay?3:r.status==='confirmed'?2:1;
+const STEPS=['Request sent','Confirm on Messenger','Papers and payment','Pick-up','Returned'];
 function kpis(){const ok=R.filter(r=>r.status==='confirmed'||r.status==='completed'),val=ok.reduce((a,r)=>a+r.total,0),n=R.filter(r=>r.status==='new').length,up=R.filter(r=>r.status==='confirmed'&&r.start>=TODAY).length,bad=R.filter(r=>r.status==='declined'||r.status==='cancelled').length;
  return `<div class="kpis"><div class="k hot"><small>New requests</small><b>${n}</b><span>Answer on Messenger</span></div><div class="k"><small>Your earnings</small><b>${money(Math.round(val*(1-SETTINGS.commission)))}</b><span>After Arkila's ${Math.round(SETTINGS.commission*100)}% fee</span></div><div class="k"><small>Confirmed bookings</small><b>${ok.length}</b><span>${up} upcoming trips</span></div><div class="k"><small>Live vehicles</small><b>${V.filter(v=>v.live).length}<span style="font-size:16px"> / ${V.length}</span></b><span>Shown on the website</span></div><div class="k"><small>Upcoming trips</small><b>${up}</b><span>Next 30 days</span></div><div class="k"><small>Cancel / decline rate</small><b>${(R.length?Math.round(bad/R.length*100):0)}%</b><span>${bad} of ${R.length} requests</span></div></div>`}
 const rqRow=r=>`<div class="rq" data-act="open" data-arg="${r.id}">${th(r.v)}<div class="m"><b>${r.name}</b><small>${r.v} · ${fd(r.start)} → ${fd(r.end)} · ${money(r.total)}</small></div><div class="acts">${r.status==='new'||r.status==='confirmed'?actions(r):chip(r)}</div></div>`;
@@ -171,7 +171,7 @@ const A={ owin:a=>{lss('osid',a);location.reload()},owout:()=>{lss('osid',null);
  unblk:a=>{const [i,k]=a.split('|'),v=V[+i],rg=ranges(ST.blocks[v.id]||[]);rg.splice(+k,1);ST.blocks[v.id]=rg.flatMap(r=>dayList(r[0],r[1]));ST.save();try{DB.pushBlocks(v.id,ST.blocks[v.id])}catch(e){}blockSheet(i);renderView()},
  appr:a=>{const v=V[+a];v.c.status='approved';v.st='approved';v.live=true;ST.save();try{DB.pushListing(v.c)}catch(e){}renderView();toast('Vehicle approved and live')},
  rej:a=>{const v=V[+a];v.c.status='rejected';ST.save();try{DB.pushListing(v.c)}catch(e){}V.splice(+a,1);renderView();toast('Vehicle rejected')},tab:a=>{view=a;close();renderView();scrollTo({top:0})},close,open:a=>detail(a),filter:a=>{filter=a;renderView()},toast:a=>toast(a),addv:()=>addV(),
- set:a=>{const [id,st]=a.split('|'),r=R.find(x=>x.id===id);r.status=st;if(st==='declined'||st==='cancelled')r.pay=false;sync(id,x=>{x.status=st;if(!r.pay)x.paid=false});renderView();toast({confirmed:'Booking confirmed',declined:'Marked not available',completed:'Marked completed',cancelled:'Booking cancelled'}[st]);if($('#ov').classList.contains('on'))detail(id)},
+ set:a=>{const [id,st]=a.split('|'),r=R.find(x=>x.id===id);r.status=st;if(st==='declined'||st==='cancelled')r.pay=false;sync(id,x=>{x.status=st;if(!r.pay)x.paid=false});renderView();toast({confirmed:'Booking confirmed',declined:'Marked not available',completed:'Marked returned',cancelled:'Booking cancelled'}[st]);if($('#ov').classList.contains('on'))detail(id)},
  pay:a=>{const r=R.find(x=>x.id===a);r.pay=!r.pay;sync(a,x=>{x.paid=r.pay});renderView();toast(r.pay?'Payment received':'Payment undone');if($('#ov').classList.contains('on'))detail(a)},
  del:a=>{ST.requests=ST.requests.filter(x=>x.id!==a);saveR();R=R.filter(x=>x.id!==a);close();renderView();toast('Request deleted')},
  live:a=>{const v=V[+a];if(v.st==='pending')return;v.live=!v.live;const l=ST.listings.find(x=>x.id===v.id);if(l){l.active=v.live;ST.save()}else{VO[v.id]=v.live;lss('vact',VO)}renderView();toast(V[+a].live?'Live on website':'Paused')}};
