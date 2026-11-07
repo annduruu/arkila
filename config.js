@@ -35,11 +35,10 @@ const CENTER=[9.7392,118.7353];
 const AREAS={
   'Airport':[9.7421,118.7587],
   'City Proper':[9.7392,118.7353],
-  'Baywalk':[9.7455,118.7343],
-  'Sabang':[10.1578,118.8369],
-  'Honda Bay':[9.8097,118.7633],
-  'Irawan':[9.7970,118.6820]
+  'Baywalk':[9.7455,118.7343]
 };
+/* Pickup is limited to Puerto Princesa city (renters land here first, then head to Sabang, El Nido and the rest). Pins must be within this many km of CENTER. */
+const PICKUP_KM=15;
 
 /* ---- places shown in the Where search before anyone types (approximate centres, edit freely).
    Searching also finds any other place in Palawan online. n=name, s=line under it, p=[lat,lng] ---- */
@@ -67,7 +66,7 @@ const CARS=[
    description:'Small, easy to park and light on fuel. A good pick for getting around the city and nearby beaches.\n\nA compact hatchback with air conditioning and room for two to three people with light bags. It is easy to drive in town traffic and cheap to run, so it suits short stays and budget trips. Pick it up, check it over with the owner, and keep to the fuel level you agreed.',
    specs:{year:2022,transmission:'Manual',fuel:'Gasoline',bags:2,aircon:'Yes'},
    features:['Air conditioning','Bluetooth audio','USB charging','Good for city driving'],images:[]},
-  {id:'l-mirage',name:'Mitsubishi Mirage G4',type:'Sedan',seats:5,service:'Self-drive',area:'Honda Bay',price:1500,color:'#C0392B',active:true,
+  {id:'l-mirage',name:'Mitsubishi Mirage G4',type:'Sedan',seats:5,service:'Self-drive',area:'Baywalk',price:1500,color:'#C0392B',active:true,
    description:'Compact sedan with a proper trunk. Comfortable for a couple or a small family on the road to Honda Bay.\n\nThe trunk takes proper luggage, and the air conditioning keeps the ride comfortable in the heat. A good choice for a few days of sightseeing around Puerto Princesa, with an easy, predictable drive on paved roads.',
    specs:{year:2021,transmission:'Automatic',fuel:'Gasoline',bags:3,aircon:'Yes'},
    features:['Air conditioning','Automatic','Large trunk','Rear camera'],images:[]},
@@ -75,7 +74,7 @@ const CARS=[
    description:'Reliable sedan, available at the airport. Smooth on the highway to the north.\n\nPickup at the airport saves you the trip into town. Good for couples and small families, with a steady ride on the long highway north and room for the bags from your flight.',
    specs:{year:2022,transmission:'Automatic',fuel:'Gasoline',bags:3,aircon:'Yes'},
    features:['Air conditioning','Automatic','Airport pickup','Bluetooth audio'],images:[]},
-  {id:'l-hilux',name:'Toyota Hilux',type:'Pickup',seats:5,service:'Self-drive',area:'Irawan',price:3500,color:'#3E6B4E',active:true,
+  {id:'l-hilux',name:'Toyota Hilux',type:'Pickup',seats:5,service:'Self-drive',area:'City Proper',price:3500,color:'#3E6B4E',active:true,
    description:'Tough pickup for rough roads and extra gear. Good for groups heading out of town.\n\nHigher ground clearance and four-wheel drive handle rough and unpaved roads better than a sedan. The open cargo bed carries dive gear, coolers and bags, so it suits groups heading out to the north or the south.',
    specs:{year:2020,transmission:'Manual',fuel:'Diesel',bags:5,aircon:'Yes'},
    features:['4x2 pickup','Open cargo bed','Air conditioning','Good ground clearance'],images:[]},
@@ -83,8 +82,8 @@ const CARS=[
    description:'Seven seats with a driver who knows the area. Good for family tours and island-hopping days.\n\nThe driver handles the roads and the parking, so everyone can relax and enjoy the views. Tell the owner your route and hours before you book so the day runs on time, and ask about stops for meals.',
    specs:{year:2021,transmission:'Manual',fuel:'Diesel',bags:4,aircon:'Yes'},
    features:['Driver included','Seats 7','Air conditioning','Local tour knowledge'],images:[]},
-  {id:'l-fortuner',name:'Toyota Fortuner',type:'SUV',seats:7,service:'With driver',area:'Sabang',price:6000,color:'#1F2933',active:true,
-   description:'Comfortable SUV with a driver, based near Sabang for the Underground River trip.\n\nStarting near Sabang saves time on the early run to the Underground River. The driver knows the road and the boat schedule, and the SUV has air conditioning and space for the whole group.',
+  {id:'l-fortuner',name:'Toyota Fortuner',type:'SUV',seats:7,service:'With driver',area:'City Proper',price:6000,color:'#1F2933',active:true,
+   description:'Comfortable SUV with a driver, ready for the Underground River trip from Puerto Princesa.\n\nAn early start from the city gets you to Sabang before the crowds. The driver knows the road and the boat schedule, and the SUV has air conditioning and space for the whole group.',
    specs:{year:2022,transmission:'Automatic',fuel:'Diesel',bags:4,aircon:'Yes'},
    features:['Driver included','Seats 7','Automatic','Leather seats'],images:[]},
   {id:'l-grandia',name:'Toyota Grandia',type:'Van',seats:10,service:'With driver',area:'City Proper',price:6000,color:'#7D8794',active:true,
@@ -111,11 +110,11 @@ CARS.push(
    description:'Bigger, more stable scooter for longer rides and two people with bags.\n\nA larger frame and bigger wheels feel steadier on the highway, with enough room for two riders and a small bag. A good step up if you plan to ride out of the city.',
    specs:{year:2023,transmission:'Automatic',cc:155,fuel:'Gasoline',helmets:2,mileage:'200 km/day',deposit:3000},
    features:['Automatic','Comfortable for two','Large under-seat storage','2 helmets included'],images:[]},
-  {id:'m-adv',kind:'motor',name:'Honda ADV 150',type:'Scooter',seats:2,service:'Self-drive',area:'Sabang',price:1000,color:'#3E6B4E',active:true,
-   description:'Adventure-style scooter with higher ground clearance, based near Sabang for the north road.\n\nThe higher ride copes better with rough patches and speed bumps on the road to the Underground River. Check the tyres and brakes together at pickup and take photos of any marks.',
+  {id:'m-adv',kind:'motor',name:'Honda ADV 150',type:'Scooter',seats:2,service:'Self-drive',area:'City Proper',price:1000,color:'#3E6B4E',active:true,
+   description:'Adventure-style scooter with higher ground clearance, good for the north road.\n\nThe higher ride copes better with rough patches and speed bumps on the road to the Underground River. Check the tyres and brakes together at pickup and take photos of any marks.',
    specs:{year:2022,transmission:'Automatic',cc:150,fuel:'Gasoline',helmets:2,mileage:'200 km/day',deposit:3000},
    features:['Automatic','Higher ground clearance','2 helmets included','Good for rougher roads'],images:[]},
-  {id:'m-sniper',kind:'motor',name:'Yamaha Sniper 150',type:'Underbone',seats:2,service:'Self-drive',area:'Irawan',price:700,color:'#A9B3C0',active:true,
+  {id:'m-sniper',kind:'motor',name:'Yamaha Sniper 150',type:'Underbone',seats:2,service:'Self-drive',area:'Baywalk',price:700,color:'#A9B3C0',active:true,
    description:'Sporty underbone with manual-style gears. For riders who are comfortable shifting.\n\nQuick and light, but you need to be confident with a clutch-less manual shift. Ride within your skill level, especially on wet roads, and bring your motorcycle licence.',
    specs:{year:2021,transmission:'Semi-automatic',cc:150,fuel:'Gasoline',helmets:2,mileage:'150 km/day',deposit:2500},
    features:['Foot-shift gears','2 helmets included','Lightweight','Quick on city roads'],images:[]},
@@ -134,3 +133,31 @@ CARS.push(
 const BLOCKED={
   'm-click':[['2026-11-12','2026-11-15'],['2026-11-24','2026-11-26']]
 };
+
+/* ---- "Before you book" box shown to renters. Edit the words freely. Leave deposit '' until you decide; renters then see that Arkila confirms it on Messenger. ---- */
+const BOOKING_INFO={
+  deposit:'',
+  fuel:'Return the vehicle with the same fuel level you picked it up with.',
+  licenceCar:"Valid driver's licence (bring the original). Foreign licences: bring your passport too.",
+  licenceMotor:"Valid motorcycle licence (bring the original). Helmet provided.",
+  cancel:'If your plans change, message us as early as you can. Full terms are in the renter notice (see the checkout).',
+  pay:'You pay Arkila after we confirm on Messenger. Nothing is charged now.'
+};
+
+/* Trip planner: APPROXIMATE road distances from Puerto Princesa city. Edit freely.
+   km = one way, h = driving hours, rough = rough final road, night = night activity,
+   boat = island, no road (rental stays on Palawan), wharf = boat trip leaves from a wharf,
+   permit = permit needed ahead, dir = N or S of the city (used to flag opposite directions) */
+const DEST_INFO={
+ 'City tour':{km:10,h:.5},'Underground River (Sabang)':{km:80,h:2,wharf:1,permit:1,dir:'N'},'Honda Bay':{km:15,h:.5,wharf:1},'Nagtabon Beach':{km:25,h:1,rough:1},'Ugong Rock':{km:30,h:1},'Iwahig Firefly Watching':{km:25,h:.7,night:1},"Mitra's Ranch":{km:8,h:.3},"Baker's Hill":{km:7,h:.3},
+ 'Narra':{km:70,h:1.5,dir:'S'},'Quezon':{km:120,h:2.5,dir:'S'},"Brooke's Point":{km:180,h:4,dir:'S'},'Rizal':{km:215,h:4.5,dir:'S'},
+ 'Roxas':{km:130,h:3,dir:'N'},'San Vicente':{km:165,h:4,dir:'N'},'Port Barton':{km:180,h:4.5,rough:1,dir:'N'},'Taytay':{km:200,h:4.5,dir:'N'},'El Nido':{km:240,h:5.5,dir:'N'},
+ 'Coron':{boat:1},'Balabac':{boat:1},'Linapacan':{boat:1}};
+
+/* Free request inbox (Google Sheet). Paste the web app link from arkila-request-script.gs here.
+   Leave '' to keep requests in the browser only (test mode). */
+const REQUEST_ENDPOINT='';
+
+/* Backend (Supabase, free). After running arkila-supabase.sql, paste your Project URL and the public "anon" key here.
+   Leave both '' for test mode (requests stay in the browser, or go to the Google Sheet if REQUEST_ENDPOINT is set). */
+const SUPABASE={url:'https://uqiiowgidsjruwlviddm.supabase.co',key:'sb_publishable_foCsX8iSK2HwlXfVmlvECA_PTZc8nLg'};

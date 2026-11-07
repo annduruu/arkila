@@ -22,3 +22,17 @@ const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/
 const reviewsOf=c=>ST.reviews.filter(r=>r.carId===c.id);
 const ratingOf=c=>{const r=reviewsOf(c);return r.length?{avg:r.reduce((s,x)=>s+x.rating,0)/r.length,n:r.length}:null};
 const stars=n=>'★'.repeat(Math.round(n))+'☆'.repeat(5-Math.round(n));
+
+/* ---- trip details helpers (shared by renter, admin, owner) ---- */
+const _te=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const osmUrl=p=>'https://www.openstreetmap.org/?mlat='+(+p[0])+'&mlon='+(+p[1])+'#map=16/'+(+p[0])+'/'+(+p[1]);
+const _okp=p=>Array.isArray(p)&&p.length===2&&p.every(n=>isFinite(n)&&n!==null&&n!=='');
+const tripOf=x=>{x=x||{};return {addr:String(x.pickupAddr||''),pin:_okp(x.pPin)?x.pPin.map(Number):null,dest:(Array.isArray(x.dest)?x.dest:[]).map(String),dpins:(Array.isArray(x.dPins)?x.dPins:[]).filter(d=>d&&_okp(d.p)).map(d=>({n:String(d.n||'Pinned spot'),p:d.p.map(Number)})),note:String(x.tripNote||'')}};
+const _dl=n=>(typeof DEST_INFO!=='undefined'&&DEST_INFO[n]&&DEST_INFO[n].boat)?'by boat: '+n:n;
+const tripDest=x=>{const t=tripOf(x);return t.dest.map(_dl).concat(t.dpins.map(d=>d.n))};
+const tripMsg=x=>{const t=tripOf(x),a=tripDest(x),o=[];if(t.addr)o.push('We will meet you at '+_te(t.addr)+'.');if(a.length)o.push('Trip: '+a.map(_te).join(', ')+'.');return o.length?' '+o.join(' '):''};
+const tripBox=x=>{const t=tripOf(x),o=[],a=tripDest(x);
+ if(t.addr||t.pin)o.push('<div><span>Pickup spot</span>'+_te(t.addr||'Pinned on the map')+(t.pin?' · <a href="'+osmUrl(t.pin)+'" target="_blank" rel="noopener">Open in map &#8599;</a>':'')+'</div>');
+ if(a.length)o.push('<div><span>Going to</span>'+t.dest.map(_te).join(', ')+(t.dest.length&&t.dpins.length?', ':'')+t.dpins.map(d=>'<a href="'+osmUrl(d.p)+'" target="_blank" rel="noopener">'+_te(d.n)+' &#8599;</a>').join(', ')+'</div>');
+ if(t.note)o.push('<div><span>Trip note</span>'+_te(t.note)+'</div>');return o.join('')};
+const tripMsgRaw=x=>{const t=tripOf(x),a=tripDest(x),o=[];if(t.addr)o.push('We will meet you at '+t.addr+'.');if(a.length)o.push('Trip: '+a.join(', ')+'.');return o.length?' '+o.join(' '):''};
