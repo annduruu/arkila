@@ -17,7 +17,7 @@ const DATA_VER=3;
 /* if the page ever breaks, show a calm reload bar instead of a blank screen */
 (function(){let shown=0;const bar=()=>{if(shown)return;shown=1;const d=document.createElement('div');d.setAttribute('role','alert');d.style.cssText='position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#1F2933;color:#fff;border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center;justify-content:space-between;font:15px system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.3)';d.innerHTML='<span>Something went wrong. Your saved data is safe.</span><button style="border:0;border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer" onclick="location.reload()">Reload</button>';(document.body||document.documentElement).appendChild(d)};
   addEventListener('error',e=>{if(e&&e.message&&!/ResizeObserver|Script error/.test(e.message))bar()});addEventListener('unhandledrejection',()=>bar())})();
-const allCars=()=>[...CARS.map(c=>Object.assign({ownerId:'sample',ownerName:'Arkila sample',status:'approved'},c)),...ST.listings];
+const allCars=()=>[...CARS.filter(c=>!ST.listings.some(l=>l.id===c.id)).map(c=>Object.assign({ownerId:'sample',ownerName:'Arkila sample',status:'approved'},c)),...ST.listings];
 const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,30);
 const reviewsOf=c=>ST.reviews.filter(r=>r.carId===c.id);
 const ratingOf=c=>{const r=reviewsOf(c);return r.length?{avg:r.reduce((s,x)=>s+x.rating,0)/r.length,n:r.length}:null};
