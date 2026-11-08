@@ -5,6 +5,7 @@
    The pages call the hooks at the bottom (pushRequest, pushListing, pushBlocks, pullAll), so nothing else changes between modes. */
 const _ep=()=>typeof REQUEST_ENDPOINT!=='undefined'&&REQUEST_ENDPOINT?String(REQUEST_ENDPOINT):'';
 const _sb=()=>typeof SUPABASE!=='undefined'&&SUPABASE&&SUPABASE.url&&SUPABASE.key?{url:String(SUPABASE.url).replace(/\/+$/,''),key:String(SUPABASE.key)}:null;
+const _T=x=>!!(x&&(x._test||String(x.id!=null?x.id:x).startsWith('T-')));
 const _ob=()=>{const a=lsg('outbox',[]);return Array.isArray(a)?a:[]};
 const _ST=()=>typeof ST!=='undefined'?ST:{requests:[],listings:[],blocks:{}};
 const _now=()=>Date.now();
@@ -44,7 +45,7 @@ const DB={
       if(r.status==='cancelled'){await DB.rpc('cancel_request',{p_id:r.id,p_track:r.track||''});return true}
       await DB.rpc('submit_request',{p:r});return true}catch(e){return false}}
     try{await fetch(_ep(),{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({hp:'',req:r})});return true}catch(e){return false}},
-  send:id=>{const r=(_ST().requests||[]).find(x=>x.id===id);if(!r||!DB.on())return Promise.resolve(true);
+  send:id=>{const r=(_ST().requests||[]).find(x=>x.id===id);if(!r||!DB.on()||_T(r))return Promise.resolve(true);
     return DB.P[id]=DB.post(r).then(ok=>{const o=_ob().filter(x=>x!==id);if(!ok)o.push(id);lss('outbox',o);return ok})},
   wait:id=>DB.P[id]||Promise.resolve(!DB.pending(id)),
   retry:()=>{if(!DB.on())return Promise.resolve(true);return Promise.all(_ob().map(DB.send)).then(a=>a.every(Boolean))},
@@ -69,7 +70,7 @@ const DB={
         const ls=await DB.rest('listings?select=id,data,status,active');ch=DB.mergeListings(ls,false)||ch;
       }
       const kv=await DB.rest('kv?select=key,data');(kv||[]).forEach(k=>{
-        if(k.key==='blocks'&&k.data&&typeof k.data==='object'&&JSON.stringify(S0.blocks)!==JSON.stringify(k.data)){S0.blocks=k.data;if(typeof ST!=='undefined')ST.blocks=k.data;ch=true}
+        if(k.key==='blocks'&&k.data&&typeof k.data==='object'){const keep=Object.fromEntries(Object.entries(S0.blocks||{}).filter(e=>String(e[0]).startsWith('T-'))),nb=Object.assign({},k.data,keep),cur=Object.fromEntries(Object.entries(S0.blocks||{}).filter(e=>!String(e[0]).startsWith('T-')));if(JSON.stringify(cur)!==JSON.stringify(k.data)){S0.blocks=nb;if(typeof ST!=='undefined')ST.blocks=nb;ch=true}}
         if(k.key==='booked'&&k.data&&typeof k.data==='object'&&JSON.stringify(lsg('booked',{}))!==JSON.stringify(k.data)){lss('booked',k.data);ch=true}
         if(k.key==='vact'&&k.data&&typeof k.data==='object'&&JSON.stringify(lsg('vact',{}))!==JSON.stringify(k.data)){lss('vact',k.data);ch=true}});
       if(ch)S0.save&&S0.save();
@@ -81,15 +82,15 @@ const DB={
     if(!staff){const n=S0.listings.filter(x=>!x._r||seen.has(x.id));if(n.length!==S0.listings.length){S0.listings.splice(0,S0.listings.length,...n);ch=true}}
     return ch},
   /* ---- Admin writes ---- */
-  pushRequest:r=>{if(!r||!DB.on())return;if(_sb()){if(DB.staff()){r.updatedAt=_now();if(!_ob().includes(r.id))lss('outbox',_ob().concat(r.id));DB.send(r.id);return}
+  pushRequest:r=>{if(!r||!DB.on()||_T(r))return;if(_sb()){if(DB.staff()){r.updatedAt=_now();if(!_ob().includes(r.id))lss('outbox',_ob().concat(r.id));DB.send(r.id);return}
       if(r.status==='new'||r.status==='cancelled'){if(!_ob().includes(r.id))lss('outbox',_ob().concat(r.id));DB.send(r.id)}return}
     if(r.status==='new'&&!r._in){if(!_ob().includes(r.id))lss('outbox',_ob().concat(r.id));DB.send(r.id)}},
-  pushListing:l=>{if(!_sb()||!DB.staff()||!l)return;const d=Object.assign({},l);delete d._r;
+  pushListing:l=>{if(!_sb()||!DB.staff()||!l||_T(l))return;const d=Object.assign({},l);delete d._r;
     DB.rest('listings',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{id:l.id,data:d,status:l.status||'approved',active:l.active!==false,updated_at:new Date().toISOString()}}).catch(()=>{})},
   pushBooked:map=>{if(!_sb()||!DB.staff())return;DB.rest('kv',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{key:'booked',data:map,updated_at:new Date().toISOString()}}).catch(()=>{})},
-  pushBlocks:(id,days)=>{if(!_sb()||!DB.staff())return;DB.rest('kv',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{key:'blocks',data:_ST().blocks,updated_at:new Date().toISOString()}}).catch(()=>{})},
-  delRequests:ids=>{if(!_sb()||!DB.staff()||!ids||!ids.length)return;DB.rest('requests?id=in.('+ids.map(i=>'"'+String(i).replace(/"/g,'')+'"').join(',')+')',{m:'DELETE',auth:1}).catch(()=>{})},
-  delListing:id=>{if(!_sb()||!DB.staff())return;DB.rest('listings?id=eq.'+encodeURIComponent(id),{m:'DELETE',auth:1}).catch(()=>{})},
+  pushBlocks:(id,days)=>{if(!_sb()||!DB.staff())return;DB.rest('kv',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{key:'blocks',data:Object.fromEntries(Object.entries(_ST().blocks||{}).filter(e=>!String(e[0]).startsWith('T-'))),updated_at:new Date().toISOString()}}).catch(()=>{})},
+  delRequests:ids=>{ids=(ids||[]).filter(i=>!_T(String(i)));if(!_sb()||!DB.staff()||!ids.length)return;DB.rest('requests?id=in.('+ids.map(i=>'"'+String(i).replace(/"/g,'')+'"').join(',')+')',{m:'DELETE',auth:1}).catch(()=>{})},
+  delListing:id=>{if(!_sb()||!DB.staff()||_T(String(id)))return;DB.rest('listings?id=eq.'+encodeURIComponent(id),{m:'DELETE',auth:1}).catch(()=>{})},
   pushVact:map=>{if(!_sb()||!DB.staff())return;DB.rest('kv',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{key:'vact',data:map,updated_at:new Date().toISOString()}}).catch(()=>{})}
 };
 window.addEventListener('online',()=>{try{DB.retry()}catch(e){}});
