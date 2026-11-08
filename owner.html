@@ -193,5 +193,5 @@ document.addEventListener('submit',e=>{if(e.target.id!=='of')return;e.preventDef
  const u={id:'owner:'+Date.now().toString(36),name:n,phone:ph,provider:'test',roles:['guest','owner'],createdAt:Date.now()};ST.users.push(u);ST.save();lss('osid',u.id);location.reload()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
 if(ME){$('#onm').textContent=ME.name;$('#oav').textContent=(ME.name||'?')[0]}
-renderView();try{TD.mount(document.body)}catch(e){}
+renderView();try{TD.mount(null)}catch(e){}
 </script><button id="thb" type="button" aria-label="Theme"></button><script>(function(){var b=document.getElementById('thb'),R=document.documentElement;function g(){try{return (JSON.parse(localStorage.getItem('arkila2-pref')||'{}')||{})}catch(e){return {}}}function lab(){var t=g().theme;b.textContent=t==='dark'?'Dark':t==='light'?'Light':'System'}lab();b.onclick=function(){var p=g(),n=p.theme==='light'?'dark':p.theme==='dark'?'system':'light';p.theme=n;try{localStorage.setItem('arkila2-pref',JSON.stringify(p))}catch(e){}n==='system'?R.removeAttribute('data-theme'):R.setAttribute('data-theme',n);lab()}})()</script></body></html>

@@ -632,6 +632,6 @@ livePull();if(DB.supa()){setInterval(livePull,30000);document.addEventListener('
 (()=>{const f=()=>{try{const h=document.querySelector('.hdr');if(h)document.documentElement.style.setProperty('--hh',Math.ceil(h.getBoundingClientRect().height)+'px');
  const L=document.querySelector('.layout'),c=document.querySelector('.cart');if(!L||!c||!h)return;const hh=Math.ceil(h.getBoundingClientRect().height),room=L.getBoundingClientRect().bottom-(hh+16+c.offsetHeight);const o=Math.max(0,Math.min(1,(room+10)/80));c.style.opacity=o;c.style.pointerEvents=o<.4?'none':''}catch(e){}};
  f();addEventListener('resize',f);addEventListener('scroll',f,{passive:true});setInterval(f,1500)})();
-try{TD.mount(document.querySelector('.ft2'))}catch(e){}
+try{TD.mount(null)}catch(e){}
 </script>
 </body></html>
