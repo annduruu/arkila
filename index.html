@@ -96,7 +96,7 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stro
 .pitch{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-radius:18px;padding:18px 20px;margin:0 0 12px;background:linear-gradient(135deg,#1B4DDB,#2F7BE8 60%,#35B6C6);color:#fff}.pitch b{display:block;font:800 22px/1.2 var(--f-display)}.pitch span{display:block;opacity:.92;margin-top:4px}.pitch .pt{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.pitch .pt i{font-style:normal;background:rgba(255,255,255,.18);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700}.pitch .cta{width:auto;padding:11px 20px;background:#fff;color:#1B4DDB}.qp{display:flex;gap:8px;overflow-x:auto;margin:0 0 14px;padding-bottom:2px;scrollbar-width:none}.qp::-webkit-scrollbar{display:none}.qp .chip{white-space:nowrap;flex:none}
 .cart.slim .empty{display:none}.cart.slim{padding:14px 18px}
 .av{border:1px solid var(--line);border-radius:14px;padding:12px}.avh{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}.avh .x{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);font-size:18px}
-.avg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}.avg em{font-style:normal;font-size:12px;color:var(--muted);padding:3px 0}.avg span{padding:7px 0;border-radius:9px;font-weight:700;font-size:14px}.avg .pa{color:#B7C0CC}
+.avg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}.avg em{font-style:normal;font-size:12px;color:var(--muted);padding:3px 0}.avg span{padding:7px 0;border-radius:9px;font-weight:700;font-size:14px}.avg .pa{color:#B7C0CC}.avg .pk{cursor:pointer}.avg .pk:hover{outline:2px solid color-mix(in srgb,var(--accent) 45%,transparent)}
 .avg .x{background:var(--line);color:var(--muted);text-decoration:line-through}.avg .rt{background:linear-gradient(135deg,var(--line) 50%,transparent 50%);color:var(--muted)}.avg .sl{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}.avg .sx{background:var(--bad);color:#fff}
 .avl{display:flex;gap:14px;margin-top:8px;font-size:12px;color:var(--muted)}.avl i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:5px;vertical-align:-2px}.avl i.x{background:var(--line)}.avl i.sl{background:color-mix(in srgb,var(--accent) 30%,transparent)}
 .avw{background:color-mix(in srgb,var(--bad) 10%,transparent);border:1px solid color-mix(in srgb,var(--bad) 40%,transparent);color:var(--bad);border-radius:12px;padding:9px 12px;font-weight:700;font-size:13px}.bz{font-size:12px;font-weight:700;color:var(--muted);margin-top:2px}
@@ -286,7 +286,7 @@ details.trp{display:block;border:1.5px solid var(--line);border-radius:14px;padd
 <nav class="tabs" id="tabs"><button data-act="view" data-arg="explore" data-i="search">Explore</button><button data-act="view" data-arg="saved" data-i="heart">Saved</button><button data-act="view" data-arg="requests" data-i="chat">Requests</button><button data-act="menu" data-i="user">Menu</button></nav>
 <div id="ov"><div class="bk" data-act="close"></div><div class="sheet" id="sh"></div></div>
 <div id="dd"></div><div id="toast"></div>
-<script src="config.js?v=115"></script><script src="store.js?v=115"></script><script src="svgs.js?v=115"></script><script src="legal.js?v=115"></script><script src="db.js?v=115"></script><script src="fil.js?v=115"></script>
+<script src="config.js?v=117"></script><script src="testfleet.js?v=117"></script><script src="store.js?v=117"></script><script src="svgs.js?v=117"></script><script src="legal.js?v=117"></script><script src="db.js?v=117"></script><script src="fil.js?v=117"></script>
 <script>
 const PREF=(p=>({lang:p&&p.lang==='fil'?'fil':'en',cur:p&&RATES[p.cur]?p.cur:'PHP',theme:p&&(p.theme==='light'||p.theme==='dark')?p.theme:'system'}))(lsg('pref',{})),t=k=>'',fmtEn=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('en-PH',{day:'numeric',month:'short',year:'numeric'})};
 const mkV=()=>{const VO=lsg('vact',{});return allCars().filter(c=>(VO[c.id]!==undefined?VO[c.id]:c.active!==false)&&c.status==='approved').map(c=>{const bike=isMotor(c);return {id:c.id,name:esc(c.name),area:esc(c.area),bike,c,p:+c.price,cap:+c.seats||1,sub:esc(c.type)+' \u00b7 '+(+c.seats||1)+(bike?' riders':' seats'),deliv:!!(c.delivery||(c.features||[]).some(f=>/deliver/i.test(f))),svg:imgsOf(c)[0].replace(/^<img/,'<img class="v"')}})};const V=mkV();
@@ -377,7 +377,7 @@ const RGRP=[['Motorbikes for around the city','Easy and cheap in town',v=>v.bike
 const rowsHtml=L=>RGRP.map((g,k)=>{const r=L.filter(g[2]);return r.length?`<section class="rsec"><div class="rhd"><div><h2>${g[0]}</h2><p>${g[1]}</p></div><div class="rar"><button class="rab" data-act="rowgo" data-arg="${k}|-1" aria-label="Scroll back">&lsaquo;</button><button class="rab" data-act="rowgo" data-arg="${k}|1" aria-label="Scroll forward">&rsaquo;</button></div></div><div class="rw" id="rw${k}">${r.map(card).join('')}</div></section>`:''}).join('');
 function renderView(){const el=$('#view');const v=S.view;
  if(v==='explore'){const L=list();
-  el.innerHTML=`<div class="layout"><div>${pitchHtml()}${tripSuggestHtml()}${L.length?rowsHtml(L):`<div class="none"><b>No vehicles match</b><span>Try different dates, fewer passengers or clear the filters.</span><button class="cta" style="width:auto;padding:11px 22px" data-act="clear">Clear filters</button></div>`}</div><aside class="cart" id="cartp"></aside></div>${HOW}`}
+  el.innerHTML=`<div class="layout"><div>${tripSuggestHtml()}${L.length?rowsHtml(L):!allCars().length?`<div class="none"><b>No vehicles listed yet</b><span>New vehicles are coming soon. Check back shortly.</span></div>`:`<div class="none"><b>No vehicles match</b><span>Try different dates, fewer passengers or clear the filters.</span><button class="cta" style="width:auto;padding:11px 22px" data-act="clear">Clear filters</button></div>`}</div><aside class="cart" id="cartp"></aside></div>${HOW}`}
  if(v==='map'){const pins=AREAL.map(a=>{const m=list().filter(x=>x.area===a).sort((x,y)=>x.p-y.p)[0];return m?`<button class="pinb" style="left:${PIN[a][0]}%;top:${PIN[a][1]}%" data-act="area" data-arg="${a}">from ${money(m.p)}<small>${a}</small></button>`:''}).join('');
   el.innerHTML=`<div class="crow"><p class="count">Pick up areas · tap a pin to see vehicles there</p><button class="chip on" data-act="view" data-arg="explore">${ic('grid')}List</button></div><div class="map"><svg viewBox="0 0 100 62" preserveAspectRatio="none"><rect width="100" height="62" style="fill:var(--win)"/><path d="M0 0H100V20C85 18 80 30 68 32C58 34 56 44 40 46C28 48 20 58 8 62H0Z" style="fill:var(--tile1)"/><path d="M0 0H100V9C84 8 78 20 66 22C54 24 50 34 36 36C24 38 14 46 0 52Z" style="fill:var(--tile2)" opacity=".7"/></svg>${pins}</div>`}
  if(v==='saved'){const L=V.filter(x=>S.fav.has(x.name));
@@ -430,11 +430,12 @@ function takenOf(v){const bk=new Set(),rt=new Set(),add=(a,b,incl)=>{if(!a||!b)r
  (((lsg('booked',{})||{})[v.id])||[]).forEach(r=>Array.isArray(r)&&add(r[0],r[1],false));rt.forEach(k=>{if(bk.has(k))rt.delete(k)});return {bk,rt}}
 function nextBusy(v){const t=isoD(new Date()),{bk,rt}=takenOf(v),all=[...bk,...rt].filter(k=>k>=t).sort();if(!all.length)return '';let a=all[0],b=a;for(const k of all.slice(1)){if(Math.round((parseD(k)-parseD(b))/864e5)<=1)b=k;else break}return a===b?'Busy '+fd(parseD(a)):'Busy '+fd(parseD(a))+' – '+fd(parseD(b))}
 let DC=null;
+let AVT={};
 function availHtml(v){const t=new Date(),td=isoD(t);if(!DC||DC.id!==v.id)DC={id:v.id,y:S.start.getFullYear(),m:S.start.getMonth()};
  const {y,m}=DC,{bk,rt}=takenOf(v),a=isoD(S.start),b=isoD(S.end),first=(new Date(y,m,1).getDay()+6)%7,n=new Date(y,m+1,0).getDate();
  let c='';for(let i=0;i<first;i++)c+='<i></i>';
  for(let d=1;d<=n;d++){const k=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'),x=bk.has(k),r=rt.has(k),sel=k>=a&&k<=b;
-  c+=`<span class="${x?'x':''} ${r?'rt':''} ${sel?(x?'sx':'sl'):''} ${k<td?'pa':''}" ${x?'aria-label="'+k+' booked"':''}>${d}</span>`}
+  c+=`<span class="${x?'x':''} ${r?'rt':''} ${sel?(x?'sx':'sl'):''} ${k<td?'pa':''} ${k>=td&&!x?'pk':''}" ${x?'aria-label="'+k+' booked"':k>=td?'data-act="avday" data-arg="'+k+'" role="button" tabindex="0"':''}>${d}</span>`}
  const mn=new Date(y,m,1).toLocaleDateString('en',{month:'long',year:'numeric'});
  return `<div class="av"><div class="avh"><button class="x" data-act="avnav" data-arg="-1" aria-label="Previous month">&lsaquo;</button><b>${mn}</b><button class="x" data-act="avnav" data-arg="1" aria-label="Next month">&rsaquo;</button></div><div class="avg">${'MTWTFSS'.split('').map(z=>`<em>${z}</em>`).join('')}${c}</div><div class="avl"><span><i class="x"></i>Booked</span><span><i class="sl"></i>Your dates</span></div></div>`}
 function clashTxt(v){const {bk}=takenOf(v),a=isoD(S.start),b=isoD(S.end),hit=[];for(let x=parseD(a);isoD(x)<b;x.setDate(x.getDate()+1)){const k=isoD(x);if(bk.has(k))hit.push(k)}
@@ -554,6 +555,10 @@ const A={ cancelreq:a=>{const g=grpOf(a);if(g)confirmSheet('Cancel this request?
  fav:a=>{S.fav.has(a)?S.fav.delete(a):S.fav.add(a);render()},
  fav2:a=>{S.fav.has(a)?S.fav.delete(a):S.fav.add(a);render();detailSheet(a)},
  add:a=>{toggleAdd(a);render()},
+ avday:a=>{if(!DC)return;const v=V.find(x=>x.id===DC.id);if(!v)return;const dt=parseD(a),nx=new Date(dt);nx.setDate(nx.getDate()+1);
+  if(!AVT.s||AVT.e||dt<=AVT.s){AVT={s:dt,e:null};S.start=dt;S.end=nx}
+  else{if(Math.round((dt-AVT.s)/864e5)>60){toast('Rentals are up to 60 days. For longer, message us.');return}AVT.e=dt;S.start=AVT.s;S.end=dt}
+  const keep={...DC},sc=document.querySelector('.dr'),top=sc?sc.scrollTop:0;render();detailSheet(v.name);DC=keep;const el=$('#avc');if(el)el.innerHTML=availHtml(v);const s2=document.querySelector('.dr');if(s2)s2.scrollTop=top},
  avnav:a=>{if(!DC)return;DC.m+=+a;if(DC.m<0){DC.m=11;DC.y--}if(DC.m>11){DC.m=0;DC.y++}const el=$('#avc');const cv=V.find(x=>x.id===DC.id);if(el&&cv)el.innerHTML=availHtml(cv)},
  add2:a=>{toggleAdd(a);render();close()},
  svc:()=>{S.svc=!S.svc;render()},svc0:()=>{S.svc=false;render();filtersSheet()},svc1:()=>{S.svc=true;render();filtersSheet()},
@@ -571,7 +576,8 @@ const A={ cancelreq:a=>{const g=grpOf(a);if(g)confirmSheet('Cancel this request?
  pax:a=>{S.pax=Math.max(0,Math.min(12,S.pax+ +a));render();searchSheet('who')},
  cal:a=>{if(+a<0&&CAL[0]===TODAY0.getFullYear()&&CAL[1]<=TODAY0.getMonth())return;CAL[1]+= +a;if(CAL[1]<0){CAL[1]=11;CAL[0]--}if(CAL[1]>11){CAL[1]=0;CAL[0]++}searchSheet('when',true)},
  day:a=>{const [y,m,d]=a.split('-').map(Number),dt=new Date(y,m,d);
-  if(!T.s||T.e){T={s:dt,e:null}}else if(dt>T.s){if(Math.round((dt-T.s)/864e5)>60){toast('Rentals are up to 60 days. For longer, message us.');searchSheet('when',true);return}T.e=dt;S.start=T.s;S.end=T.e;render()}else{T={s:dt,e:null}}
+  const f1=()=>{T={s:dt,e:null};S.start=dt;S.end=new Date(y,m,d+1);render()};
+  if(!T.s||T.e){f1()}else if(dt>T.s){if(Math.round((dt-T.s)/864e5)>60){toast('Rentals are up to 60 days. For longer, message us.');searchSheet('when',true);return}T.e=dt;S.start=T.s;S.end=T.e;render()}else{f1()}
   searchSheet('when',true)},
  checkout:()=>{close();checkoutSheet()},
  adv:a=>{const r=S.reqs.find(x=>x.id===a);if(r&&r.step<5){r.step++;render();toast(STEPS[r.step]||'Returned')}},
@@ -626,5 +632,6 @@ livePull();if(DB.supa()){setInterval(livePull,30000);document.addEventListener('
 (()=>{const f=()=>{try{const h=document.querySelector('.hdr');if(h)document.documentElement.style.setProperty('--hh',Math.ceil(h.getBoundingClientRect().height)+'px');
  const L=document.querySelector('.layout'),c=document.querySelector('.cart');if(!L||!c||!h)return;const hh=Math.ceil(h.getBoundingClientRect().height),room=L.getBoundingClientRect().bottom-(hh+16+c.offsetHeight);const o=Math.max(0,Math.min(1,(room+10)/80));c.style.opacity=o;c.style.pointerEvents=o<.4?'none':''}catch(e){}};
  f();addEventListener('resize',f);addEventListener('scroll',f,{passive:true});setInterval(f,1500)})();
+try{TD.mount(document.querySelector('.ft2'))}catch(e){}
 </script>
 </body></html>

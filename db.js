@@ -79,7 +79,7 @@ const DB={
   mergeListings:(rows,staff)=>{const S0=_ST();let ch=false;const seen=new Set();
     (rows||[]).forEach(w=>{const d=Object.assign({},w.data,{id:w.id,status:w.status,active:w.active});seen.add(w.id);const i=S0.listings.findIndex(x=>x.id===w.id);
       if(i<0){S0.listings.unshift(Object.assign(d,{_r:1}));ch=true}else if(JSON.stringify(Object.assign({},S0.listings[i],{_r:0}))!==JSON.stringify(Object.assign({},d,{_r:0}))){if(!staff||S0.listings[i]._r)S0.listings[i]=Object.assign(d,{_r:1});ch=true}});
-    if(!staff){const n=S0.listings.filter(x=>!x._r||seen.has(x.id));if(n.length!==S0.listings.length){S0.listings.splice(0,S0.listings.length,...n);ch=true}}
+    if(!staff){const n=S0.listings.filter(x=>!x._r||seen.has(x.id)||_T(x));if(n.length!==S0.listings.length){S0.listings.splice(0,S0.listings.length,...n);ch=true}}
     return ch},
   /* ---- Admin writes ---- */
   pushRequest:r=>{if(!r||!DB.on()||_T(r))return;if(_sb()){if(DB.staff()){r.updatedAt=_now();if(!_ob().includes(r.id))lss('outbox',_ob().concat(r.id));DB.send(r.id);return}
