@@ -286,7 +286,7 @@ details.trp{display:block;border:1.5px solid var(--line);border-radius:14px;padd
 <nav class="tabs" id="tabs"><button data-act="view" data-arg="explore" data-i="search">Explore</button><button data-act="view" data-arg="saved" data-i="heart">Saved</button><button data-act="view" data-arg="requests" data-i="chat">Requests</button><button data-act="menu" data-i="user">Menu</button></nav>
 <div id="ov"><div class="bk" data-act="close"></div><div class="sheet" id="sh"></div></div>
 <div id="dd"></div><div id="toast"></div>
-<script src="config.js?v=114"></script><script src="store.js?v=114"></script><script src="svgs.js?v=114"></script><script src="legal.js?v=114"></script><script src="db.js?v=114"></script><script src="fil.js?v=114"></script>
+<script src="config.js?v=115"></script><script src="store.js?v=115"></script><script src="svgs.js?v=115"></script><script src="legal.js?v=115"></script><script src="db.js?v=115"></script><script src="fil.js?v=115"></script>
 <script>
 const PREF=(p=>({lang:p&&p.lang==='fil'?'fil':'en',cur:p&&RATES[p.cur]?p.cur:'PHP',theme:p&&(p.theme==='light'||p.theme==='dark')?p.theme:'system'}))(lsg('pref',{})),t=k=>'',fmtEn=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('en-PH',{day:'numeric',month:'short',year:'numeric'})};
 const mkV=()=>{const VO=lsg('vact',{});return allCars().filter(c=>(VO[c.id]!==undefined?VO[c.id]:c.active!==false)&&c.status==='approved').map(c=>{const bike=isMotor(c);return {id:c.id,name:esc(c.name),area:esc(c.area),bike,c,p:+c.price,cap:+c.seats||1,sub:esc(c.type)+' \u00b7 '+(+c.seats||1)+(bike?' riders':' seats'),deliv:!!(c.delivery||(c.features||[]).some(f=>/deliver/i.test(f))),svg:imgsOf(c)[0].replace(/^<img/,'<img class="v"')}})};const V=mkV();
