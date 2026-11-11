@@ -74,17 +74,21 @@ function hostDeclaration(){
   foot:`Each of us is responsible for our own acts. Nothing here limits any liability that the law does not allow to be limited, including liability for fraud or intentional wrongdoing.`};
 }
 
+/* small text pieces of the notice. Uses the page translator t() when it has the key, otherwise the English below.
+   The Filipino summary (nt.rintro, nt.r1..nt.r6) only shows once those keys are written. */
+const _LT={'nt.rnote':'Full rules:','nt.hnote':'Full rules:','ack.terms':'Terms of Service','nt.privacy':'Privacy Notice','close':'Close','nt.fullen':'The English text above is the full version.'};
+const _lt=k=>{let v='';try{v=typeof t==='function'?t(k):''}catch(e){}return v||_LT[k]||''};
 function noticeHtml(kind,ctx){
   const h=kind==='host',n=h?hostDeclaration():renterNotice(ctx&&ctx.c,ctx);
   let k=0;
-  const fil=(PREF.lang==='fil')?`<div class="banner" style="margin:10px 0"><b>Buod sa Filipino.</b> ${esc(t(h?'nt.hintro':'nt.rintro'))}<ol>${Array.from({length:h?5:6},(_,i)=>`<li>${esc(t((h?'nt.h':'nt.r')+(i+1)))}</li>`).join('')}</ol><span class="note">${esc(t('nt.fullen'))}</span></div>`:'';
-  return `<h2 id="ntitle">${esc(n.title)}</h2><p style="margin:0">${esc(n.intro)}</p>${fil}`+n.groups.map(g=>`<h3 class="h3">${esc(g.h)}</h3><ol class="nl" start="${k+1}">${g.items.map(x=>{k++;return `<li>${phf(x)}</li>`}).join('')}</ol>`).join('')+`<p>${esc(n.foot)}</p><p class="note">${esc(t(h?'nt.hnote':'nt.rnote'))} <a href="#terms" target="_blank" rel="noopener">${esc(t('ack.terms'))}</a> · <a href="#privacy" target="_blank" rel="noopener">${esc(t('nt.privacy'))}</a></p><div class="stack"><button type="button" class="btn" data-nclose>${esc(t('close'))}</button></div>`;
+  const fil=(PREF.lang==='fil'&&_lt('nt.rintro'))?`<div class="banner" style="margin:10px 0"><b>Buod sa Filipino.</b> ${esc(t(h?'nt.hintro':'nt.rintro'))}<ol>${Array.from({length:h?5:6},(_,i)=>`<li>${esc(t((h?'nt.h':'nt.r')+(i+1)))}</li>`).join('')}</ol><span class="note">${esc(t('nt.fullen'))}</span></div>`:'';
+  return `<h2 id="ntitle">${esc(n.title)}</h2><p style="margin:0">${esc(n.intro)}</p>${fil}`+n.groups.map(g=>`<h3 class="h3">${esc(g.h)}</h3><ol class="nl" start="${k+1}">${g.items.map(x=>{k++;return `<li>${phf(x)}</li>`}).join('')}</ol>`).join('')+`<p>${esc(n.foot)}</p><p class="note">${esc(_lt(h?'nt.hnote':'nt.rnote'))} <button type="button" class="lnk" data-act="legal" data-arg="terms">${esc(_lt('ack.terms'))}</button> · <button type="button" class="lnk" data-act="legal" data-arg="privacy">${esc(_lt('nt.privacy'))}</button></p><div class="stack"><button type="button" class="btn cta" data-nclose data-act="close">${esc(_lt('close'))}</button></div>`;
 }
 
 /* ---------------- Terms of Service ---------------- */
 const TERMS=[
 {id:'tos1',h:'1. About these terms',b:[
- ['p','By using Arkila\'s website or sending a request, you agree to these terms. Items in [brackets] are decisions still to be made.'],
+ ['p','By using Arkila\'s website or sending a request, you agree to these terms. Highlighted items are decisions still to be made.'],
  ['ul',[
   '**Who we are.** Arkila is [Business name], based in Puerto Princesa, Palawan, Philippines. Contact: [email], [phone], [Facebook page].',
   '**What Arkila does.** Arkila lists cars and motorbikes for rent in Puerto Princesa. Renters send a request on the site, Arkila replies on Messenger to confirm, and the vehicle is handed over at pickup.',
@@ -109,7 +113,7 @@ const TERMS=[
   '**Request.** The renter picks dates on the vehicle\'s calendar. Dates already booked or blocked are greyed out and cannot be picked. The renter sends contact details and ticks the renter notice in section 6.',
   '**Confirmation.** Arkila replies on Messenger, usually within [2 hours] between [8am and 8pm], to confirm availability, the final price, the pickup place and how to pay. If Arkila cannot confirm, no booking is made and nothing is owed.',
   '**Payment.** After confirmation the renter pays Arkila by [GCash, Maya, bank transfer or cash: decide], before or at pickup. Arkila gives a receipt. [Decide: whether the dates are held for a set time while the renter pays.]',
-  '**Deposit.** [Decide whether a security deposit is asked at pickup. If it is, it is returned at return, less any damage, fuel shortfall or fine shown with dated photos, within [5 days].]',
+  '**Deposit.** [Decide whether a security deposit is asked at pickup.] If one is asked, it is returned at return, less any damage, fuel shortfall or fine shown with dated photos, within [5 days].',
   '**24-hour days.** Each rental day is 24 hours from the pickup time the renter chose, and the renter returns the vehicle at the same time on the last day. The renter may add up to [6] extra hours at booking, charged at [20%] of the daily rate for each extra hour, up to a full day, and the return time moves later by the same hours. Arkila keeps a [3-hour] break between two rentals of the same vehicle for cleaning, checks and fuel.',
   '**Renter cancellation.** Cancel on Messenger. If the renter cancels [14] or more days before pickup, nothing is owed. If they cancel later, they may owe [20%, 50% or up to 100%] of the rental fee depending on how late, never more than [3] days\' rental. If the renter does not show up within [2 hours] of the pickup time and has not contacted Arkila, it counts as a no-show. Arkila tells the renter the exact rule when it confirms.',
   '**Arkila cancellation.** If Arkila cancels a confirmed booking, the renter gets a full refund of anything paid, and Arkila helps find a similar vehicle where possible.',
@@ -168,7 +172,7 @@ const TERMS=[
 /* ---------------- Privacy Notice ---------------- */
 const PRIVACY=[
 {id:'pv0',h:'About this notice',b:[
- ['p','This notice explains what personal information Arkila collects when you request a car or motorbike in Puerto Princesa, why we need it, who sees it, and your rights. It follows the Philippine Data Privacy Act of 2012 (Republic Act 10173). Items in [brackets] are decisions still to be made.'],
+ ['p','This notice explains what personal information Arkila collects when you request a car or motorbike in Puerto Princesa, why we need it, who sees it, and your rights. It follows the Philippine Data Privacy Act of 2012 (Republic Act 10173). Highlighted items are decisions still to be made.'],
  ['p','**In short:** we collect only what we need to run your request and rental. We do not sell your data.'],
  ['p','**Who we are.** [Business name], Puerto Princesa, Palawan, Philippines, is the personal information controller. Data Protection contact: [name or "Arkila owner"], [email], [phone].']]},
 {id:'pv1',h:'1. What we collect',b:[
@@ -179,8 +183,8 @@ const PRIVACY=[
  ['ul',['reply to your request and confirm your booking on Messenger;','check that renters are allowed to drive the vehicle;','prepare the handover, take payment, and keep records of who paid what;','settle accidents, damage claims and disputes fairly, using photos and checklists;','keep the service safe: stop fake requests, fraud and misuse;','meet our legal duties, such as tax and accounting records.']],
  ['p','**Our basis.** We process your information because you agree to it when you tick the renter notice and send a request, because we need it to carry out the booking you asked for, and because we have a legitimate interest in preventing fraud. You may withdraw your consent, but then we cannot complete a booking that needs that information.']]},
 {id:'pv3',h:'3. Who sees your information',b:[
- ['ul',['**Arkila** sees everything above, only for the purposes in section 2.','**The vehicle owner** may see your name, contact number and dates once the booking is confirmed. They do not get your ID or licence photos unless needed to settle a dispute.','**Payment providers** such as GCash or a bank see what they need to move the money, under their own privacy rules.','**Authorities and courts** if the law requires it, for example after an accident or theft.','**Our own helpers**, such as a lawyer or accountant, only as needed and under a duty to keep it confidential. [List any other service Arkila uses, such as Messenger or a database, before launch.]'],],
- ['p','**Map and place search.** When you type a place in the search bar, the text is sent to OpenStreetMap-based search services (Photon) to show suggestions, and the map tiles come from OpenStreetMap. We do not send your name or contact details to them.'],
+ ['ul',['**Arkila** sees everything above, only for the purposes in section 2.','**The vehicle owner** may see your name, contact number and dates once the booking is confirmed. They do not get your ID or licence photos unless needed to settle a dispute.','**Payment providers** such as GCash or a bank see what they need to move the money, under their own privacy rules.','**Authorities and courts** if the law requires it, for example after an accident or theft.','**Our own helpers**, such as a lawyer or accountant, only as needed and under a duty to keep it confidential.','**Service providers that run the website**: Supabase (database, Singapore) stores requests; Meta (Facebook Messenger) carries the messages you send us; GitHub Pages hosts the site; Google Fonts and Cloudflare (cdnjs) deliver fonts and the map code, and see your device\'s internet address when the page loads. Some of these are outside the Philippines. [Lawyer: confirm the cross-border transfer wording.]'],],
+ ['p','**Map and place search.** When you type a place in the search bar, the text is sent to OpenStreetMap-based search services (Photon, run by komoot) to show suggestions. When you drop a pin, its map position is sent to the same service to look up the place name. The map tiles come from OpenStreetMap. We do not send your name or contact details to them.'],
  ['p','We do not sell your data and we do not use it for advertising by other companies.']]},
 {id:'pv4',h:'4. How long we keep it',b:[
  ['ul',['**Request details and messages:** kept [1 year] after the rental, in case of a later claim, then deleted.','**Handover and damage photos and checklists:** kept [1 year] after the rental, then deleted. If there is an open claim or dispute, we keep them until it is settled.','**ID and licence copies, if any are kept:** deleted [90 days] after the rental ends, unless there is an open claim.','**Booking and payment records:** kept as long as tax and accounting rules require. [Period to be confirmed.]'],],
@@ -188,7 +192,8 @@ const PRIVACY=[
 {id:'pv5',h:'5. How we protect it',b:[
  ['ul',['Any ID or licence photos are stored in [a private, access-controlled place] and never on a public page.','Only [the Arkila owner and named helpers] can open them, and only to do the jobs in section 2.','We use strong passwords and two-step sign-in on the accounts that hold your data.','If there is a data breach that puts you at real risk, we will tell you and the National Privacy Commission as the law requires.']]]},
 {id:'pv6',h:'6. Website storage',b:[
- ['p','The Arkila website saves some choices, such as language, currency, your saved details and saved vehicles, on your own device. It does not send them to us unless you send a request. You can clear them in your browser settings. [Update this when Arkila starts keeping requests on a server.]']]},
+ ['p','The Arkila website saves some choices, such as language, currency, your saved details and saved vehicles, on your own device. It does not send them to us unless you send a request. You can clear them in your browser settings.'],
+ ['p','**Where requests are kept.** When you send a request, your name, mobile number, optional email, dates, pickup and trip details are stored in Arkila\'s online database (Supabase, servers in Singapore), so the Arkila team can see and confirm it. Only signed-in Arkila staff can read it. A copy also stays on your device so you can follow your request. [Confirm retention period and storage location with your lawyer.]']]},
 {id:'pv7',h:'7. Your rights',b:[
  ['p','Under the Data Privacy Act you can:'],
  ['ul',['**be informed** about how we use your data, which is what this notice does;','**access** the data we hold about you and get a copy;','**correct** anything wrong or out of date;','**object** to how we use it, or withdraw your consent, as long as we are not required to keep it;','**ask us to delete or block** your data when it is no longer needed, was collected unlawfully, or you withdraw consent, apart from records the law or an open claim requires us to keep;','**move your data** in a common format where it applies;','**claim damages** if you are harmed by inaccurate, unlawfully obtained or misused data;','**complain** to us first, and to the National Privacy Commission (privacy.gov.ph) if we do not resolve it.']],
@@ -209,9 +214,8 @@ function legalBlock(b){
 }
 function renderLegal(kind){
   const isT=kind==='terms',secs=isT?TERMS:PRIVACY,el=$('#v-'+kind);
-  el.innerHTML=`<h1>${isT?'Terms of Service':'Privacy Notice'}</h1><p class="lead">${isT?'How Arkila works for renters and owners in Puerto Princesa.':'What we collect, why, who sees it, and your rights.'} Last updated ${esc(fmtEn(LEGAL_VERSION))}.</p>
-  <div class="banner">Draft for review. Highlighted items in [brackets] are decisions still to be made, and a Philippine lawyer will check this before real payments start.</div>
-  <p class="note"><a href="#terms">Terms of Service</a> · <a href="#privacy">Privacy Notice</a></p>
+  el.innerHTML=`<h1>${isT?'Terms of Service':'Privacy Notice'}</h1><p class="lead">${isT?'How renting a vehicle through Arkila works in Puerto Princesa.':'What we collect, why, who sees it, and your rights.'} Last updated ${esc(fmtEn(LEGAL_VERSION))}.</p>
+  <div class="banner">Draft for review. Highlighted items in [brackets] are decisions still to be made, and a Philippine lawyer will check this before real bookings start.</div>
   <section class="step legal"><h2>Contents</h2><ol class="toc">${secs.map(s=>`<li><a href="#${kind}" data-lsec="${s.id}">${esc(s.h)}</a></li>`).join('')}</ol></section>`+
   secs.map(s=>`<section class="step legal" id="${s.id}"><h2>${esc(s.h)}</h2>${s.b.map(legalBlock).join('')}</section>`).join('');
 }

@@ -3,7 +3,12 @@ const mem={};
 const lsg=(k,d)=>{const fb=()=>k in mem?mem[k]:d;try{const v=localStorage.getItem('arkila2-'+k);if(!v)return fb();const j=JSON.parse(v);if(Array.isArray(d)&&!Array.isArray(j))return fb();if(d&&typeof d==='object'&&!Array.isArray(d)&&(!j||typeof j!=='object'||Array.isArray(j)))return fb();return j}catch(e){return fb()}};
 const lss=(k,v)=>{mem[k]=v;try{localStorage.setItem('arkila2-'+k,JSON.stringify(v));return true}catch(e){return false}};
 const ST={users:lsg('users',[]),listings:lsg('listings',[]),requests:lsg('requests',[]),sid:lsg('sid',null),favs:lsg('favs',[]),reviews:lsg('reviews',[]),blocks:lsg('blocks',{}),
-  save(){return [lss('users',this.users),lss('listings',this.listings),lss('requests',this.requests),lss('sid',this.sid),lss('favs',this.favs),lss('reviews',this.reviews),lss('blocks',this.blocks)].every(Boolean)},
+  /* With the live database on, the renter site keeps vehicle photos in memory only (they are re-downloaded once per visit),
+     so browser storage can never fill up and block a renter from sending a request. */
+  save(){const live=typeof DB!=='undefined'&&DB.supa&&DB.supa()&&!DB.staff(),
+    L=live?this.listings.map(l=>Array.isArray(l.images)&&l.images.some(u=>/^data:/.test(u))?Object.assign({},l,{images:l.images.filter(u=>!/^data:/.test(u))}):l):this.listings,
+    okL=lss('listings',L);
+    return [lss('users',this.users),live||okL,lss('requests',this.requests),lss('sid',this.sid),lss('favs',this.favs),lss('reviews',this.reviews),lss('blocks',this.blocks)].every(Boolean)},
   me(){return this.users.find(u=>u.id===this.sid)||null}};
 if(!ST.blocks||typeof ST.blocks!=='object'||Array.isArray(ST.blocks))ST.blocks={};
 /* safety: old or damaged saved data is tidied on load so a bad record can never blank the page. DATA_VER lets future updates upgrade old data. */
@@ -13,8 +18,6 @@ const DATA_VER=3;
   ST.listings=(Array.isArray(ST.listings)?ST.listings:[]).filter(ok);ST.listings.forEach(l=>{l.name=String(l.name||'Vehicle');l.price=+l.price>0?+l.price:0;l.seats=+l.seats||1;if(!Array.isArray(l.pos)||l.pos.length<2||!isFinite(l.pos[0])||!isFinite(l.pos[1]))l.pos=[9.7392,118.7353]});
   ST.requests=(Array.isArray(ST.requests)?ST.requests:[]).filter(ok&&(x=>ok(x)&&x.from&&x.to));ST.requests.forEach(r=>{r.time=r.time||'';r.extraH=+r.extraH||0;r.extraFee=+r.extraFee||0;r.total=+r.total||0;r.deposit=+r.deposit||0;r.days=+r.days||1});
   ST.reviews=(Array.isArray(ST.reviews)?ST.reviews:[]).filter(x=>x&&typeof x==='object');ST.favs=Array.isArray(ST.favs)?ST.favs:[];
-  /* self-heal: a published sample vehicle (S-) replaces its device-only test twin (T-) so nothing shows twice */
-  (function(){const ids=new Set(ST.listings.map(l=>String(l.id)));const n=ST.listings.filter(l=>!(String(l.id).startsWith('T-')&&ids.has('S-'+String(l.id).slice(2))));if(n.length!==ST.listings.length){ST.listings=n;lss('listings',n)}})();
   if(lsg('ver',0)!==DATA_VER)lss('ver',DATA_VER)})();
 /* if the page ever breaks, show a calm reload bar instead of a blank screen */
 (function(){let shown=0;const bar=()=>{if(shown)return;shown=1;const d=document.createElement('div');d.setAttribute('role','alert');d.style.cssText='position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#1F2933;color:#fff;border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center;justify-content:space-between;font:15px system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.3)';d.innerHTML='<span>Something went wrong. Your saved data is safe.</span><button style="border:0;border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer" onclick="location.reload()">Reload</button>';(document.body||document.documentElement).appendChild(d)};
@@ -56,5 +59,5 @@ const TD={is:x=>!!(x&&(x._test||String(x.id||'').startsWith('T-'))),
 
 /* Test data control shared by the renter site and the owner page: a small footer link plus a bar while test data is loaded. Admin has its own box. */
 TD.mount=function(host){try{const on=TD.counts().any;
- if(on&&!document.getElementById('tdb')){const b=document.createElement('div');b.id='tdb';b.setAttribute('role','status');b.style.cssText='position:relative;z-index:5;background:#FFF4D6;color:#6B4A00;border-bottom:1px solid #F0D58A;padding:8px 14px;display:flex;gap:12px;align-items:center;justify-content:center;font:600 13px system-ui,sans-serif';b.innerHTML='<span>Test renters and bookings are loaded (this device only)</span><button type="button" style="border:1px solid #D8B24C;background:#fff;color:#6B4A00;border-radius:999px;padding:4px 12px;font:700 12px system-ui,sans-serif;cursor:pointer">Remove</button>';b.querySelector('button').onclick=()=>{TD.unload();location.reload()};document.body.prepend(b)}
+ if(on&&!document.getElementById('tdb')){const b=document.createElement('div');b.id='tdb';b.setAttribute('role','status');b.style.cssText='position:sticky;top:0;z-index:60;background:#FFF4D6;color:#6B4A00;border-bottom:1px solid #F0D58A;padding:8px 14px;display:flex;gap:12px;align-items:center;justify-content:center;font:600 13px system-ui,sans-serif';b.innerHTML='<span>Test renters and bookings are loaded (this device only)</span><button type="button" style="border:1px solid #D8B24C;background:#fff;color:#6B4A00;border-radius:999px;padding:4px 12px;font:700 12px system-ui,sans-serif;cursor:pointer">Remove</button>';b.querySelector('button').onclick=()=>{TD.unload();location.reload()};document.body.prepend(b)}
  if(host&&!host.querySelector('.tdl')){const p=document.createElement('p');p.className='tdl';p.style.cssText='margin:10px 0 0;font-size:12px;opacity:.7';const a=document.createElement('a');a.href='#';a.style.cssText='color:inherit;text-decoration:underline';a.textContent=on?'Remove test data':'Load test data';a.onclick=e=>{e.preventDefault();on?TD.unload():TD.load();location.reload()};p.appendChild(a);host.appendChild(p)}}catch(e){}};

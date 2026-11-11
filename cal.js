@@ -1,5 +1,9 @@
 /* Availability calendar for the Blocked dates sheet (admin and owner). Tap a day to block or unblock it.
    Dark = blocked by you, striped = already booked (confirmed), light outline = a request still waiting. Needs ST, dayList(). */
+/* Admin and owner buttons carry the vehicle id, not its position in the list (the list is rebuilt by the 30-second refresh,
+   so a position could point at a different vehicle). vAt accepts an id, or an old position as a fallback. */
+const vAt=a=>{const s=String(a);return V.find(v=>String(v.id)===s)||(/^\d+$/.test(s)?V[+s]:undefined)};
+const vid=i=>{const v=vAt(i);return esc(v?v.id:i)};
 let CALM=null;
 const CALN=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const isoOf=(y,m,d)=>y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
@@ -9,11 +13,11 @@ function calHtml(v,i){const t=new Date(),ty=t.getFullYear(),tm=t.getMonth(),td=i
  ST.requests.filter(r=>r.carId===v.id&&r.from&&r.to).forEach(r=>{const s=['confirmed','approved','completed'].includes(r.status)?bk:r.status==='new'?wt:null;if(!s)return;dayList(r.from,r.to).forEach(d=>s.add(d))});
  let cells='';for(let k=0;k<first;k++)cells+='<i></i>';
  for(let d=1;d<=n;d++){const k=isoOf(y,m,d),past=k<td,cls=(bl.has(k)?'cb-bl ':'')+(bk.has(k)?'cb-bk ':'')+(wt.has(k)?'cb-wt ':'')+(k===td?'cb-td':'');
-  cells+=`<button type="button" class="${cls}" ${past||bk.has(k)?'disabled':''} data-act="caltog" data-arg="${i}|${k}" aria-label="${k}${bl.has(k)?' blocked':bk.has(k)?' booked':''}">${d}</button>`}
- return `<div class="acal"><div class="ach"><button type="button" class="x" data-act="calnav" data-arg="${i}|-1" aria-label="Previous month">&lsaquo;</button><b>${CALN[m]} ${y}</b><button type="button" class="x" data-act="calnav" data-arg="${i}|1" aria-label="Next month">&rsaquo;</button></div><div class="acg">${'SMTWTFS'.split('').map(x=>`<em>${x}</em>`).join('')}${cells}</div><div class="acl"><span><i class="cb-bl"></i>Blocked</span><span><i class="cb-bk"></i>Booked</span><span><i class="cb-wt"></i>Request waiting</span></div></div>`}
+  cells+=`<button type="button" class="${cls}" ${past||bk.has(k)?'disabled':''} data-act="caltog" data-arg="${vid(i)}|${k}" aria-label="${k}${bl.has(k)?' blocked':bk.has(k)?' booked':''}">${d}</button>`}
+ return `<div class="acal"><div class="ach"><button type="button" class="x" data-act="calnav" data-arg="${vid(i)}|-1" aria-label="Previous month">&lsaquo;</button><b>${CALN[m]} ${y}</b><button type="button" class="x" data-act="calnav" data-arg="${vid(i)}|1" aria-label="Next month">&rsaquo;</button></div><div class="acg">${'SMTWTFS'.split('').map(x=>`<em>${x}</em>`).join('')}${cells}</div><div class="acl"><span><i class="cb-bl"></i>Blocked</span><span><i class="cb-bk"></i>Booked</span><span><i class="cb-wt"></i>Request waiting</span></div></div>`}
 Object.assign(CSVA,{
  calnav:a=>{const [i,d]=a.split('|');if(!CALM)return;CALM.m+=+d;if(CALM.m<0){CALM.m=11;CALM.y--}if(CALM.m>11){CALM.m=0;CALM.y++}blockSheet(i)},
- caltog:a=>{const [i,k]=a.split('|'),v=V[+i];if(!v)return;const cur=new Set(ST.blocks[v.id]||[]);cur.has(k)?cur.delete(k):cur.add(k);ST.blocks[v.id]=[...cur].sort();ST.save();try{DB.pushBlocks(v.id,ST.blocks[v.id])}catch(e){}blockSheet(i);renderView()}});
+ caltog:a=>{const [i,k]=a.split('|'),v=vAt(i);if(!v)return;const cur=new Set(ST.blocks[v.id]||[]);cur.has(k)?cur.delete(k):cur.add(k);ST.blocks[v.id]=[...cur].sort();ST.save();try{DB.pushBlocks(v.id,ST.blocks[v.id])}catch(e){}blockSheet(i);renderView()}});
 (function(){const st=document.createElement('style');st.textContent=`.acal{margin:12px 0}.ach{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .acg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}.acg em{font-style:normal;font-size:12px;color:var(--muted);padding:3px 0}
 .acg button{height:38px;border-radius:10px;border:1px solid transparent;background:var(--bg);color:var(--ink);font:inherit;font-size:14px;cursor:pointer}

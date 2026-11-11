@@ -35,10 +35,17 @@ begin
   if rid is null or rid !~ '^REQ-[0-9A-Za-z-]{3,20}$' then raise exception 'bad id'; end if;
   if tk is null or length(tk) < 16 or length(tk) > 64 then raise exception 'bad token'; end if;
   if length(p::text) > 20000 then raise exception 'too large'; end if;
+  if coalesce(p ->> 'hp', '') <> '' then return jsonb_build_object('ok', true); end if;  -- spam trap: bots fill the hidden field
+  -- numbers must be numbers (they are shown on the admin screen)
+  if exists (select 1 from unnest(array['days','extraH','extraFee','total','deposit']) k
+             where p ? k and jsonb_typeof(p -> k) <> 'number') then raise exception 'bad number'; end if;
   if (select count(*) from requests where created_at > now() - interval '1 hour' and track = tk) >= 10 then raise exception 'slow down'; end if;
+  if (select count(*) from requests where created_at > now() - interval '10 minutes') >= 60 then raise exception 'busy'; end if;  -- site-wide limit
   insert into requests (id, grp, data, status, paid, track)
-    values (rid, p ->> 'group', (p - 'track') || jsonb_build_object('status', 'new', 'paid', false), 'new', false, tk)
+    values (rid, p ->> 'group', (p - 'track' - 'hp') || jsonb_build_object('status', 'new', 'paid', false), 'new', false, tk)
     on conflict (id) do nothing;
+  -- same id already taken by someone else: tell the website, never pretend it was saved
+  if not found and not exists (select 1 from requests where id = rid and track = tk) then raise exception 'duplicate id'; end if;
   return jsonb_build_object('ok', true);
 end $$;
 
@@ -50,8 +57,9 @@ grant execute on function my_requests(text[]) to anon, authenticated;
 
 create or replace function cancel_request(p_id text, p_track text) returns jsonb language plpgsql security definer set search_path = public as $$
 begin
-  update requests set status = 'cancelled', paid = false, updated_at = now(),
-         data = data || jsonb_build_object('status', 'cancelled', 'paid', false)
+  -- paid stays as it was, so Admin still sees that money was received and a refund may be due
+  update requests set status = 'cancelled', updated_at = now(),
+         data = data || jsonb_build_object('status', 'cancelled', 'cancelledAt', (extract(epoch from now()) * 1000)::bigint)
    where id = p_id and track = p_track and status in ('new', 'approved', 'confirmed');
   return jsonb_build_object('ok', true);
 end $$;

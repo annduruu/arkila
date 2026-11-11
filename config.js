@@ -14,10 +14,10 @@ const BRAND={
 const PHASE1=true;
 const SETTINGS={
   damageCap:{car:50000,motor:30000}, // most a renter pays for damage in one rental (placeholder amounts: decide)
-  deposit:{car:5000,motor:2000}, // refundable security deposit, paid online to Arkila and held until the return check (placeholder amounts: decide)
-  extraHourRate:0.2, // each extra hour costs this share of the daily rate (placeholder: decide)
-  maxExtraHours:4,   // more than this, book another day instead
-  turnaroundHours:3, // break between two rentals of the same vehicle (cleaning, checks, fuel)
+  deposit:{car:5000,motor:2000}, // Phase 2 only (not used yet). Phase 1: any deposit is agreed on Messenger, see BOOKING_INFO.deposit below
+  extraHourRate:0.2, // each extra hour costs this share of the daily rate (used by the site; placeholder: decide)
+  maxExtraHours:4,   // most extra hours a renter can pick (used by the site); more than this, book another day instead
+  turnaroundHours:3, // break between two rentals of the same vehicle (not used by the site yet; same-day turnovers are allowed)
   commission:0.12,  // Arkila share of each trip total (shown on the admin screen)
   cancellation:"Free if you cancel 14 or more days before pickup. After that the owner may keep part of the rental fee: 20% from 7 to 13 days before, 50% from 2 to 6 days before, and up to 100% (at most 3 days' rental) with less than 48 hours' notice or if you do not show up. Your security deposit is always refunded.", // placeholder, matches the Terms draft. Edit to your real policy
   isSample:true     // set to false once real vehicles are listed, to hide the sample banner
@@ -26,7 +26,7 @@ const SETTINGS={
 /* ---- languages and currencies shown in the language menu ---- */
 const LANGS=[['en','English'],['fil','Filipino']];
 const CURRENCIES=[['PHP','Philippine peso'],['USD','US dollar'],['AUD','Australian dollar'],['EUR','Euro'],['GBP','British pound'],['KRW','South Korean won'],['JPY','Japanese yen'],['CNY','Chinese yuan'],['SGD','Singapore dollar'],['CAD','Canadian dollar']];
-/* Units per 1 Philippine peso on 2 Nov 2026. The live site refreshes these automatically when it can. */
+/* Units per 1 Philippine peso on 2 Nov 2026. Update by hand now and then (the site does not fetch new rates). */
 const RATES={PHP:1,USD:0.015698,AUD:0.02233,EUR:0.014068,GBP:0.011725,KRW:20.916605,JPY:2.474329,CNY:0.1047,SGD:0.020069,CAD:0.021939};
 const RATEINFO={date:'2026-11-02'};
 

@@ -16,7 +16,7 @@ let DR=90,DRC=null;                                  /* range in days: 30, 90, 3
 const DC={good:'#0E9F8E',amber:'#F59E0B',red:'#E5484D',grey:'#9AA5B1',violet:'#7C3AED',blue:'#1B4DDB'};
 const DSTAT={completed:['Returned',DC.good],confirmed:['Paid, upcoming',DC.blue],new:['Requested',DC.amber],cancelled:['Cancelled',DC.grey],declined:['Declined',DC.red]};
 const DRANGES=[[30,'30 days'],[90,'90 days'],[365,'12 months'],[0,'All time']];
-const dhPaid=r=>r.status==='confirmed'||r.status==='completed';
+const dhPaid=r=>(r.status==='confirmed'&&!!(r.paid||r.pay))||r.status==='completed';/* confirmed only counts once marked paid */
 const dhW=half=>{const el=document.querySelector('#view'),cw=(el&&el.clientWidth)||600,w=(half&&cw>=900)?(cw-110)/2:cw-70;return Math.round(Math.max(280,Math.min(1100,w)))};
 const dhS=(n,w)=>n+' '+w+(n===1?'':'s');
 const dhK=n=>n>=1e6?'₱'+(n/1e6).toFixed(n>=1e7?0:1)+'M':n>=1e3?'₱'+(n/1e3).toFixed(n>=1e4?0:1).replace(/\.0$/,'')+'k':'₱'+Math.round(n);
@@ -148,7 +148,7 @@ function ownDash(oid,asAdmin){
   ${dhCard('Earnings per vehicle','In the selected range',chHB(perV))}
   ${dhCard('Request outcomes','Requests with a pickup date in this range',chDonut(dhStatus(D),{unit:'requests',label:'Request outcomes'}))}
   ${dhCard('Busiest pickup days','In the selected range',chBars(dhWeekdays(D),{label:'Pickups by weekday',h:170,half:1,unit:'pickups'}))}
-  ${dhCard('Next pickups','Paid trips coming up',nxt.length?nxt.map(r=>`<div class="dlrow"><b>${esc(r.carName)}</b><span class="dsub">${esc(fmtS(r.from))}${r.time?' · '+esc(r.time):''} · ${r.days} day${r.days>1?'s':''} · you get ${php(ownerGets(r))}</span></div>`).join(''):'<p class="dnote">No paid pickups coming up.</p>')}</div>`}
+  ${dhCard('Next pickups','Paid trips coming up',nxt.length?nxt.map(r=>`<div class="dlrow"><b>${esc(r.carName)}</b><span class="dsub">${esc(fmtS(r.from))}${r.time?' · '+esc(r.time):''} · ${+r.days||1} day${r.days>1?'s':''} · you get ${php(ownerGets(r))}</span></div>`).join(''):'<p class="dnote">No paid pickups coming up.</p>')}</div>`}
 
 
 /* ---- hover / tap details for every chart, tile and bar ----
