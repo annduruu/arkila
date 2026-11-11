@@ -24,6 +24,10 @@ drop policy if exists staff_staff    on staff;    create policy staff_staff    o
 drop policy if exists staff_requests on requests; create policy staff_requests on requests for all to authenticated using (is_staff()) with check (is_staff());
 drop policy if exists staff_listings on listings; create policy staff_listings on listings for all to authenticated using (is_staff()) with check (is_staff());
 drop policy if exists staff_kv       on kv;       create policy staff_kv       on kv       for all to authenticated using (is_staff()) with check (is_staff());
+-- Private staff notes about renters (Admin > Renters). Staff only, never readable by the public website.
+create table if not exists notes (key text primary key, data jsonb not null, updated_at timestamptz not null default now());
+alter table notes enable row level security;
+drop policy if exists staff_notes on notes; create policy staff_notes on notes for all to authenticated using (is_staff()) with check (is_staff());
 -- The public website may only READ approved, active vehicles and the blocked-days / paused lists.
 drop policy if exists pub_listings on listings; create policy pub_listings on listings for select to anon using (status = 'approved' and active);
 drop policy if exists pub_kv       on kv;       create policy pub_kv       on kv       for select to anon using (true);

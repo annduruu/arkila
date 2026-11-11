@@ -9,7 +9,7 @@ If `SUPABASE` in `config.js` is left empty, the site runs in test mode and every
 - `config.js` brand, settings (extra-hour rate and maximum are used by the site), Supabase keys. `store.js` local data layer (`ST`). `db.js` database layer (`DB`). `svgs.js` vehicle art. `legal.js` terms, privacy, renter notice. `fil.js` Filipino strings.
 - `dash.js` + `dash.css` Insights tab. `csv.js` CSV export/import. `cal.js` blocked-dates calendar and the `vAt()`/`vid()` helpers (buttons carry vehicle ids, not list positions).
 - `arkila-supabase.sql` database setup. Re-run it after changing it (it is safe to run again).
-- Script tags use `?v=137`. Bump them all together when a JS or CSS file changes.
+- Script tags use `?v=161`. Bump them all together when a JS or CSS file changes.
 
 ## What each screen has
 - Renter: search, filters, sort, map, saved, trip planner, request flow, "Your requests" with cancel / delete. Reviews are hidden in Phase 1 (they are only stored on the renter's device until a reviews table exists).

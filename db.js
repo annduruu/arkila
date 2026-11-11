@@ -84,8 +84,9 @@ const DB={
         const ls=await DB.pullListings(0);ch=DB.mergeListings(ls,false)||ch;
       }
       const kv=await DB.rest('kv?select=key,data');(kv||[]).forEach(k=>{
-        if(k.key==='blocks'&&k.data&&typeof k.data==='object'){const keep=Object.fromEntries(Object.entries(S0.blocks||{}).filter(e=>String(e[0]).startsWith('T-'))),nb=Object.assign({},k.data,keep),cur=Object.fromEntries(Object.entries(S0.blocks||{}).filter(e=>!String(e[0]).startsWith('T-')));if(JSON.stringify(cur)!==JSON.stringify(k.data)){S0.blocks=nb;if(typeof ST!=='undefined')ST.blocks=nb;ch=true}}
+        if(k.key==='blocks'&&k.data&&typeof k.data==='object'&&lsg('blkdirty',0)){DB.pushBlocks()}else if(k.key==='blocks'&&k.data&&typeof k.data==='object'){const keep=Object.fromEntries(Object.entries(S0.blocks||{}).filter(e=>String(e[0]).startsWith('T-'))),nb=Object.assign({},k.data,keep),cur=Object.fromEntries(Object.entries(S0.blocks||{}).filter(e=>!String(e[0]).startsWith('T-')));if(JSON.stringify(cur)!==JSON.stringify(k.data)){S0.blocks=nb;if(typeof ST!=='undefined')ST.blocks=nb;ch=true}}
         if(k.key==='booked'&&k.data&&typeof k.data==='object'&&JSON.stringify(lsg('booked',{}))!==JSON.stringify(k.data)){lss('booked',k.data);ch=true}
+        if(k.key==='site'&&k.data&&typeof k.data==='object'&&JSON.stringify(lsg('site',null))!==JSON.stringify(k.data)){lss('site',k.data);applySite(k.data);ch=true;try{window.dispatchEvent(new Event('arkila:site'))}catch(e){}}/* Admin Settings: applied now, so first-time visitors and open tabs get them too */
         if(k.key==='vact'&&k.data&&typeof k.data==='object'&&JSON.stringify(lsg('vact',{}))!==JSON.stringify(k.data)){lss('vact',k.data);ch=true}});
       if(ch)S0.save&&S0.save();
     }catch(e){DB.err=String(e&&e.message||e);return false}
@@ -102,9 +103,31 @@ const DB={
   pushListing:l=>{if(!_sb()||!DB.staff()||!l||_T(l))return;const d=Object.assign({},l);delete d._r;
     DB.rest('listings',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{id:l.id,data:d,status:l.status||'approved',active:l.active!==false,updated_at:new Date().toISOString()}}).catch(()=>{})},
   pushBooked:map=>{if(!_sb()||!DB.staff())return;DB.rest('kv',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{key:'booked',data:map,updated_at:new Date().toISOString()}}).catch(()=>{})},
-  pushBlocks:(id,days)=>{if(!_sb()||!DB.staff())return;DB.rest('kv',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{key:'blocks',data:Object.fromEntries(Object.entries(_ST().blocks||{}).filter(e=>!String(e[0]).startsWith('T-'))),updated_at:new Date().toISOString()}}).catch(()=>{})},
+  pushBlocks:(id,days)=>{if(!_sb()||!DB.staff())return;/* stays marked unsent until the database confirms, so a refresh can't undo it */lss('blkdirty',1);DB.rest('kv',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{key:'blocks',data:Object.fromEntries(Object.entries(_ST().blocks||{}).filter(e=>!String(e[0]).startsWith('T-'))),updated_at:new Date().toISOString()}}).then(()=>lss('blkdirty',0)).catch(()=>{})},
   delRequests:ids=>{ids=(ids||[]).filter(i=>!_T(String(i)));if(!_sb()||!DB.staff()||!ids.length)return;DB.rest('requests?id=in.'+_q(ids),{m:'DELETE',auth:1}).catch(()=>{try{toast('Delete not saved online. Sign in again and retry.')}catch(e){}})},
   delListing:id=>{if(!_sb()||!DB.staff()||_T(String(id)))return;DB.rest('listings?id=eq.'+encodeURIComponent(id),{m:'DELETE',auth:1}).catch(()=>{})},
+  /* ---- Admin Settings / Renters / Staff ---- */
+  pushKV:(key,data)=>{if(!_sb()||!DB.staff())return Promise.resolve(false);return DB.rest('kv',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{key,data,updated_at:new Date().toISOString()}}).then(()=>true).catch(()=>false)},
+  /* private staff notes (table "notes", staff only; never public) */
+  pushNote:(key,text)=>{if(!_sb()||!DB.staff())return Promise.resolve(false);return DB.rest('notes',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{key,data:{text},updated_at:new Date().toISOString()}}).then(()=>true).catch(()=>false)},
+  pullNotes:()=>{if(!_sb()||!DB.staff())return Promise.resolve(null);return DB.rest('notes?select=key,data&key=not.like.x.*',{auth:1}).catch(()=>null)},
+  /* Admin extras (payments, hand-over checklist, vehicle papers, message templates): staff-only rows in "notes", keys start with "x." */
+  pushPriv:(key,data)=>{if(!_sb()||!DB.staff())return Promise.resolve(false);return DB.rest('notes',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{key,data,updated_at:new Date().toISOString()}}).then(()=>true).catch(()=>false)},
+  pullPriv:()=>{if(!_sb()||!DB.staff())return Promise.resolve(null);return DB.rest('notes?select=key,data&key=like.x.*&key=not.like.x.ph.*',{auth:1}).catch(()=>null)},
+  pullPh:key=>{if(!_sb()||!DB.staff())return Promise.resolve(null);return DB.rest('notes?select=data&key=eq.'+encodeURIComponent(key),{auth:1}).then(r=>r&&r[0]?r[0].data:null).catch(()=>undefined)},
+  staffList:()=>DB.rest('staff?select=email',{auth:1}),
+  staffAdd:email=>DB.rest('staff',{m:'POST',auth:1,b:{email}}),
+  staffDel:email=>DB.rest('staff?email=eq.'+encodeURIComponent(email),{m:'DELETE',auth:1}),
   pushVact:map=>{if(!_sb()||!DB.staff())return;DB.rest('kv',{m:'POST',auth:1,h:{Prefer:'resolution=merge-duplicates'},b:{key:'vact',data:map,updated_at:new Date().toISOString()}}).catch(()=>{})}
 };
+/* Admin Settings (saved in the database as kv "site") override config.js. Applied before the pages build, so they take effect on load. */
+const SITE_DEF={h1:6,h2:22,minDays:1,maxDays:60,notice:0,payInfo:'',paused:false,pauseMsg:''};
+function applySite(s){window.SITE=Object.assign({},SITE_DEF);if(!s||typeof s!=='object')return;try{
+ if(typeof BRAND!=='undefined')['name','tagline','fb','whatsapp','phone','email'].forEach(k=>{if(typeof s[k]==='string')BRAND[k]=s[k].trim()});
+ if(typeof SETTINGS!=='undefined'){if(s.xr!=null&&s.xr!==''&&isFinite(s.xr))SETTINGS.extraHourRate=Math.max(0,+s.xr)/100;if(s.xmax!=null&&s.xmax!==''&&isFinite(s.xmax))SETTINGS.maxExtraHours=Math.max(0,Math.min(12,+s.xmax));if(typeof s.isSample==='boolean')SETTINGS.isSample=s.isSample}
+ if(typeof BOOKING_INFO!=='undefined')['deposit','fuel','licenceCar','licenceMotor','cancel','pay'].forEach(k=>{if(typeof s[k]==='string')BOOKING_INFO[k]=s[k]});
+ ['h1','h2','minDays','maxDays','notice'].forEach(k=>{if(s[k]!=null&&s[k]!==''&&isFinite(s[k]))window.SITE[k]=+s[k]});
+ if(!(SITE.h1>=0&&SITE.h1<24))SITE.h1=6;if(!(SITE.h2>SITE.h1&&SITE.h2<=24))SITE.h2=22;if(!(SITE.minDays>=1))SITE.minDays=1;if(!(SITE.maxDays>=SITE.minDays))SITE.maxDays=60;
+ if(typeof s.payInfo==='string')SITE.payInfo=s.payInfo;if(typeof s.paused==='boolean')SITE.paused=s.paused;if(typeof s.pauseMsg==='string')SITE.pauseMsg=s.pauseMsg}catch(e){}}
+applySite(typeof lsg==='function'?lsg('site',null):null);
 window.addEventListener('online',()=>{try{DB.retry()}catch(e){}});
