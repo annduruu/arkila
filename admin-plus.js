@@ -65,7 +65,9 @@ let TPLSEL={};
 
 /* ---------- 2. Payments ---------- */
 const payOf=id=>DX.pay[id]||(DX.pay[id]={list:[],dep:{a:'',st:''},refunded:false});
-function payInfo(r){const p=DX.pay[r.id]||{list:[],dep:{}},got=p.list.reduce((a,x)=>a+(+x.a||0),0),bal=Math.max(0,(+r.total||0)-got),refund=(r.status==='cancelled'||r.status==='declined')&&got>0&&!p.refunded;return {p,got,bal,refund}}
+function payInfo(r){const p=DX.pay[r.id]||{list:[],dep:{}},listed=p.list.reduce((a,x)=>a+(+x.a||0),0),
+ /* "Payment received" (or bulk Mark paid) without itemised payments means paid in full */
+ paidFlag=!!(r.pay||(r._r&&r._r.paid)),got=!p.list.length&&paidFlag&&r.status!=='cancelled'&&r.status!=='declined'?(+r.total||0):listed,bal=Math.max(0,(+r.total||0)-got),refund=(r.status==='cancelled'||r.status==='declined')&&got>0&&!p.refunded;return {p,got,bal,refund}}
 const METH=['GCash','Bank','Cash','Maya'];
 
 /* ---------- 3. Pick-up / return checklist ---------- */

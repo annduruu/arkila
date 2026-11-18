@@ -27,7 +27,8 @@ const DB={
   hdr:async(auth)=>{const c=_sb(),h={apikey:c.key,'Content-Type':'application/json'};if(auth){const s=await DB.fresh();if(!s)throw new Error('noauth');h.Authorization='Bearer '+s.access_token}return h},
   rest:async(path,opt)=>{const c=_sb();opt=opt||{};const h=await DB.hdr(opt.auth);Object.assign(h,opt.h||{});
     const r=await fetch(c.url+'/rest/v1/'+path,{method:opt.m||'GET',headers:h,body:opt.b!==undefined?JSON.stringify(opt.b):undefined});
-    if(!r.ok)throw new Error('http '+r.status);const t=await r.text();return t?JSON.parse(t):null},
+    if(!r.ok){let m='';try{const j=await r.json();m=j&&(j.message||j.error_description||j.error)||''}catch(e){}const er=new Error('http '+r.status+(m?' '+m:''));er.status=r.status;er.msg=m;throw er}
+    const t=await r.text();return t?JSON.parse(t):null},
   rpc:(name,args)=>DB.rest('rpc/'+name,{m:'POST',b:args}),
   login:async(email,pw)=>{const c=_sb();const r=await fetch(c.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:c.key,'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
     const j=await r.json().catch(()=>({}));if(!r.ok||!j.access_token)throw new Error(r.status===400||r.status===401?'bad':'net');
@@ -40,19 +41,35 @@ const DB={
   /* true = on the staff list, false = signed in but not staff (or session gone), null = could not check (no signal) */
   isStaff:async()=>{try{const r=await DB.rest('staff?select=email',{auth:true});return Array.isArray(r)&&r.length>0}catch(e){return /noauth|http 40[13]/.test(String(e&&e.message))?false:null}},
   logout:()=>{lss('sbsession',null)},
-  fresh:async()=>{const s=DB.sess();if(!s)return null;if(s.exp-_now()>60000)return s;const c=_sb();
-    try{const r=await fetch(c.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:c.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});
-      const j=await r.json();if(!r.ok||!j.access_token){lss('sbsession',null);return null}
-      const n={access_token:j.access_token,refresh_token:j.refresh_token||s.refresh_token,exp:_now()+(j.expires_in||3600)*1000,email:s.email};lss('sbsession',n);return n}catch(e){return s}},
+  fresh:async()=>{const s=DB.sess();if(!s)return null;if(s.exp-_now()>60000)return s;if(DB._rf)return DB._rf;const c=_sb();
+    return DB._rf=(async()=>{try{const r=await fetch(c.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:c.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});
+      const j=await r.json().catch(()=>({}));if(!r.ok||!j.access_token){if(r.status===400||r.status===401){lss('sbsession',null);return null}return s}
+      const n={access_token:j.access_token,refresh_token:j.refresh_token||s.refresh_token,exp:_now()+(j.expires_in||3600)*1000,email:s.email};lss('sbsession',n);return n}catch(e){return s}finally{DB._rf=null}})()},
   /* ---- sending ---- */
   post:async r=>{
     if(_sb()){try{
-      if(DB.staff()){const u=await DB.rest('requests?id=eq.'+encodeURIComponent(r.id),{m:'PATCH',auth:1,h:{Prefer:'return=representation'},b:{status:r.status,paid:!!r.paid,data:r,updated_at:new Date(r.updatedAt||_now()).toISOString()}});if(Array.isArray(u)&&!u.length&&r.status==='new')await DB.rpc('submit_request',{p:r});return true}
+      if(DB.staff()){
+        /* a request the renter already cancelled is never switched back by a stale Admin screen */
+        const u=await DB.rest('requests?id=eq.'+encodeURIComponent(r.id)+(r.status==='cancelled'?'':'&status=neq.cancelled'),{m:'PATCH',auth:1,h:{Prefer:'return=representation'},b:{status:r.status,paid:!!r.paid,data:r,updated_at:new Date(r.updatedAt||_now()).toISOString()}});
+        if(Array.isArray(u)&&!u.length){const ex=await DB.rest('requests?select=status&id=eq.'+encodeURIComponent(r.id),{auth:1});
+          if(Array.isArray(ex)&&ex.length){r.updatedAt=0;r.sendErr='The renter cancelled this request.';return 'perm'}  /* next poll brings the cancelled status in */
+          if(r.status==='new'&&r.track)await DB.rpc('submit_request',{p:r});else return 'perm'}
+        return true}
       if(r.status==='cancelled'){await DB.rpc('cancel_request',{p_id:r.id,p_track:r.track||''});return true}
-      await DB.rpc('submit_request',{p:r});return true}catch(e){return false}}
+      await DB.rpc('submit_request',{p:r});return true}catch(e){
+        /* bad data, a past date, too many requests and the like will never succeed by retrying: stop and say why */
+        const st=e&&e.status;if(st>=400&&st<500&&![401,403,408,429].includes(st)&&!/slow down|busy/.test(e.msg||'')){r.sendErr=e.msg||('Error '+st);return 'perm'}
+        return false}}
     try{await fetch(_ep(),{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({hp:'',req:r})});return true}catch(e){return false}},
-  send:id=>{const r=(_ST().requests||[]).find(x=>x.id===id);if(!r||!DB.on()||_T(r))return Promise.resolve(true);
-    return DB.P[id]=DB.post(r).then(ok=>{const o=_ob().filter(x=>x!==id);if(!ok)o.push(id);lss('outbox',o);return ok})},
+  send:id=>{const prev=DB.P[id];if(prev&&!prev.done)return DB.P[id]=prev.then(()=>DB.send(id));
+    const r=(_ST().requests||[]).find(x=>x.id===id);if(!r||!DB.on()||_T(r))return Promise.resolve(true);
+    const v=r.updatedAt;delete r.sendErr;
+    const p=DB.post(r).then(res=>{const ok=res===true,cur=(_ST().requests||[]).find(x=>x.id===id),o=_ob().filter(x=>x!==id);
+      if(res===false||(ok&&cur&&cur.updatedAt!==v))o.push(id);
+      if(!lss('outbox',o)&&res!==true)try{toast('This device is out of storage space. Changes may not be saved.')}catch(e){}
+      if(res==='perm'){try{_ST().save&&_ST().save()}catch(e){}}
+      p.done=1;return ok});
+    return DB.P[id]=p},
   wait:id=>DB.P[id]||Promise.resolve(!DB.pending(id)),
   retry:()=>{if(!DB.on())return Promise.resolve(true);return Promise.all(_ob().map(DB.send)).then(a=>a.every(Boolean))},
   /* ---- Google Sheet inbox (mode 2): Admin asks the Sheet for requests it does not have yet ---- */
