@@ -49,10 +49,17 @@ const DB={
   post:async r=>{
     if(_sb()){try{
       if(DB.staff()){
-        /* a request the renter already cancelled is never switched back by a stale Admin screen */
-        const u=await DB.rest('requests?id=eq.'+encodeURIComponent(r.id)+(r.status==='cancelled'?'':'&status=neq.cancelled'),{m:'PATCH',auth:1,h:{Prefer:'return=representation'},b:{status:r.status,paid:!!r.paid,data:r,updated_at:new Date(r.updatedAt||_now()).toISOString()}});
-        if(Array.isArray(u)&&!u.length){const ex=await DB.rest('requests?select=status&id=eq.'+encodeURIComponent(r.id),{auth:1});
-          if(Array.isArray(ex)&&ex.length){r.updatedAt=0;r.sendErr='The renter cancelled this request.';return 'perm'}  /* next poll brings the cancelled status in */
+        /* the update only applies if the row is still the version this Admin last saw, so two admins (or a renter cancelling)
+           can never silently overwrite each other. A request the renter cancelled is never switched back. */
+        const srv=r._srvAt?'&updated_at=eq.'+encodeURIComponent(r._srvAt):'',body=Object.assign({},r);delete body._srvAt;delete body.sendErr;
+        const u=await DB.rest('requests?id=eq.'+encodeURIComponent(r.id)+(r.status==='cancelled'?'':'&status=neq.cancelled')+srv,{m:'PATCH',auth:1,h:{Prefer:'return=representation'},b:{status:r.status,paid:!!r.paid,data:body,updated_at:new Date(r.updatedAt||_now()).toISOString()}});
+        if(Array.isArray(u)&&u.length){r._srvAt=u[0].updated_at;return true}
+        if(Array.isArray(u)){
+          const ex=await DB.rest('requests?select=id,data,status,paid,updated_at&id=eq.'+encodeURIComponent(r.id),{auth:1});
+          if(Array.isArray(ex)&&ex.length){const w=ex[0];/* changed elsewhere: take the latest, do not retry, tell Admin */
+            Object.assign(r,w.data,{id:w.id,status:w.status,paid:!!w.paid,updatedAt:Date.parse(w.updated_at)||0,_srvAt:w.updated_at});
+            r.sendErr=w.status==='cancelled'?'The renter cancelled this request.':'Changed by someone else. Showing the latest.';
+            try{toast(r.sendErr);if(typeof loadR==='function'){loadR();renderView()}}catch(e){}return 'perm'}
           if(r.status==='new'&&r.track)await DB.rpc('submit_request',{p:r});else return 'perm'}
         return true}
       if(r.status==='cancelled'){await DB.rpc('cancel_request',{p_id:r.id,p_track:r.track||''});return true}
@@ -92,7 +99,7 @@ const DB={
         const rows=await DB.rest('requests?select=id,data,status,paid,updated_at&order=created_at.desc&limit=2000',{auth:1});
         const m=new Map(S0.requests.map(x=>[x.id,x]));
         rows.forEach(w=>{const t=Date.parse(w.updated_at)||0,l=m.get(w.id),d=_num(Object.assign({},w.data,{id:w.id,status:w.status,paid:!!w.paid,updatedAt:t}));
-          if(!l){S0.requests.push(d);ch=true}else if(!DB.pending(w.id)&&t>(l.updatedAt||0)&&(l.status!==w.status||!!l.paid!==!!w.paid)){Object.assign(l,{status:w.status,paid:!!w.paid,updatedAt:t});ch=true}});
+          if(!l){d._srvAt=w.updated_at;S0.requests.push(d);ch=true}else if(!DB.pending(w.id)){if(t>(l.updatedAt||0)){Object.assign(l,d,{_srvAt:w.updated_at});ch=true}else if(!l._srvAt||l.updatedAt===t)l._srvAt=w.updated_at}});
         S0.requests.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
         const ls=await DB.pullListings(1);ch=DB.mergeListings(ls,true)||ch;
       }else{

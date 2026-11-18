@@ -5,6 +5,10 @@
    Anyone can ADD a request (that is how the website posts). Only someone with SECRET can READ them. */
 const SECRET = 'CHANGE-THIS-TO-A-LONG-PRIVATE-PHRASE';
 
+/* A cell starting with = + - @ would run as a formula, so renter text gets a leading ' and a length cap. */
+function s_(v) { v = v == null ? '' : String(v).slice(0, 500); return /^[=+\-@\t\r]/.test(v) ? "'" + v : v; }
+function configured_() { return SECRET.length >= 24 && !/CHANGE-THIS/.test(SECRET); }
+
 function doPost(e) {
   try {
     const raw = (e.postData && e.postData.contents) || '';
@@ -15,13 +19,14 @@ function doPost(e) {
     if (!r || !r.id) return ok_();
     const sh = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
     if (sh.getLastRow() === 0) sh.appendRow(['Received', 'ID', 'Name', 'Phone', 'Vehicle', 'From', 'To', 'Time', 'Pickup', 'Going to', 'Total', 'Raw']);
-    sh.appendRow([new Date(), r.id, r.guestName, r.guestPhone, r.carName, r.from, r.to, r.time,
-      (r.spot || '') + (r.pickupAddr ? ' - ' + r.pickupAddr : ''), (r.dest || []).join(', '), r.total, JSON.stringify(r)]);
+    sh.appendRow([new Date(), s_(r.id), s_(r.guestName), s_(r.guestPhone), s_(r.carName), s_(r.from), s_(r.to), s_(r.time),
+      s_((r.spot || '') + (r.pickupAddr ? ' - ' + r.pickupAddr : '')), s_((r.dest || []).join(', ')), Number(r.total) || 0, JSON.stringify(r)]);
   } catch (err) {}
   return ok_();
 }
 
 function doGet(e) {
+  if (!configured_()) return out_({ error: 'not configured: change SECRET to a long private phrase (24+ characters)' });
   if (!e.parameter || e.parameter.key !== SECRET) return out_({ error: 'denied' });
   const sh = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
   const n = sh.getLastRow();

@@ -13,7 +13,7 @@ const CM={y:new Date().getFullYear(),m:new Date().getMonth()};
 function calendarPage(){
  const y=CM.y,m=CM.m,n=new Date(y,m+1,0).getDate(),td=todayIso(),days=[...Array(n)].map((_,i)=>isoD(new Date(y,m,i+1)));
  const book={};ST.requests.forEach(r=>{if(!r.carId||!r.from||!r.to)return;const k=LIVE.includes(r.status)?'bk':r.status==='new'?'pend':null;if(!k)return;
-  dayList(r.from,r.to).forEach(d=>{const b=(book[r.carId]=book[r.carId]||{});if(!b[d]||k==='bk')b[d]={k,r}})});
+  occDays(r.from,r.to).forEach(d=>{const b=(book[r.carId]=book[r.carId]||{});if(!b[d]||k==='bk')b[d]={k,r}})});
  const freeToday=V.filter(v=>v.live!==false&&!(book[v.id]&&book[v.id][td]&&book[v.id][td].k==='bk')&&!(ST.blocks[v.id]||[]).includes(td)).length;
  const hd=days.map(d=>{const dt=new Date(y,m,+d.slice(8)),we=dt.getDay()===0||dt.getDay()===6;return `<th class="${d===td?'ctd':''} ${we?'cwe':''}"><small>${'SMTWTFS'[dt.getDay()]}</small>${+d.slice(8)}</th>`}).join('');
  const rows=V.map(v=>{const bl=new Set(ST.blocks[v.id]||[]),bk=book[v.id]||{};
