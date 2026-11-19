@@ -421,7 +421,7 @@ try{var m=location.search.match(/[?&]draft=([01])/);if(m){localStorage.setItem('
 if(localStorage.getItem('arkila2-draft')==='1'){var d=document,h=d.documentElement;h.classList.add('draft');
 var c=d.createElement('link');c.rel='preconnect';c.href='https://fonts.gstatic.com';c.crossOrigin='';d.head.appendChild(c);
 c=d.createElement('link');c.rel='stylesheet';c.href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&display=swap';d.head.appendChild(c);
-c=d.createElement('link');c.rel='stylesheet';c.href='draft.css?v=174';d.head.appendChild(c);
+c=d.createElement('link');c.rel='stylesheet';c.href='draft.css?v=175';d.head.appendChild(c);
 d.addEventListener('DOMContentLoaded',function(){var b=d.createElement('button');b.className='dbadge';b.type='button';b.textContent='Draft design · tap to turn off';b.onclick=function(){localStorage.setItem('arkila2-draft','0');location.href=location.pathname};d.body.appendChild(b)})}}catch(e){}</script>
 </head><body>
 <header class="hdr">
@@ -447,7 +447,7 @@ d.addEventListener('DOMContentLoaded',function(){var b=d.createElement('button')
 <nav class="tabs" id="tabs"><button data-act="view" data-arg="explore" data-i="search">Explore</button><button data-act="view" data-arg="saved" data-i="heart">Saved</button><button data-act="view" data-arg="requests" data-i="chat">Requests</button><button data-act="menu" data-i="user">Menu</button></nav>
 <div id="ov"><div class="bk" data-act="close"></div><div class="sheet" id="sh" onscroll="if(this.scrollTop)this.scrollTop=0"></div></div>
 <div id="dd"></div><div id="toast" role="status" aria-live="polite"></div>
-<script src="config.js?v=174"></script><script src="testfleet.js?v=174"></script><script src="store.js?v=174"></script><script src="svgs.js?v=174"></script><script src="legal.js?v=174"></script><script src="db.js?v=174"></script><script src="fil.js?v=174"></script>
+<script src="config.js?v=175"></script><script src="testfleet.js?v=175"></script><script src="store.js?v=175"></script><script src="svgs.js?v=175"></script><script src="legal.js?v=175"></script><script src="db.js?v=175"></script><script src="fil.js?v=175"></script>
 <script>
 const PREF=(p=>({lang:p&&p.lang==='fil'?'fil':'en',cur:p&&RATES[p.cur]?p.cur:'PHP',theme:p&&(p.theme==='light'||p.theme==='dark')?p.theme:'system'}))(lsg('pref',{})),t=k=>'',fmtEn=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('en-PH',{day:'numeric',month:'short',year:'numeric'})};
 const mkV=()=>{const VO=lsg('vact',{});return allCars().filter(c=>(VO[c.id]!==undefined?VO[c.id]:c.active!==false)&&c.status==='approved').map(c=>{const bike=isMotor(c);return {id:c.id,name:esc(c.name),area:esc(c.area),bike,c,p:+c.price,cap:+c.seats||1,sub:esc(c.type)+' \u00b7 '+(+c.seats||1)+(bike?' riders':' seats'),deliv:!!(c.delivery||(c.features||[]).some(f=>/deliver/i.test(f))),svg:imgsOf(c)[0].replace(/^<img/,'<img class="v"')}})};const V=mkV();
