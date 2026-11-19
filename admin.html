@@ -1,9 +1,13 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!doctype html><html lang="en" class="lagoon"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Arkila Admin</title>
 <meta name="robots" content="noindex,nofollow">
-<link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script>try{var _p=(JSON.parse(localStorage.getItem('arkila2-pref')||'{}')||{});if(_p.theme==='light'||_p.theme==='dark')document.documentElement.setAttribute('data-theme',_p.theme)}catch(e){}</script><link rel="stylesheet" href="dash.css?v=180"><style>
-:root{--bg:#F1F4F8;--surface:#fff;--ink:#101B2B;--muted:#576579;--line:#DCE3EB;--accent:#1B4DDB;--accent-ink:#fff;--sun:#FFC72C;--sun-ink:#1B1500;--good:#15774A;--bad:#B3261E;--tile1:#E3EAF3;--tile2:#CFD9E6;--sh1:0 2px 10px rgba(15,26,43,.12);--f-display:'Gabarito','Trebuchet MS',system-ui,sans-serif;--f-body:'Figtree',system-ui,sans-serif}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css?v=181">
+<link rel="stylesheet" href="admin-theme.css?v=181">
+<script>try{var _p=(JSON.parse(localStorage.getItem('arkila2-pref')||'{}')||{});if(_p.theme==='light'||_p.theme==='dark')document.documentElement.setAttribute('data-theme',_p.theme)}catch(e){}</script><link rel="stylesheet" href="dash.css?v=181"><style>
+:root{--bg:#F1F4F8;--surface:#fff;--ink:#101B2B;--muted:#576579;--line:#DCE3EB;--accent:#1B4DDB;--accent-ink:#fff;--sun:#FFC72C;--sun-ink:#1B1500;--good:#15774A;--bad:#B3261E;--tile1:#E3EAF3;--tile2:#CFD9E6;--sh1:0 2px 10px rgba(15,26,43,.12);--f-display:'Inter Tight',system-ui,sans-serif;--f-body:'Inter',system-ui,sans-serif}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0F0F10;--surface:#18181A;--ink:#F2F2F2;--muted:#9A9A9F;--line:#2D2D31;--accent:#6E95FF;--accent-ink:#0A1220;--good:#4CC38A;--bad:#FF8A80;--tile1:#26262B;--tile2:#1C1C20;color-scheme:dark}}:root[data-theme=dark]{--bg:#0F0F10;--surface:#18181A;--ink:#F2F2F2;--muted:#9A9A9F;--line:#2D2D31;--accent:#6E95FF;--accent-ink:#0A1220;--good:#4CC38A;--bad:#FF8A80;--tile1:#26262B;--tile2:#1C1C20;color-scheme:dark}:root[data-theme=light]{color-scheme:light}#thb{position:fixed;bottom:14px;right:14px;z-index:25;height:34px;min-width:34px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:700 12px var(--f-body);box-shadow:var(--sh1)}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-body)}
@@ -115,14 +119,7 @@ a.btn{text-decoration:none;display:inline-flex}
 .thb{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-transform:inherit;letter-spacing:inherit}
 .bbar .btn{background:var(--surface);color:var(--ink);border-color:transparent}.bbar .btn.ok{background:var(--good);color:#fff}.bbar .btn.bad{color:var(--bad)}.bbar{position:sticky;top:0;z-index:5;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;margin-bottom:10px;background:var(--ink);color:var(--surface);border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
 body.locked>*:not(#ov):not(#toast){display:none!important}body.locked #ov{background:var(--bg)}body.locked #ov .bk{pointer-events:none}body.locked #sh .x,body.locked #sh [data-act=close]{display:none}
-</style><script>/* Draft admin design: ?draft=1 turns it on (and remembers), ?draft=0 turns it off. Without it the admin is unchanged. */
-try{var m=location.search.match(/[?&]draft=([01])/);if(m){localStorage.setItem('arkila2-admin-draft',m[1])}
-if(localStorage.getItem('arkila2-admin-draft')==='1'){var d=document,h=d.documentElement;h.classList.add('lagoon');
-var c=d.createElement('link');c.rel='preconnect';c.href='https://fonts.gstatic.com';c.crossOrigin='';d.head.appendChild(c);
-c=d.createElement('link');c.rel='stylesheet';c.href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&display=swap';d.head.appendChild(c);
-c=d.createElement('link');c.rel='stylesheet';c.href='tokens.css?v=180';d.head.appendChild(c);
-c=d.createElement('link');c.rel='stylesheet';c.href='admin-theme.css?v=180';d.head.appendChild(c);
-d.addEventListener('DOMContentLoaded',function(){var b=d.createElement('button');b.className='dbadge';b.type='button';b.textContent='Draft design · tap to turn off';b.onclick=function(){localStorage.setItem('arkila2-admin-draft','0');location.href=location.pathname};d.body.appendChild(b)})}}catch(e){}</script></head><body>
+</style></head><body>
 <div class="app">
  <aside class="side"><div class="logo"><i><svg class="i" style="stroke:#fff;width:18px;height:18px" viewBox="0 0 24 24"><path d="M5 16l1.5-5.5A2 2 0 0 1 8.4 9h7.2a2 2 0 0 1 1.9 1.5L19 16"/><path d="M3 16h18v3H3z"/></svg></i><div>Arkila<small>Admin</small></div></div>
   <div id="nav"></div><div class="sp"></div>
@@ -135,7 +132,7 @@ d.addEventListener('DOMContentLoaded',function(){var b=d.createElement('button')
 </div>
 <nav class="tbar" id="tbar"></nav>
 <div id="ov"><div class="bk" data-act="close"></div><div class="sheet" id="sh"></div></div><div id="toast" role="status" aria-live="polite"></div>
-<script src="config.js?v=180"></script><script src="testfleet.js?v=180"></script><script src="store.js?v=180"></script><script src="svgs.js?v=180"></script><script src="db.js?v=180"></script><script src="dash.js?v=180"></script><script src="csv.js?v=180"></script><script src="cal.js?v=180"></script>
+<script src="config.js?v=181"></script><script src="testfleet.js?v=181"></script><script src="store.js?v=181"></script><script src="svgs.js?v=181"></script><script src="db.js?v=181"></script><script src="dash.js?v=181"></script><script src="csv.js?v=181"></script><script src="cal.js?v=181"></script>
 <script>
 let VO=lsg('vact',{});
 /* "What you get" quick options in the vehicle form; anything else goes in "Other features" and is kept on save */
@@ -320,4 +317,4 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){close();return}
  if(e.key==='Tab'&&$('#ov').classList.contains('on')){const f=[...$('#sh').querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled&&x.offsetParent);if(!f.length)return;const a=f[0],z=f[f.length-1];
   if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus()}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}}});
 whoRender();renderView();inbCheck(false);if(DB.supa()){(async()=>{if(DB.sess()&&(await DB.isStaff())===false){DB.logout();whoRender();loginSheet('This account is not on the staff list');return}if(await DB.fromHash()){if(await DB.isStaff()){whoRender();adminPull(true);toast('Signed in')}else{DB.logout();whoRender();loginSheet('This account is not on the staff list')}}})();if(DB.sess())adminPull(true);else loginSheet();setInterval(()=>{if(!document.hidden)adminPull(false)},30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)adminPull(false)})}
-</script><script src="admin-x.js?v=180"></script><script src="admin-plus.js?v=180"></script></body></html>
+</script><script src="admin-x.js?v=181"></script><script src="admin-plus.js?v=181"></script></body></html>
