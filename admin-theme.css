@@ -1,6 +1,6 @@
-/* ARKILA ADMIN THEME "Lagoon" (draft for the staff pages)
+/* ARKILA ADMIN THEME "Lagoon"
    Same colours, type and motion as the renter site (tokens.css), tuned for a working screen:
-   a compact stat strip so new requests are on screen at once, one-line dates, buttons that show the next step.
+   compact stat strip, one-line dates, buttons that show the next step.
    Scoped to html.lagoon. Motion is skipped for visitors who ask for reduced motion. */
 
 /* ---------- type ---------- */
@@ -74,7 +74,3 @@ html.lagoon .x{width:38px;height:38px}
  html.lagoon #view.stg tbody tr:nth-child(n+6),html.lagoon #view.stg .vl>*:nth-child(n+6){animation-delay:.2s}
  html.lagoon .nv em{animation:d-pop .5s var(--spring) both}
 }
-
-/* ---------- draft switch ---------- */
-.dbadge{position:fixed;right:14px;bottom:14px;z-index:95;background:var(--ink);color:var(--surface);border-radius:999px;padding:8px 13px;font:600 12px var(--f-body);box-shadow:var(--sh1);cursor:pointer;border:0;opacity:.92}
-@media(max-width:760px){.dbadge{bottom:76px;right:10px;font-size:11px;padding:7px 12px}}
