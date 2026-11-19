@@ -10,7 +10,7 @@ If `SUPABASE` in `config.js` is left empty, the site runs in test mode and every
 - `dash.js` + `dash.css` Insights tab. `csv.js` CSV export/import. `cal.js` blocked-dates calendar and the `vAt()`/`vid()` helpers (buttons carry vehicle ids, not list positions).
 - `arkila-supabase.sql` database setup. Re-run it after changing it (it is safe to run again).
 - `archive/` holds old copies (`app.js`, `views.js`, `i18n.js`, `demo.js`, `style.css`) that no page loads. The live renter code and styles are inline in `index.html`. Do not edit the archive expecting the site to change.
-- Script tags use `?v=165`. Bump them all together when a JS or CSS file changes.
+- Script tags use `?v=166`. Bump them all together when a JS or CSS file changes.
 
 ## What each screen has
 - Renter: search, filters, sort, map, saved, trip planner, request flow, "Your requests" with cancel / delete. Reviews are hidden in Phase 1 (they are only stored on the renter's device until a reviews table exists).
