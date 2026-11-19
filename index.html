@@ -206,7 +206,9 @@ body[data-view=saved] .cats,body[data-view=requests] .cats{display:none}
 .fchp{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 13px;border-radius:999px;border:1px solid var(--ink);background:var(--surface);color:var(--ink);font:600 14px var(--f-body);cursor:pointer}.fchp i{font-style:normal;font-size:11px;color:var(--muted)}
 .fchs .lnk{min-height:40px;display:inline-flex;align-items:center}
 .grid.res{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:26px 16px}
-@media(max-width:560px){.grid.res{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 12px}}
+@media(max-width:560px){.grid.res{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 12px}
+ .grid.res .card .s{white-space:normal}.grid.res .rdl{flex-wrap:wrap;white-space:normal;row-gap:0}.grid.res .rda{flex-basis:100%;padding-left:21px}.grid.res .rda .dot{display:none}}
+.rda .dot{font-style:normal}
 /* comfortable tap targets */
 .hrt{width:40px!important;height:40px!important}.sh-h .x,.x.cl{min-width:40px;min-height:40px}.rab{width:40px;height:40px}
 .cat,.fbtn,.go,.chip{min-height:40px}.dsr .lnk,.cart .lnk,.cf .lnk,#sh .lnk{min-height:40px;display:inline-flex;align-items:center}
@@ -437,7 +439,7 @@ details.trp{display:block;border:1.5px solid var(--line);border-radius:14px;padd
 <nav class="tabs" id="tabs"><button data-act="view" data-arg="explore" data-i="search">Explore</button><button data-act="view" data-arg="saved" data-i="heart">Saved</button><button data-act="view" data-arg="requests" data-i="chat">Requests</button><button data-act="menu" data-i="user">Menu</button></nav>
 <div id="ov"><div class="bk" data-act="close"></div><div class="sheet" id="sh" onscroll="if(this.scrollTop)this.scrollTop=0"></div></div>
 <div id="dd"></div><div id="toast" role="status" aria-live="polite"></div>
-<script src="config.js?v=166"></script><script src="testfleet.js?v=166"></script><script src="store.js?v=166"></script><script src="svgs.js?v=166"></script><script src="legal.js?v=166"></script><script src="db.js?v=166"></script><script src="fil.js?v=166"></script>
+<script src="config.js?v=167"></script><script src="testfleet.js?v=167"></script><script src="store.js?v=167"></script><script src="svgs.js?v=167"></script><script src="legal.js?v=167"></script><script src="db.js?v=167"></script><script src="fil.js?v=167"></script>
 <script>
 const PREF=(p=>({lang:p&&p.lang==='fil'?'fil':'en',cur:p&&RATES[p.cur]?p.cur:'PHP',theme:p&&(p.theme==='light'||p.theme==='dark')?p.theme:'system'}))(lsg('pref',{})),t=k=>'',fmtEn=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('en-PH',{day:'numeric',month:'short',year:'numeric'})};
 const mkV=()=>{const VO=lsg('vact',{});return allCars().filter(c=>(VO[c.id]!==undefined?VO[c.id]:c.active!==false)&&c.status==='approved').map(c=>{const bike=isMotor(c);return {id:c.id,name:esc(c.name),area:esc(c.area),bike,c,p:+c.price,cap:+c.seats||1,sub:esc(c.type)+' \u00b7 '+(+c.seats||1)+(bike?' riders':' seats'),deliv:!!(c.delivery||(c.features||[]).some(f=>/deliver/i.test(f))),svg:imgsOf(c)[0].replace(/^<img/,'<img class="v"')}})};const V=mkV();
@@ -523,7 +525,7 @@ function confirmSheet(title,text,go,arg,btn){open('pp',`${head(title)}<div class
 const hasDriver=v=>/driver/i.test(v.c.service||'')&&!/self/i.test(v.c.service||'');
 const badgeOf=v=>hasDriver(v)?'With driver':v.deliv?(S.area&&v.area!==S.area?'Delivers to you':'Hotel delivery'):v.area==='Airport'?'Airport pickup':'';
 /* "ready" line under the name, like a delivery time: free today / tomorrow / next free day, or free on the chosen dates */
-function readyLine(v){const {bk}=takenOf(v),at=v.area?`<span class="rda"> · ${v.area}</span>`:'';/* where it is picked up sits on the same line */
+function readyLine(v){const {bk}=takenOf(v),at=v.area?`<span class="rda"><i class="dot"> · </i>${v.area}</span>`:'';/* where it is picked up sits on the same line */
  if(S.picked)return busy(v)?`<div class="rdl w">${ic('cal')}Not free on your dates</div>`:`<div class="rdl g">${ic('check')}Free on your dates${at}</div>`;
  const d=new Date(TODAY0),late=phNow().getHours()>=20;if(late)d.setDate(d.getDate()+1);
  for(let i=0;i<120;i++,d.setDate(d.getDate()+1)){if(!bk.has(isoD(d))){const k=Math.round((d-TODAY0)/864e5);return k===0?`<div class="rdl g">${ic('clock')}Ready today${at}</div>`:k===1?`<div class="rdl g">${ic('clock')}Ready tomorrow${at}</div>`:`<div class="rdl w">${ic('cal')}Next free ${fd(d)}${at}</div>`}}
