@@ -64,3 +64,5 @@ Object.assign(FIL,{"Sorted by price, low to high. Tap to reverse.":"Nakaayos ayo
 Object.assign(FIL,{"Send a request, we confirm on Messenger, you pay after.":"Magpadala ng request, kukumpirmahin namin sa Messenger, saka ka magbabayad.","No account, no payment now.":"Walang account, wala pang bayad ngayon."});
 Object.assign(FIL,{"Add":"Idagdag","Added":"Naidagdag"});
 FILP.push(["^(\\d+) days? · (.+)$","{1} araw · {2}"]);
+Object.assign(FIL,{"Length":"Haba","1 week":"1 linggo","Any":"Kahit alin","Rental length":"Haba ng renta"});
+FILP.push(["^(\\d+) days$","{1} araw"],["^(\\d+) people$","{1} tao"],["^1 person$","1 tao"]);

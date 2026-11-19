@@ -11,7 +11,7 @@ If `SUPABASE` in `config.js` is left empty, the site runs in test mode and every
 - `arkila-supabase.sql` database setup. Re-run it after changing it (it is safe to run again).
 - `archive/` holds old copies (`app.js`, `views.js`, `i18n.js`, `demo.js`, `style.css`) that no page loads. The live renter code and styles are inline in `index.html`. Do not edit the archive expecting the site to change.
 - `draft.css` is an opt-in **draft design** ("Lagoon" colours, Inter / Inter Tight type, Figma-style motion). Open the renter site with `?draft=1` to try it, `?draft=0` to switch it off. The live design does not change until the draft is approved and merged into the main styles. Reduced-motion visitors get no animation.
-- Script tags use `?v=175`. Bump them all together when a JS or CSS file changes.
+- Script tags use `?v=177`. Bump them all together when a JS or CSS file changes.
 
 ## What each screen has
 - Renter: search, filters, sort, map, saved, trip planner, request flow, "Your requests" with cancel / delete. Reviews are hidden in Phase 1 (they are only stored on the renter's device until a reviews table exists).
