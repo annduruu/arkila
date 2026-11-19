@@ -1,0 +1,180 @@
+/* ARKILA THEME "Lagoon" (renter site)
+   Inter / Inter Tight type, the Lagoon colour scheme, and Figma-style motion, layered over the base styles in index.html.
+   Everything is scoped to html.lagoon, which index.html sets on <html>.
+   Figma's own website font is licensed, so Inter (the font Figma's product UI uses) is the open stand-in.
+   Colours and fonts live in tokens.css. Motion is skipped for visitors who ask for reduced motion. */
+
+/* ---------- 2. TYPE ---------- */
+html.lagoon body{letter-spacing:-.006em;-webkit-font-smoothing:antialiased}
+html.lagoon :is(h1,h2,h3,.pg,.rhd h2,.pitch b,.fb,.rtop b){letter-spacing:-.008em;word-spacing:.05em}
+html.lagoon :is(.pr b,.pr,.tot,.pl,.pl b,.cbar b,.req .rt,.rh .rt){font-variant-numeric:tabular-nums}
+html.lagoon .cname,html.lagoon .card .t{letter-spacing:-.005em}
+
+/* ---------- 3. SHAPE + COLOUR APPLIED ---------- */
+html.lagoon .cta{border-radius:999px;font-weight:650;letter-spacing:-.005em}
+html.lagoon .ph{border-radius:20px}
+html.lagoon .pitch{background:linear-gradient(120deg,#0B5CFF 0%,#2B7BFF 48%,#00B8A9 100%);border-radius:22px}
+html.lagoon .pitch .cta{background:#fff;color:#0B3FCC}
+html.lagoon .ybd{background:var(--sun);color:#2A1D00}
+/* each vehicle type has its own colour: tile tint, category icon, selected state */
+html.lagoon .card[data-cat=bike] .ph{background:linear-gradient(160deg,var(--t-bike1),var(--t-bike2))}
+html.lagoon .card[data-cat=car] .ph{background:linear-gradient(160deg,var(--t-car1),var(--t-car2))}
+html.lagoon .card[data-cat=van] .ph{background:linear-gradient(160deg,var(--t-van1),var(--t-van2))}
+html.lagoon .cat[data-arg=bike] svg{color:var(--coral)}html.lagoon .cat[data-arg=car] svg{color:var(--accent)}html.lagoon .cat[data-arg=van] svg{color:var(--violet)}
+html.lagoon .cat[data-arg=bike].on{border-color:var(--coral);background:var(--coral-soft)}
+html.lagoon .cat[data-arg=car].on{border-color:var(--accent);background:var(--blue-soft)}
+html.lagoon .cat[data-arg=van].on{border-color:var(--violet);background:var(--violet-soft)}
+html.lagoon .fchp{border-color:var(--accent);background:var(--blue-soft);color:var(--ink)}
+html.lagoon .rdl.g{color:var(--good)}
+
+/* ---------- 4. MOTION (skipped for anyone who asks for reduced motion) ---------- */
+@keyframes d-up{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes d-pop{0%{transform:scale(.55);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1)}}
+@keyframes d-heart{0%{transform:scale(1)}30%{transform:scale(1.4)}60%{transform:scale(.9)}100%{transform:scale(1)}}
+@keyframes d-draw{to{stroke-dashoffset:0}}
+@keyframes d-fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media(prefers-reduced-motion:no-preference){
+ /* press feedback: everything tappable gives a little squeeze */
+ html.lagoon :is(.cta,.chip,.fchp,.cat,.sg button,.opt,.hrt,.add,.rab,.fbtn,.go,.circ,.dy,.tabs button){transition:transform .22s var(--spring),background-color .2s,border-color .2s,color .2s,box-shadow .2s,filter .2s}
+ html.lagoon :is(.cta,.chip,.fchp,.cat,.sg button,.opt,.hrt,.add,.rab,.fbtn,.go,.circ,.dy):active{transform:scale(.95)}
+ html.lagoon .cta:hover{filter:brightness(1.07)}
+ /* cards: the photo lifts and the vehicle drifts in on hover */
+ html.lagoon .card .ph{transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
+ html.lagoon .ph svg.v,html.lagoon .ph img.v{transition:transform .6s var(--ease)}
+ @media(hover:hover){html.lagoon .card:hover .ph{transform:translateY(-4px);box-shadow:0 18px 30px -16px rgba(11,15,25,.35)}html.lagoon .card:hover .ph .v{transform:scale(1.07)}}
+ /* panels glide in with a soft spring */
+ html.lagoon .sheet{animation-duration:.44s;animation-timing-function:var(--ease)}
+ html.lagoon .cbar.show{transition:transform .55s var(--spring)}
+ html.lagoon .tabs button.on svg{transform:translateY(-2px) scale(1.1)}html.lagoon .tabs button svg{transition:transform .3s var(--spring)}
+ /* the page flows in when the view or the result list changes (class set by the page, see _renderView) */
+ html.lagoon #view.stg .card{animation:d-up .6s var(--ease) both}
+ html.lagoon #view.stg :is(.rhd,.rtop,.fchs,.pitch,.none,.smpl){animation:d-up .5s var(--ease) both}
+ html.lagoon #view.stg .req{animation:d-up .55s var(--ease) both}
+ html.lagoon #view.stg .fchp{animation:d-pop .4s var(--spring) both}
+html.lagoon #view.stg .card:nth-child(2){animation-delay:45ms}
+html.lagoon #view.stg .card:nth-child(3){animation-delay:90ms}
+html.lagoon #view.stg .card:nth-child(4){animation-delay:135ms}
+html.lagoon #view.stg .card:nth-child(5){animation-delay:180ms}
+html.lagoon #view.stg .card:nth-child(6){animation-delay:225ms}
+html.lagoon #view.stg .card:nth-child(7){animation-delay:270ms}
+html.lagoon #view.stg .card:nth-child(8){animation-delay:315ms}
+html.lagoon #view.stg .card:nth-child(9){animation-delay:360ms}
+html.lagoon #view.stg .card:nth-child(10){animation-delay:405ms}
+html.lagoon #view.stg .card:nth-child(11){animation-delay:450ms}
+html.lagoon #view.stg .card:nth-child(12){animation-delay:495ms}
+html.lagoon #view.stg .card:nth-child(n+13){animation-delay:540ms}
+html.lagoon #view.stg .req:nth-child(2){animation-delay:60ms}
+html.lagoon #view.stg .req:nth-child(3){animation-delay:120ms}
+html.lagoon #view.stg .req:nth-child(4){animation-delay:180ms}
+html.lagoon #view.stg .req:nth-child(5){animation-delay:240ms}
+html.lagoon #view.stg .req:nth-child(6){animation-delay:300ms}
+
+ /* little moments of delight */
+ html.lagoon .hrt.pp svg{animation:d-heart .55s var(--spring)}
+ html.lagoon .add.pp svg{animation:d-pop .45s var(--spring)}
+ html.lagoon .okc{animation:d-pop .65s var(--spring) both}
+ html.lagoon .okc svg *{stroke-dasharray:40;stroke-dashoffset:40;animation:d-draw .6s .25s var(--ease) forwards}
+ html.lagoon :is(.sheet,#view.stg) .prog li.done::after{transform-origin:left center;animation:d-fill .7s var(--ease) .2s both}
+ html.lagoon :is(.sheet,#view.stg) .prog li.done i{animation:d-pop .5s var(--spring) both}
+ html.lagoon :is(.sheet,#view.stg) .prog li.cur i{animation:d-pop .5s .15s var(--spring) both}
+}
+
+/* The photo (with its heart and Add buttons) always sits above the card's invisible "open details" layer. Without this, the hover lift made that layer cover the buttons on a computer. Clicking the photo itself still opens the vehicle. */
+html.lagoon .card .ph{position:relative;z-index:2}
+
+/* ---------- 4b. MORE ROOM FOR DETAILS (phone vehicle page) ---------- */
+@media(max-width:760px){
+ html.lagoon .sheet.lg .ph.big{height:164px;min-height:164px}
+ html.lagoon .ths{padding:6px 12px;gap:8px;justify-content:flex-start}html.lagoon .th{flex:none;width:68px;height:44px;padding:2px;overflow:hidden}html.lagoon .th svg,html.lagoon .th img{width:100%;height:100%;object-fit:contain;display:block}
+ html.lagoon .drs{gap:8px}
+ /* dates and availability read as one block under the title; vehicle facts become one swipeable row */
+ html.lagoon .drs>*{order:5}
+ html.lagoon .drs>h3{order:0}html.lagoon .drs>div.s{order:1}
+ html.lagoon #ddr{order:2}html.lagoon #dstat{order:3}
+ html.lagoon .dch{order:4;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-right:-16px;padding-right:28px;-webkit-mask-image:linear-gradient(90deg,#000 90%,transparent)}
+ html.lagoon .dch::-webkit-scrollbar{display:none}html.lagoon .dch span{flex:none}
+ /* the price bar becomes one row: total on the left, Add and Request on the right */
+ html.lagoon .pb{display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"tot add cta" "ds add cta" "note note note";column-gap:8px;row-gap:0;align-items:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+ html.lagoon .pb .pbk{display:none}
+ html.lagoon .pb .pbt{grid-area:tot;display:flex;align-items:baseline;gap:6px;justify-content:flex-start}
+ html.lagoon .pb .pbt b{font:800 20px/1.15 var(--f-display);letter-spacing:-.01em}html.lagoon .pb .pbt b:first-child:not(:last-child){font:600 13px var(--f-body);color:var(--muted)}
+ html.lagoon .pb .pbt small{font:500 12px var(--f-body);color:var(--muted)}
+ html.lagoon .pb .pbt b:has(> small){display:flex;flex-direction:column;align-items:flex-start;gap:0}
+ html.lagoon .pb .pl.s{grid-area:ds;font-size:11.5px;line-height:1.3;white-space:nowrap;letter-spacing:-.01em}html.lagoon .pb .dsl2{display:none}html.lagoon .pb .dss2{display:inline}
+ html.lagoon .pb .pbt b:first-child:not(:last-child){display:none}
+ html.lagoon .pb .cta{grid-area:cta;margin:0;width:auto;padding:0 14px;min-height:48px;white-space:nowrap;font-size:15px}
+ html.lagoon .pb .cta[disabled]{white-space:normal;font-size:13px;line-height:1.2;max-width:150px}
+ html.lagoon .pb .dsec{grid-area:add;margin:0;width:auto;min-height:48px;padding:0 12px;border:1.5px solid var(--line);border-radius:999px;font-weight:650;text-decoration:none;display:inline-flex;align-items:center;gap:2px;background:var(--surface);color:var(--ink)}
+ html.lagoon .pb .dsl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+ html.lagoon .pb .dss{display:inline}html.lagoon .pb .dss::before{content:"+";font-size:18px;line-height:1;margin-right:3px}
+ html.lagoon .pb .note{grid-area:note;font-size:11.5px;margin-top:6px;text-align:center}
+}
+
+/* ---------- 4c. CLEARER BUTTONS ---------- */
+/* cards: the round "+" gets its word, and the badge moves up so they never collide */
+html.lagoon .add{width:auto;min-width:40px;height:38px;padding:0 13px 0 10px;border-radius:999px;gap:5px;display:inline-flex;align-items:center;justify-content:center}
+html.lagoon .add svg{width:16px;height:16px}
+html.lagoon .addl{display:inline;font:650 13px var(--f-body);letter-spacing:-.005em}
+html.lagoon .ybd{bottom:auto;top:10px;left:10px}
+/* actions that were plain underlined links become buttons */
+html.lagoon .lnk:is([data-act=avscroll],[data-act=coadd],[data-act=auth2],[data-act=save2],[data-act=search]){display:inline-flex;align-items:center;min-height:36px;padding:0 14px;margin:0;border-radius:999px;background:var(--blue-soft);color:var(--accent);font-weight:650;text-decoration:none}
+html.lagoon .lnk:is([data-act=avscroll],[data-act=coadd],[data-act=auth2],[data-act=save2],[data-act=search]):hover{filter:brightness(.97)}
+html.lagoon .fchs .lnk{text-decoration:none;font-weight:650;color:var(--accent)}
+/* cancelling is a real, clearly different button */
+html.lagoon [data-act=cancelreq]{display:inline-flex;align-items:center;min-height:40px;padding:0 16px;border:1.5px solid var(--line);border-radius:999px;color:var(--bad);font-weight:650;text-decoration:none;background:var(--surface)}
+/* after sending: one obvious next step */
+html.lagoon .okb .chip[data-act=gotoreq]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:650}
+html.lagoon .okb .chip[data-act=close]{border-color:transparent;color:var(--muted);background:transparent}
+
+/* ---------- 4d. FIND A VEHICLE (search) + FILTERS ---------- */
+/* the panel itself is focused by script when it opens; only the controls inside should show a focus ring */
+html.lagoon .sheet:focus,html.lagoon .sheet:focus-visible{outline:none}
+/* anything selected in a sheet is Lagoon blue, never black */
+html.lagoon :is(.sg button,.tbs button,.gch .chip,.qd .chip).on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+/* the three steps show what you have chosen so far */
+html.lagoon .tbs{gap:8px}
+html.lagoon .tbs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:7px 6px;min-height:54px;line-height:1.15;border-radius:18px;min-width:0}
+html.lagoon .tsub{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:500 11.5px var(--f-body);color:var(--muted)}
+html.lagoon .tsub.set{color:var(--accent);font-weight:650}
+html.lagoon .tbs button.on .tsub,html.lagoon .tbs button.on .tsub.set{color:var(--accent-ink);opacity:.9}
+/* pickup choices: compact cards, "Anywhere" on its own row */
+html.lagoon .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}
+html.lagoon .opts .opt{position:relative;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:8px;padding:12px;min-height:98px;border:1.5px solid var(--line);border-radius:18px;background:var(--surface);text-align:left}
+html.lagoon .opts .opt:hover{background:var(--surface);border-color:var(--accent)}
+html.lagoon .opts .opt:first-child{grid-column:1/-1;flex-direction:row;align-items:center;min-height:0;padding:12px 44px 12px 12px}
+html.lagoon .opts .opt .oi{width:34px;height:34px;border-radius:11px;background:var(--blue-soft);color:var(--accent);flex:none}
+html.lagoon .opts .opt>span:nth-child(2){flex:none;font-size:15px;line-height:1.2;letter-spacing:-.01em}
+html.lagoon .opts .opt small{font-size:11.5px;line-height:1.25;margin-top:2px}
+html.lagoon .opts .opt.on{border-color:var(--accent);background:var(--blue-soft)}
+html.lagoon .opts .opt .rd{position:absolute;top:10px;right:10px;width:20px;height:20px;border:2px solid var(--line);border-radius:50%;background:var(--surface)}
+html.lagoon .opts .opt:first-child .rd{top:50%;margin-top:-10px}
+html.lagoon .opts .opt.on .rd{background:var(--accent);border:2px solid var(--accent)}
+html.lagoon .opts .opt.on .rd::after{content:"";position:absolute;left:5px;top:1.5px;width:5px;height:9px;border:solid var(--accent-ink);border-width:0 2px 2px 0;transform:rotate(45deg)}
+/* optional destinations: one colour per group, picked places named in the closed row */
+html.lagoon .gdt summary{flex-wrap:wrap;row-gap:2px}
+html.lagoon .gsel{flex-basis:100%;order:3;display:block;font:600 13px var(--f-body);color:var(--accent);padding-bottom:10px;margin-top:-6px}
+html.lagoon .gdt[open] .gsel{display:none}
+html.lagoon .gdt .gch:nth-of-type(2){--gc:var(--accent)}
+html.lagoon .gdt .gch:nth-of-type(4){--gc:var(--violet)}
+html.lagoon .gdt .gch:nth-of-type(6){--gc:var(--teal)}
+html.lagoon .gdt .gch .chip{border-color:color-mix(in srgb,var(--gc,var(--line)) 38%,var(--line));background:color-mix(in srgb,var(--gc,transparent) 8%,var(--surface))}
+html.lagoon .gdt .gch .chip.on{background:var(--gc,var(--accent));border-color:var(--gc,var(--accent));color:var(--on-color)}
+/* dates: pick a start, then tap a length */
+html.lagoon .qd{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 14px}
+html.lagoon .qdl{font:650 12px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+html.lagoon .qd .chip{min-height:40px}
+/* passengers */
+html.lagoon .stp .ctl b{font:800 30px/1 var(--f-display);min-width:40px;text-align:center;font-variant-numeric:tabular-nums}
+html.lagoon .stp .x.ring{width:48px;height:48px;border:1.5px solid var(--accent);color:var(--accent);background:var(--surface)}
+html.lagoon .stp .x.ring:disabled{border-color:var(--line);color:var(--muted)}
+/* footer buttons: Clear is quiet, "Show N" is secondary, Next / Show is the main one */
+html.lagoon .sh-f .lnk[data-act=clearsearch],html.lagoon .sh-f .lnk[data-act=clear2]{text-decoration:none;color:var(--muted);font-weight:650}
+html.lagoon .sh-f .lnk[data-act=close]{display:inline-flex;align-items:center;min-height:46px;padding:0 16px;margin:0;border:1.5px solid var(--line);border-radius:999px;text-decoration:none;font-weight:650;color:var(--fg);background:var(--surface)}
+html.lagoon .sh-f .cta{min-height:46px}
+@media(prefers-reduced-motion:no-preference){
+ html.lagoon .sh-b.stepin{animation:d-up .4s var(--ease) both}
+ html.lagoon :is(.opts .opt,.gdt .chip,.qd .chip,.tbs button){transition:background-color .2s,border-color .2s,color .2s,transform .22s var(--spring)}
+ html.lagoon .opts .opt:active{transform:scale(.97)}
+ html.lagoon .opts .opt.on .rd{animation:d-pop .38s var(--spring)}
+ html.lagoon .gdt .chip.on{animation:d-pop .32s var(--spring)}
+}

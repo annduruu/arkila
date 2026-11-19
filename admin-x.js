@@ -13,15 +13,15 @@ const CM={y:new Date().getFullYear(),m:new Date().getMonth()};
 function calendarPage(){
  const y=CM.y,m=CM.m,n=new Date(y,m+1,0).getDate(),td=todayIso(),days=[...Array(n)].map((_,i)=>isoD(new Date(y,m,i+1)));
  const book={};ST.requests.forEach(r=>{if(!r.carId||!r.from||!r.to)return;const k=LIVE.includes(r.status)?'bk':r.status==='new'?'pend':null;if(!k)return;
-  dayList(r.from,r.to).forEach(d=>{const b=(book[r.carId]=book[r.carId]||{});if(!b[d]||k==='bk')b[d]={k,r}})});
- const freeToday=V.filter(v=>v.live!==false&&!(book[v.id]&&book[v.id][td]&&book[v.id][td].k==='bk')&&!(ST.blocks[v.id]||[]).includes(td)).length;
+  occDays(r.from,r.to).forEach(d=>{const b=(book[r.carId]=book[r.carId]||{});if(!b[d]||k==='bk')b[d]={k,r}})});
+ const freeToday=V.filter(v=>v.live!==false&&v.st==='approved'&&!(book[v.id]&&book[v.id][td]&&book[v.id][td].k==='bk')&&!(ST.blocks[v.id]||[]).includes(td)).length;
  const hd=days.map(d=>{const dt=new Date(y,m,+d.slice(8)),we=dt.getDay()===0||dt.getDay()===6;return `<th class="${d===td?'ctd':''} ${we?'cwe':''}"><small>${'SMTWTFS'[dt.getDay()]}</small>${+d.slice(8)}</th>`}).join('');
  const rows=V.map(v=>{const bl=new Set(ST.blocks[v.id]||[]),bk=book[v.id]||{};
   return `<tr><th class="cvn"><button class="lnk" data-act="editv" data-arg="${xe(v.id)}">${v.name}</button><small>${v.live===false?'Paused · ':''}${v.sub}</small></th>${days.map(d=>{const b=bk[d],past=d<td;
    if(b){const nm=String(b.r.guestName||'?').trim();return `<td class="c${b.k}" data-act="calopen" data-arg="${xe(b.r.id)}" title="${xe(nm)} · ${b.k==='bk'?'booked':'request waiting'}">${xe(nm[0]||'?')}</td>`}
    return `<td class="${bl.has(d)?'cbl':''} ${past?'cpa':''}" ${past?'':`data-act="calx" data-arg="${xe(v.id)}|${d}"`} title="${bl.has(d)?'Blocked · tap to free':'Free · tap to block'}"></td>`}).join('')}</tr>`}).join('');
  return `<div class="ph"><div><h1>Calendar</h1><div class="sub">Every vehicle, every day. Tap a free day to block it, a blocked day to free it, a booking to open it.</div></div></div>
- <div class="cbar"><button class="btn g sm" data-act="calm" data-arg="-1">‹</button><b>${new Date(y,m,1).toLocaleDateString('en',{month:'long',year:'numeric'})}</b><button class="btn g sm" data-act="calm" data-arg="1">›</button><button class="btn g sm" data-act="calm" data-arg="0">Today</button><span class="sub" style="margin-left:auto">Free today: <b>${freeToday}</b> of ${V.length}</span></div>
+ <div class="cbar"><button class="btn g sm" data-act="calm" data-arg="-1">‹</button><b>${new Date(y,m,1).toLocaleDateString('en',{month:'long',year:'numeric'})}</b><button class="btn g sm" data-act="calm" data-arg="1">›</button><button class="btn g sm" data-act="calm" data-arg="0">Today</button><span class="sub" style="margin-left:auto">Free today: <b>${freeToday}</b> of ${V.filter(v=>v.live!==false&&v.st==='approved').length}</span></div>
  <div class="cwrap"><table class="cgrid"><thead><tr><th class="cvn"></th>${hd}</tr></thead><tbody>${rows||'<tr><td class="sub" style="padding:14px">No vehicles yet.</td></tr>'}</tbody></table></div>
  <div class="clg"><span><i class="cbk"></i>Booked</span><span><i class="cpend"></i>Request waiting</span><span><i class="cbl"></i>Blocked by you</span><span><i></i>Free</span></div>`}
 
@@ -35,7 +35,7 @@ function renters(){const g={};ST.requests.forEach(x=>{if(!x.guestName&&!x.guestP
 function rentersPage(){const L=renters().filter(p=>!RQ||(p.name+' '+p.phone+' '+p.email).toLowerCase().includes(RQ));
  if(!NOTES_PULLED){NOTES_PULLED=true;DB.pullNotes().then(rows=>{if(!rows)return;rows.forEach(r=>{if(r&&r.key&&r.data)NOTES[r.key]=String(r.data.text||'')});lss('rnotes',NOTES);if(view==='renters')renderView()})}
  return `<div class="ph"><div><h1>Renters</h1><div class="sub">Everyone who sent a request, grouped by mobile number. Tap a renter for trips, contact and notes.</div></div></div>
- <div class="rbar"><input id="rsearch" class="rinp" placeholder="Search name, mobile or email" value="${xe(RQ)}"><span class="sub">${L.length} renter${L.length===1?'':'s'}</span></div>
+ <div class="rbar"><input id="rsearch" class="rinp" aria-label="Search renters" placeholder="Search name, mobile or email" value="${xe(RQ)}"><span class="sub">${L.length} renter${L.length===1?'':'s'}</span></div>
  ${L.length?`<div class="rlist">${L.map(p=>`<button class="rrow" data-act="renter" data-arg="${xe(p.k)}"><i class="rav">${xe((p.name||'?').trim()[0]||'?')}</i><span class="rnm"><b>${xe(p.name)}</b><small>${xe(p.phone||p.email)}</small></span><span class="rst"><b>${p.trips.length}</b><small>request${p.trips.length===1?'':'s'}</small></span><span class="rst"><b>${pesos(p.value)}</b><small>booked</small></span><span class="rtg">${p.open?`<em class="ron">${p.open} open</em>`:''}${p.done?`<em>${p.done} done</em>`:''}${p.cx?`<em class="rcx">${p.cx} cancelled</em>`:''}${NOTES[p.k]?'<em>Note</em>':''}</span></button>`).join('')}</div>`:`<div class="emp2"><b>No renters yet</b><div class="sub">Renters appear here after their first request.</div></div>`}`}
 function renterSheet(k){const p=renters().find(x=>x.k===k);if(!p)return;const ph=String(p.phone).replace(/\D/g,''),wa=ph.startsWith('63')||ph.length>10?ph:'63'+ph.replace(/^0/,'');
  const ST2={new:'New',confirmed:'Confirmed',approved:'Confirmed',completed:'Returned',cancelled:'Cancelled',declined:'Declined',rejected:'Declined'};
@@ -70,7 +70,7 @@ function settingsPage(){const s=curSite(),inp=(k,l,ph,t)=>`<label class="sf"><sp
  </form>
  <section class="scard"><h2>Staff</h2><p class="sub">People who can sign in to Admin.${DB.staff()?'':' Sign in to manage staff.'}</p>
  ${STAFF_ERR?`<p class="sub">${STAFF_ERR}</p>`:''}${(STAFF||[]).map(e=>`<div class="srow"><span>${xe(e)}${e.toLowerCase()===me.toLowerCase()?' <small class="sub">(you)</small>':''}</span>${e.toLowerCase()===me.toLowerCase()?'':`<button class="btn g sm" data-act="staffdel" data-arg="${xe(e)}">Remove</button>`}</div>`).join('')}
- ${DB.staff()?`<div class="srow"><input id="staffnew" class="rinp" type="email" placeholder="new.staff@email.com"><button class="btn sm" data-act="staffadd">Add</button></div><p class="sub">They also need a login: Supabase → Authentication → Users → Add user (same email).</p>`:''}</section>`}
+ ${DB.staff()?`<div class="srow"><input id="staffnew" class="rinp" type="email" aria-label="New staff email" placeholder="new.staff@email.com"><button class="btn sm" data-act="staffadd">Add</button></div><p class="sub">They also need a login: Supabase → Authentication → Users → Add user (same email).</p>`:''}</section>`}
 function readSet(){const f=document.getElementById('setf'),g=new FormData(f),s={};
  ['name','tagline','fb','whatsapp','phone','email','payInfo','pauseMsg','deposit','fuel','licenceCar','licenceMotor','cancel','pay'].forEach(k=>s[k]=String(g.get(k)||'').trim());
  s.fb=s.fb.replace(/^https?:\/\/(www\.)?(facebook\.com|m\.me)\//i,'').replace(/\/+$/,'');s.whatsapp=s.whatsapp.replace(/\D/g,'');

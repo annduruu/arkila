@@ -32,6 +32,37 @@ FILP.push(["^Add dates · (.+)$","Magdagdag ng petsa · {1}"],["^mula (.+)/day$"
  ["^Pick-up needs at least (\\d+) hours notice$","Kailangan ng hindi bababa sa {1} oras na abiso bago ang pick-up"]);
 Object.assign(FIL,{"+ Add vehicle":"+ Magdagdag ng sasakyan","When":"Kailan","Add dates and time":"Magdagdag ng petsa at oras","Choose area":"Pumili ng lugar","Trip":"Biyahe","Optional":"Opsyonal","Use saved details":"Gamitin ang naka-save na detalye",
  "I agree to the":"Sumasang-ayon ako sa","Terms":"Mga Tuntunin","and":"at",". Nothing is charged now.":". Walang sinisingil ngayon.","Tap your pick-up day":"Piliin ang araw ng pick-up","Done":"Tapos","Pick-up / return":"Pick-up / balik","None":"Wala",
- "Pick your dates first. Each extra hour is 20% of the daily rate.":"Pumili muna ng petsa. Ang bawat dagdag na oras ay 20% ng arawang presyo.","No bookings yet. Free to book.":"Wala pang booking. Puwedeng i-book.","Not picked yet":"Hindi pa napipili","Greyed days are already booked.":"Naka-book na ang mga kulay-abong araw."});
+ "Pick your dates first. Each extra hour is 20% of the daily rate.":"Pumili muna ng petsa. Ang bawat dagdag na oras ay 20% ng arawang presyo.","No bookings yet. Free to book.":"Wala pang booking. Puwedeng i-book.","Not picked yet":"Hindi pa napipili","Greyed days are already booked.":"Naka-book na ang mga kulay-abong araw.","Crossed-out days are already booked. Earlier days can't be picked.":"May guhit na ang mga araw na naka-book na. Hindi mapipili ang mga lumipas na araw."});
 FILP.push(["^(\\d{4}) model$","Modelo {1}"],["^Pick your dates first\\. Each extra hour is (\\d+)% of the daily rate\\.$","Pumili muna ng petsa. Ang bawat dagdag na oras ay {1}% ng arawang presyo."]);
 FILP.push(["^Pick-up is between (.+) and (.+)$","Ang pick-up ay mula {1} hanggang {2}"]);Object.assign(FIL,{"That pick-up time has already passed":"Lumipas na ang oras ng pick-up na iyan"});
+/* ---- more Filipino (added in the crosscheck pass; a Filipino speaker should proofread) ---- */
+Object.assign(FIL,{
+ "Terms of Service":"Mga Tuntunin ng Serbisyo","Privacy Notice":"Paunawa sa Privacy","Sign in or save my details":"Mag-sign in o i-save ang detalye ko","Currency":"Pera","Trip details":"Detalye ng biyahe",
+ "Where are you going?":"Saan ka pupunta?","(optional, up to 3)":"(opsyonal, hanggang 3)","We suggest vehicles that suit the trip.":"Magmumungkahi kami ng mga sasakyang akma sa biyahe.",
+ "Around Puerto Princesa":"Sa paligid ng Puerto Princesa","City tour":"City tour","Further by road":"Mas malayo sa kalsada","By boat, not by road":"Sa bangka, hindi sa kalsada",
+ "Iwahig Firefly Watching":"Panonood ng alitaptap sa Iwahig",
+ "Dashed places are reached by boat. Your rental stays on Palawan and they don't change which vehicle we suggest.":"Sa bangka ang pagpunta sa mga lugar na may putol-putol na guhit. Nasa Palawan lang ang renta mo at hindi nito binabago ang sasakyang imumungkahi namin.",
+ "Valid driver's licence (bring the original). Foreign licences: bring your passport too.":"May bisa na lisensya sa pagmamaneho (dalhin ang orihinal). Banyagang lisensya: dalhin din ang pasaporte.",
+ "Valid motorcycle licence (bring the original). Helmet provided.":"May bisa na lisensya sa motorsiklo (dalhin ang orihinal). May ibinibigay na helmet.",
+ "Return the vehicle with the same fuel level you picked it up with.":"Ibalik ang sasakyan na kapareho ng antas ng gasolina nang kunin mo ito.",
+ "If your plans change, message us as early as you can. Full terms are in the renter notice (see the checkout).":"Kung magbago ang plano mo, mag-message sa amin sa lalong madaling panahon. Nasa paunawa sa umuupa ang buong tuntunin (tingnan sa checkout).",
+ "Leave empty":"Iwanang walang laman",
+ /* labels read aloud by screen readers, and tooltips */
+ "Search":"Maghanap","Vehicle type and filters":"Uri ng sasakyan at mga filter","Scroll back":"Mag-scroll pabalik","Scroll forward":"Mag-scroll pasulong","Vehicle details":"Detalye ng sasakyan","Pick your dates":"Piliin ang mga petsa mo",
+ "Previous month":"Nakaraang buwan","Next month":"Susunod na buwan","Pickup area":"Lugar ng pick-up","Gearbox":"Gearbox","Country code":"Code ng bansa",
+ "Anywhere in Puerto Princesa · No dates yet · No passengers set":"Kahit saan sa Puerto Princesa · Wala pang petsa · Walang pasaherong nakatakda"});
+FILP.push(
+ ["^total · (.+)/day$","kabuuan · {1}/araw"],["^Free on (.+)$","Libre sa {1}"],["^Next booked: (.+)$","Susunod na naka-book: {1}"],["^Show (\\d+)$","Ipakita ang {1}"],
+ ["^Return by (.+) on (.+?) · each extra hour is (\\d+)% of the daily rate\\.$","Ibalik bago mag-{1} sa {2} · ang bawat dagdag na oras ay {3}% ng arawang presyo."],
+ ["^Save (?!my |your |changes|details)(.+)$","I-save ang {1}"],["^Add (.+) to request$","Idagdag ang {1} sa request"],["^Remove (.+) from request$","Alisin ang {1} sa request"],
+ ["^Open (?!Messenger|Maps?\\b|Google|Menu\\b)([A-Z].*)$","Buksan ang {1}"],["^(.+), (.+) per day$","{1}, {2} bawat araw"]);
+
+Object.assign(FIL,{"Transmission":"Transmission","Driving":"Pagmamaneho","Self-drive":"Ikaw ang magmamaneho","With driver":"May driver","Any":"Kahit alin","Pick-up":"Pick-up","Hotel delivery only":"Hotel delivery lang","Hotel delivery":"Hotel delivery","Clear all":"Alisin lahat","Automatic":"Awtomatiko","Manual":"Manual","Semi-auto":"Semi-auto",
+ "No vehicles match":"Walang tugmang sasakyan","Try different dates, fewer passengers or remove a filter above.":"Subukan ang ibang petsa, mas kaunting pasahero, o alisin ang isang filter sa itaas.","Clear filters":"Alisin ang mga filter"});
+FILP.push(["^(\\d+) vehicles?$","{1} sasakyan"],["^Price low to high ⇅$","Presyo: mura muna ⇅"],["^Price high to low ⇅$","Presyo: mahal muna ⇅"],["^Pickup: (.+)$","Pick-up: {1}"],["^Up to (.+)/day$","Hanggang {1}/araw"],["^(\\d+) passengers?$","{1} pasahero"],["^Remove filter: (.+)$","Alisin ang filter: {1}"]);
+Object.assign(FIL,{"Sorted by price, low to high. Tap to reverse.":"Nakaayos ayon sa presyo, mura muna. Pindutin para baligtarin.","Sorted by price, high to low. Tap to reverse.":"Nakaayos ayon sa presyo, mahal muna. Pindutin para baligtarin."});
+Object.assign(FIL,{"Send a request, we confirm on Messenger, you pay after.":"Magpadala ng request, kukumpirmahin namin sa Messenger, saka ka magbabayad.","No account, no payment now.":"Walang account, wala pang bayad ngayon."});
+Object.assign(FIL,{"Add":"Idagdag","Added":"Naidagdag"});
+FILP.push(["^(\\d+) days? · (.+)$","{1} araw · {2}"]);
+Object.assign(FIL,{"Length":"Haba","1 week":"1 linggo","Any":"Kahit alin","Rental length":"Haba ng renta"});
+FILP.push(["^(\\d+) days$","{1} araw"],["^(\\d+) people$","{1} tao"],["^1 person$","1 tao"]);

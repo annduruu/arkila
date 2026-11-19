@@ -4,13 +4,16 @@
    so a position could point at a different vehicle). vAt accepts an id, or an old position as a fallback. */
 const vAt=a=>{const s=String(a);return V.find(v=>String(v.id)===s)||(/^\d+$/.test(s)?V[+s]:undefined)};
 const vid=i=>{const v=vAt(i);return esc(v?v.id:i)};
+/* Days a rental occupies: pick-up day up to the day BEFORE the return day (the return day is free again, like on the renter site).
+   A same-day rental occupies that one day. */
+const occDays=(a,b)=>{const l=dayList(a,b);return l.length>1?l.slice(0,-1):l};
 let CALM=null;
 const CALN=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const isoOf=(y,m,d)=>y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
 function calHtml(v,i){const t=new Date(),ty=t.getFullYear(),tm=t.getMonth(),td=isoOf(ty,tm,t.getDate());
  if(!CALM||CALM.id!==v.id)CALM={id:v.id,y:ty,m:tm};
  const {y,m}=CALM,first=new Date(y,m,1).getDay(),n=new Date(y,m+1,0).getDate(),bl=new Set(ST.blocks[v.id]||[]),bk=new Set(),wt=new Set();
- ST.requests.filter(r=>r.carId===v.id&&r.from&&r.to).forEach(r=>{const s=['confirmed','approved','completed'].includes(r.status)?bk:r.status==='new'?wt:null;if(!s)return;dayList(r.from,r.to).forEach(d=>s.add(d))});
+ ST.requests.filter(r=>r.carId===v.id&&r.from&&r.to).forEach(r=>{const s=['confirmed','approved','completed'].includes(r.status)?bk:r.status==='new'?wt:null;if(!s)return;occDays(r.from,r.to).forEach(d=>s.add(d))});
  let cells='';for(let k=0;k<first;k++)cells+='<i></i>';
  for(let d=1;d<=n;d++){const k=isoOf(y,m,d),past=k<td,cls=(bl.has(k)?'cb-bl ':'')+(bk.has(k)?'cb-bk ':'')+(wt.has(k)?'cb-wt ':'')+(k===td?'cb-td':'');
   cells+=`<button type="button" class="${cls}" ${past||bk.has(k)?'disabled':''} data-act="caltog" data-arg="${vid(i)}|${k}" aria-label="${k}${bl.has(k)?' blocked':bk.has(k)?' booked':''}">${d}</button>`}

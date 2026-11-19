@@ -26,7 +26,7 @@ const allCars=()=>[...CARS.filter(c=>!ST.listings.some(l=>l.id===c.id)).map(c=>O
 const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,30);
 const reviewsOf=c=>ST.reviews.filter(r=>r.carId===c.id);
 const ratingOf=c=>{const r=reviewsOf(c);return r.length?{avg:r.reduce((s,x)=>s+x.rating,0)/r.length,n:r.length}:null};
-const stars=n=>'★'.repeat(Math.round(n))+'☆'.repeat(5-Math.round(n));
+const stars=n=>{n=Math.max(0,Math.min(5,Math.round(+n||0)));return '★'.repeat(n)+'☆'.repeat(5-n)};/* clamped: a bad stored rating can't break the page */
 
 /* ---- trip details helpers (shared by renter, admin, owner) ---- */
 const _te=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

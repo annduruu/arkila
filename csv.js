@@ -11,7 +11,8 @@ function parseCSV(text){text=String(text||'').replace(/^﻿/,'');const rows=[];l
  row.push(cur);if(row.some(x=>x.trim()!==''))rows.push(row);return rows}
 const csvToday=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 /* spreadsheet apps run text starting with = + - @ as a formula: prefix those so exported names can never execute */
-const csvSafe=v=>typeof v==='string'&&/^[=+\-@\t\r]/.test(v)?"'"+v:v;
+/* cells starting with = + - @ could run as formulas in Excel/Sheets, so they get a leading '. Plain numbers like +63 917 123 4567 or -500 are safe and stay as they are. */
+const csvSafe=v=>typeof v==='string'&&/^[=+\-@\t\r]/.test(v)&&!/^[+-]?\d[\d\s().-]*$/.test(v)?"'"+v:v;
 let CSVDATA='';
 function csvSheet(title,note,rows,file){const csv=toCSV(rows.map((r,i)=>i?r.map(csvSafe):r));CSVDATA=csv;
  open(`${head(title)}<div class="sh-b"><p class="sub" style="margin:0 0 10px">${note}</p><textarea id="xta" readonly rows="9" style="width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:10px;font:12px/1.4 ui-monospace,Menlo,monospace">${esc(csv.replace(/^﻿/,''))}</textarea><p class="sub" id="xnote" style="margin:8px 0 0"></p></div><div class="sh-f"><button class="btn g" data-act="xcopy">Copy</button><button class="btn" data-act="xdl" data-arg="${esc(file)}">Download ${esc(file)}</button></div>`)}
@@ -31,7 +32,7 @@ const CAR_T=['Hatchback','Sedan','SUV','Van','Pickup'],MOTOR_T=['Scooter','Under
 let IMPPLAN=[];
 function importSheet(){IMPPLAN=[];
  open(`${head('Import vehicles')}<div class="sh-b"><p class="sub" style="margin:0 0 8px">Paste CSV rows. Columns: ${VCOLS.join(', ')}. Leave <b>id</b> empty to add, or use an existing id to update. Features are separated with a semicolon. Area is one of ${Object.keys(AREAS).join(', ')} (or any name with lat and lng).</p><div class="acts" style="justify-content:flex-start;margin-bottom:8px"><label class="btn g sm" style="cursor:pointer">Choose file<input type="file" id="xfile" accept=".csv,text/csv" hidden></label><button class="btn g sm" data-act="xtpl">Use the template</button></div><textarea id="xin" rows="8" placeholder="Paste CSV here" style="width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:10px;font:12px/1.4 ui-monospace,Menlo,monospace"></textarea><div id="xprev" style="margin-top:8px"></div></div><div class="sh-f"><button class="btn g" data-act="xcheck">Check</button><button class="btn" id="xgo" data-act="xgo" disabled>Import</button></div>`)}
-function importCheck(){const rows=parseCSV(document.getElementById('xin').value),prev=document.getElementById('xprev'),go=document.getElementById('xgo');IMPPLAN=[];go.disabled=true;go.textContent='Import';
+function importCheck(){const rows=parseCSV(document.getElementById('xin').value).map(r=>r.map(c=>/^'[=+\-@]/.test(c)?c.slice(1):c))/* undo the export's formula guard */,prev=document.getElementById('xprev'),go=document.getElementById('xgo');IMPPLAN=[];go.disabled=true;go.textContent='Import';
  const bad=m=>`<p style="color:var(--bad);margin:2px 0;font-size:13px">${esc(m)}</p>`;
  if(rows.length<2){prev.innerHTML=bad('Add a header row and at least one vehicle.');return}
  const head=rows[0].map(h=>h.trim().toLowerCase()),ix=k=>head.indexOf(k),errs=[];

@@ -16,8 +16,24 @@ alter table requests enable row level security;
 alter table listings enable row level security;
 alter table kv enable row level security;
 
+alter table requests add column if not exists ip text;
+create index if not exists requests_created_idx on requests (created_at);
+create index if not exists requests_track_idx   on requests (track, created_at);
+create index if not exists requests_ip_idx      on requests (ip, created_at);
+
+-- Staff = a signed-in user whose email is on the staff list AND has been confirmed (a fresh unconfirmed sign-up never counts).
 create or replace function is_staff() returns boolean language sql stable security definer set search_path = public as
-$$ select exists (select 1 from staff where lower(email) = lower(coalesce(auth.jwt() ->> 'email', ''))) $$;
+$$ select exists (select 1 from staff s join auth.users u on lower(u.email) = lower(s.email)
+                  where u.id = auth.uid() and u.email_confirmed_at is not null) $$;
+
+-- Never let the last staff email be removed (that would lock everyone out of Admin).
+create or replace function keep_one_staff() returns trigger language plpgsql set search_path = public as $$
+begin
+  if (select count(*) from staff) <= 1 then raise exception 'cannot remove the last staff email'; end if;
+  return old;
+end $$;
+drop trigger if exists keep_one_staff on staff;
+create trigger keep_one_staff before delete on staff for each row execute function keep_one_staff();
 
 -- Staff (Admin login) can do everything. Everyone else gets NO direct access to requests (names and phones stay private).
 drop policy if exists staff_staff    on staff;    create policy staff_staff    on staff    for all to authenticated using (is_staff()) with check (is_staff());
@@ -30,23 +46,40 @@ alter table notes enable row level security;
 drop policy if exists staff_notes on notes; create policy staff_notes on notes for all to authenticated using (is_staff()) with check (is_staff());
 -- The public website may only READ approved, active vehicles and the blocked-days / paused lists.
 drop policy if exists pub_listings on listings; create policy pub_listings on listings for select to anon using (status = 'approved' and active);
-drop policy if exists pub_kv       on kv;       create policy pub_kv       on kv       for select to anon using (true);
+-- only these shared keys are public; any new kv key stays staff-only until it is added here
+drop policy if exists pub_kv       on kv;       create policy pub_kv       on kv       for select to anon using (key in ('blocks', 'booked', 'site', 'vact'));
 
 -- Renters send, check and cancel through these three functions only.
 create or replace function submit_request(p jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
-declare rid text := p ->> 'id'; tk text := p ->> 'track';
+declare rid text := p ->> 'id'; tk text := p ->> 'track'; d1 date; d2 date;
+        phone text := regexp_replace(coalesce(p ->> 'guestPhone', ''), '\D', '', 'g');
+        v_ip text := nullif(trim(split_part(coalesce(nullif(current_setting('request.headers', true), '')::json ->> 'x-forwarded-for', ''), ',', 1)), '');
 begin
   if rid is null or rid !~ '^REQ-[0-9A-Za-z-]{3,20}$' then raise exception 'bad id'; end if;
   if tk is null or length(tk) < 16 or length(tk) > 64 then raise exception 'bad token'; end if;
-  if length(p::text) > 20000 then raise exception 'too large'; end if;
+  if length(p::text) > 8000 then raise exception 'too large'; end if;
   if coalesce(p ->> 'hp', '') <> '' then return jsonb_build_object('ok', true); end if;  -- spam trap: bots fill the hidden field
   -- numbers must be numbers (they are shown on the admin screen)
   if exists (select 1 from unnest(array['days','extraH','extraFee','total','deposit']) k
              where p ? k and jsonb_typeof(p -> k) <> 'number') then raise exception 'bad number'; end if;
+  if coalesce((p ->> 'total')::numeric, 0) < 0 or coalesce((p ->> 'days')::numeric, 1) < 1 or coalesce((p ->> 'days')::numeric, 1) > 90
+     then raise exception 'bad number'; end if;
+  -- dates must be real, in order, and not in the past (one day of slack for time zones)
+  begin d1 := (p ->> 'from')::date; d2 := (p ->> 'to')::date; exception when others then raise exception 'bad dates'; end;
+  if d1 is null or d2 is null or d2 < d1 or d1 < current_date - 1 or d1 > current_date + 400 then raise exception 'bad dates'; end if;
+  if length(phone) < 7 then raise exception 'bad phone'; end if;
+  -- limits: per renter device, per phone number, per network address, and site-wide
   if (select count(*) from requests where created_at > now() - interval '1 hour' and track = tk) >= 10 then raise exception 'slow down'; end if;
+  if (select count(distinct grp) from requests where created_at > now() - interval '1 day'
+        and regexp_replace(coalesce(data ->> 'guestPhone', ''), '\D', '', 'g') = phone) >= 5 then raise exception 'slow down'; end if;
+  if v_ip is not null and (select count(distinct grp) from requests where created_at > now() - interval '1 hour' and requests.ip = v_ip) >= 6
+     then raise exception 'slow down'; end if;
   if (select count(*) from requests where created_at > now() - interval '10 minutes') >= 60 then raise exception 'busy'; end if;  -- site-wide limit
-  insert into requests (id, grp, data, status, paid, track)
-    values (rid, p ->> 'group', (p - 'track' - 'hp') || jsonb_build_object('status', 'new', 'paid', false), 'new', false, tk)
+  -- keys starting with _ are internal (e.g. _test) and status/paid/createdAt are set here, never trusted from the website
+  p := (select coalesce(jsonb_object_agg(k, v), '{}'::jsonb) from jsonb_each(p) e(k, v) where left(k, 1) <> '_');
+  insert into requests (id, grp, data, status, paid, track, ip)
+    values (rid, p ->> 'group', (p - 'track' - 'hp') || jsonb_build_object('status', 'new', 'paid', false,
+            'createdAt', (extract(epoch from now()) * 1000)::bigint), 'new', false, tk, v_ip)
     on conflict (id) do nothing;
   -- same id already taken by someone else: tell the website, never pretend it was saved
   if not found and not exists (select 1 from requests where id = rid and track = tk) then raise exception 'duplicate id'; end if;
