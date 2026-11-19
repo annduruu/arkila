@@ -1,0 +1,107 @@
+/* ARKILA DRAFT DESIGN  (turn on with ?draft=1, off with ?draft=0)
+   "Lagoon": Inter / Inter Tight type, a fresh colour scheme, Figma-style motion.
+   Everything is scoped to html.draft, so the live design is unchanged until this is approved.
+   Figma's own website font is licensed and cannot be used; Inter is the closest open font (Figma's product UI uses it). */
+
+/* ---------- 1. COLOUR SCHEME: light ---------- */
+html.draft{
+  --bg:#F5F6F8;--surface:#FFFFFF;--ink:#0B0F19;--muted:#566073;--line:#E3E6EB;
+  --accent:#0B5CFF;--accent-ink:#FFFFFF;          /* Lagoon blue: buttons, links, selected */
+  --sun:#FFC400;--bad:#C9301F;--good:#0A7D4F;     /* badges, errors, success */
+  --coral:#E5432A;--violet:#6A4DF4;--teal:#00867E; /* category colours: motorbikes, vans & SUVs, extras */
+  --coral-soft:#FFEDE8;--blue-soft:#E7EFFF;--violet-soft:#EFEBFF;
+  --tile1:#EEF1F5;--tile2:#E1E6EE;--win:#DCEBFA;
+  --t-bike1:#FFF1EC;--t-bike2:#FFDFD4;--t-car1:#EAF2FF;--t-car2:#D3E3FF;--t-van1:#F2EEFF;--t-van2:#E0D8FF;
+  --sh1:0 2px 12px rgba(11,15,25,.10);
+  --f-display:'Inter Tight','Inter',system-ui,sans-serif;--f-body:'Inter',system-ui,sans-serif;
+  --ease:cubic-bezier(.22,1,.36,1);--spring:cubic-bezier(.34,1.56,.64,1)}
+/* dark */
+@media(prefers-color-scheme:dark){html.draft:not([data-theme=light]){
+  --bg:#0B0D12;--surface:#14171E;--ink:#F3F4F6;--muted:#A3AAB7;--line:#262B35;--accent:#6B97FF;--accent-ink:#06122E;
+  --bad:#FF8A7A;--good:#34D399;--coral:#FF7A62;--violet:#9D87FF;--teal:#2DD4C4;
+  --coral-soft:#2A1914;--blue-soft:#131F3A;--violet-soft:#1D1838;--tile1:#1C2029;--tile2:#161A22;--win:#2A3140;
+  --t-bike1:#2B1B16;--t-bike2:#22150F;--t-car1:#16233F;--t-car2:#101A30;--t-van1:#211B3D;--t-van2:#171230}}
+html.draft[data-theme=dark]{
+  --bg:#0B0D12;--surface:#14171E;--ink:#F3F4F6;--muted:#A3AAB7;--line:#262B35;--accent:#6B97FF;--accent-ink:#06122E;
+  --bad:#FF8A7A;--good:#34D399;--coral:#FF7A62;--violet:#9D87FF;--teal:#2DD4C4;
+  --coral-soft:#2A1914;--blue-soft:#131F3A;--violet-soft:#1D1838;--tile1:#1C2029;--tile2:#161A22;--win:#2A3140;
+  --t-bike1:#2B1B16;--t-bike2:#22150F;--t-car1:#16233F;--t-car2:#101A30;--t-van1:#211B3D;--t-van2:#171230}
+
+/* ---------- 2. TYPE ---------- */
+html.draft body{letter-spacing:-.006em;-webkit-font-smoothing:antialiased}
+html.draft :is(h1,h2,h3,.pg,.rhd h2,.pitch b,.fb,.rtop b){letter-spacing:-.008em;word-spacing:.05em}
+html.draft :is(.pr b,.pr,.tot,.pl,.pl b,.cbar b,.req .rt,.rh .rt){font-variant-numeric:tabular-nums}
+html.draft .cname,html.draft .card .t{letter-spacing:-.005em}
+
+/* ---------- 3. SHAPE + COLOUR APPLIED ---------- */
+html.draft .cta{border-radius:999px;font-weight:650;letter-spacing:-.005em}
+html.draft .ph{border-radius:20px}
+html.draft .pitch{background:linear-gradient(120deg,#0B5CFF 0%,#2B7BFF 48%,#00B8A9 100%);border-radius:22px}
+html.draft .pitch .cta{background:#fff;color:#0B3FCC}
+html.draft .ybd{background:var(--sun);color:#2A1D00}
+/* each vehicle type has its own colour: tile tint, category icon, selected state */
+html.draft .card[data-cat=bike] .ph{background:linear-gradient(160deg,var(--t-bike1),var(--t-bike2))}
+html.draft .card[data-cat=car] .ph{background:linear-gradient(160deg,var(--t-car1),var(--t-car2))}
+html.draft .card[data-cat=van] .ph{background:linear-gradient(160deg,var(--t-van1),var(--t-van2))}
+html.draft .cat[data-arg=bike] svg{color:var(--coral)}html.draft .cat[data-arg=car] svg{color:var(--accent)}html.draft .cat[data-arg=van] svg{color:var(--violet)}
+html.draft .cat[data-arg=bike].on{border-color:var(--coral);background:var(--coral-soft)}
+html.draft .cat[data-arg=car].on{border-color:var(--accent);background:var(--blue-soft)}
+html.draft .cat[data-arg=van].on{border-color:var(--violet);background:var(--violet-soft)}
+html.draft .fchp{border-color:var(--accent);background:var(--blue-soft);color:var(--ink)}
+html.draft .rdl.g{color:var(--good)}
+
+/* ---------- 4. MOTION (skipped for anyone who asks for reduced motion) ---------- */
+@keyframes d-up{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes d-pop{0%{transform:scale(.55);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1)}}
+@keyframes d-heart{0%{transform:scale(1)}30%{transform:scale(1.4)}60%{transform:scale(.9)}100%{transform:scale(1)}}
+@keyframes d-draw{to{stroke-dashoffset:0}}
+@keyframes d-fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media(prefers-reduced-motion:no-preference){
+ /* press feedback: everything tappable gives a little squeeze */
+ html.draft :is(.cta,.chip,.fchp,.cat,.sg button,.opt,.hrt,.add,.rab,.fbtn,.go,.circ,.dy,.tabs button){transition:transform .22s var(--spring),background-color .2s,border-color .2s,color .2s,box-shadow .2s,filter .2s}
+ html.draft :is(.cta,.chip,.fchp,.cat,.sg button,.opt,.hrt,.add,.rab,.fbtn,.go,.circ,.dy):active{transform:scale(.95)}
+ html.draft .cta:hover{filter:brightness(1.07)}
+ /* cards: the photo lifts and the vehicle drifts in on hover */
+ html.draft .card .ph{transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
+ html.draft .ph svg.v,html.draft .ph img.v{transition:transform .6s var(--ease)}
+ @media(hover:hover){html.draft .card:hover .ph{transform:translateY(-4px);box-shadow:0 18px 30px -16px rgba(11,15,25,.35)}html.draft .card:hover .ph .v{transform:scale(1.07)}}
+ /* panels glide in with a soft spring */
+ html.draft .sheet{animation-duration:.44s;animation-timing-function:var(--ease)}
+ html.draft .cbar.show{transition:transform .55s var(--spring)}
+ html.draft .tabs button.on svg{transform:translateY(-2px) scale(1.1)}html.draft .tabs button svg{transition:transform .3s var(--spring)}
+ /* the page flows in when the view or the result list changes (class set by the page, see _renderView) */
+ html.draft #view.stg .card{animation:d-up .6s var(--ease) both}
+ html.draft #view.stg :is(.rhd,.rtop,.fchs,.pitch,.none,.smpl){animation:d-up .5s var(--ease) both}
+ html.draft #view.stg .req{animation:d-up .55s var(--ease) both}
+ html.draft #view.stg .fchp{animation:d-pop .4s var(--spring) both}
+html.draft #view.stg .card:nth-child(2){animation-delay:45ms}
+html.draft #view.stg .card:nth-child(3){animation-delay:90ms}
+html.draft #view.stg .card:nth-child(4){animation-delay:135ms}
+html.draft #view.stg .card:nth-child(5){animation-delay:180ms}
+html.draft #view.stg .card:nth-child(6){animation-delay:225ms}
+html.draft #view.stg .card:nth-child(7){animation-delay:270ms}
+html.draft #view.stg .card:nth-child(8){animation-delay:315ms}
+html.draft #view.stg .card:nth-child(9){animation-delay:360ms}
+html.draft #view.stg .card:nth-child(10){animation-delay:405ms}
+html.draft #view.stg .card:nth-child(11){animation-delay:450ms}
+html.draft #view.stg .card:nth-child(12){animation-delay:495ms}
+html.draft #view.stg .card:nth-child(n+13){animation-delay:540ms}
+html.draft #view.stg .req:nth-child(2){animation-delay:60ms}
+html.draft #view.stg .req:nth-child(3){animation-delay:120ms}
+html.draft #view.stg .req:nth-child(4){animation-delay:180ms}
+html.draft #view.stg .req:nth-child(5){animation-delay:240ms}
+html.draft #view.stg .req:nth-child(6){animation-delay:300ms}
+
+ /* little moments of delight */
+ html.draft .hrt.pp svg{animation:d-heart .55s var(--spring)}
+ html.draft .add.pp svg{animation:d-pop .45s var(--spring)}
+ html.draft .okc{animation:d-pop .65s var(--spring) both}
+ html.draft .okc svg *{stroke-dasharray:40;stroke-dashoffset:40;animation:d-draw .6s .25s var(--ease) forwards}
+ html.draft :is(.sheet,#view.stg) .prog li.done::after{transform-origin:left center;animation:d-fill .7s var(--ease) .2s both}
+ html.draft :is(.sheet,#view.stg) .prog li.done i{animation:d-pop .5s var(--spring) both}
+ html.draft :is(.sheet,#view.stg) .prog li.cur i{animation:d-pop .5s .15s var(--spring) both}
+}
+
+/* ---------- 5. DRAFT SWITCH ---------- */
+.dbadge{position:fixed;right:10px;bottom:72px;z-index:30;background:var(--ink);color:var(--surface);border-radius:999px;padding:7px 12px;font:600 11px var(--f-body);box-shadow:var(--sh1);cursor:pointer;border:0;opacity:.92}
+@media(min-width:761px){.dbadge{bottom:16px;right:16px}}

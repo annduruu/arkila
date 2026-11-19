@@ -2,7 +2,7 @@
 <title>Arkila Admin</title>
 <meta name="robots" content="noindex,nofollow">
 <link href="https://fonts.googleapis.com/css2?family=Gabarito:wght@600;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script>try{var _p=(JSON.parse(localStorage.getItem('arkila2-pref')||'{}')||{});if(_p.theme==='light'||_p.theme==='dark')document.documentElement.setAttribute('data-theme',_p.theme)}catch(e){}</script><link rel="stylesheet" href="dash.css?v=167"><style>
+<script>try{var _p=(JSON.parse(localStorage.getItem('arkila2-pref')||'{}')||{});if(_p.theme==='light'||_p.theme==='dark')document.documentElement.setAttribute('data-theme',_p.theme)}catch(e){}</script><link rel="stylesheet" href="dash.css?v=169"><style>
 :root{--bg:#F1F4F8;--surface:#fff;--ink:#101B2B;--muted:#576579;--line:#DCE3EB;--accent:#1B4DDB;--accent-ink:#fff;--sun:#FFC72C;--sun-ink:#1B1500;--good:#15774A;--bad:#B3261E;--tile1:#E3EAF3;--tile2:#CFD9E6;--sh1:0 2px 10px rgba(15,26,43,.12);--f-display:'Gabarito','Trebuchet MS',system-ui,sans-serif;--f-body:'Figtree',system-ui,sans-serif}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0F0F10;--surface:#18181A;--ink:#F2F2F2;--muted:#9A9A9F;--line:#2D2D31;--accent:#6E95FF;--accent-ink:#0A1220;--good:#4CC38A;--bad:#FF8A80;--tile1:#26262B;--tile2:#1C1C20;color-scheme:dark}}:root[data-theme=dark]{--bg:#0F0F10;--surface:#18181A;--ink:#F2F2F2;--muted:#9A9A9F;--line:#2D2D31;--accent:#6E95FF;--accent-ink:#0A1220;--good:#4CC38A;--bad:#FF8A80;--tile1:#26262B;--tile2:#1C1C20;color-scheme:dark}:root[data-theme=light]{color-scheme:light}#thb{position:fixed;bottom:14px;right:14px;z-index:25;height:34px;min-width:34px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:700 12px var(--f-body);box-shadow:var(--sh1)}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
@@ -128,7 +128,7 @@ body.locked>*:not(#ov):not(#toast){display:none!important}body.locked #ov{backgr
 </div>
 <nav class="tbar" id="tbar"></nav>
 <div id="ov"><div class="bk" data-act="close"></div><div class="sheet" id="sh"></div></div><div id="toast" role="status" aria-live="polite"></div>
-<script src="config.js?v=167"></script><script src="testfleet.js?v=167"></script><script src="store.js?v=167"></script><script src="svgs.js?v=167"></script><script src="db.js?v=167"></script><script src="dash.js?v=167"></script><script src="csv.js?v=167"></script><script src="cal.js?v=167"></script>
+<script src="config.js?v=169"></script><script src="testfleet.js?v=169"></script><script src="store.js?v=169"></script><script src="svgs.js?v=169"></script><script src="db.js?v=169"></script><script src="dash.js?v=169"></script><script src="csv.js?v=169"></script><script src="cal.js?v=169"></script>
 <script>
 let VO=lsg('vact',{});
 /* "What you get" quick options in the vehicle form; anything else goes in "Other features" and is kept on save */
@@ -311,4 +311,4 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){close();return}
  if(e.key==='Tab'&&$('#ov').classList.contains('on')){const f=[...$('#sh').querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled&&x.offsetParent);if(!f.length)return;const a=f[0],z=f[f.length-1];
   if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus()}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}}});
 whoRender();renderView();inbCheck(false);if(DB.supa()){(async()=>{if(DB.sess()&&(await DB.isStaff())===false){DB.logout();whoRender();loginSheet('This account is not on the staff list');return}if(await DB.fromHash()){if(await DB.isStaff()){whoRender();adminPull(true);toast('Signed in')}else{DB.logout();whoRender();loginSheet('This account is not on the staff list')}}})();if(DB.sess())adminPull(true);else loginSheet();setInterval(()=>{if(!document.hidden)adminPull(false)},30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)adminPull(false)})}
-</script><script src="admin-x.js?v=167"></script><script src="admin-plus.js?v=167"></script></body></html>
+</script><script src="admin-x.js?v=169"></script><script src="admin-plus.js?v=169"></script></body></html>
