@@ -62,3 +62,5 @@ Object.assign(FIL,{"Transmission":"Transmission","Driving":"Pagmamaneho","Self-d
 FILP.push(["^(\\d+) vehicles?$","{1} sasakyan"],["^Price low to high ⇅$","Presyo: mura muna ⇅"],["^Price high to low ⇅$","Presyo: mahal muna ⇅"],["^Pickup: (.+)$","Pick-up: {1}"],["^Up to (.+)/day$","Hanggang {1}/araw"],["^(\\d+) passengers?$","{1} pasahero"],["^Remove filter: (.+)$","Alisin ang filter: {1}"]);
 Object.assign(FIL,{"Sorted by price, low to high. Tap to reverse.":"Nakaayos ayon sa presyo, mura muna. Pindutin para baligtarin.","Sorted by price, high to low. Tap to reverse.":"Nakaayos ayon sa presyo, mahal muna. Pindutin para baligtarin."});
 Object.assign(FIL,{"Send a request, we confirm on Messenger, you pay after.":"Magpadala ng request, kukumpirmahin namin sa Messenger, saka ka magbabayad.","No account, no payment now.":"Walang account, wala pang bayad ngayon."});
+Object.assign(FIL,{"Add":"Idagdag","Added":"Naidagdag"});
+FILP.push(["^(\\d+) days? · (.+)$","{1} araw · {2}"]);
