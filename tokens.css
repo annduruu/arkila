@@ -1,0 +1,26 @@
+/* ARKILA TOKENS "Lagoon": the shared colour scheme, fonts and easing, for the renter site and the admin.
+   Light, plus dark that follows the phone's setting (or data-theme). Scoped to html.lagoon. */
+
+/* ---------- 1. COLOUR SCHEME: light ---------- */
+html.lagoon{
+  --bg:#F5F6F8;--surface:#FFFFFF;--ink:#0B0F19;--muted:#566073;--line:#E3E6EB;
+  --accent:#0B5CFF;--accent-ink:#FFFFFF;          /* Lagoon blue: buttons, links, selected */
+  --sun:#FFC400;--bad:#C9301F;--good:#0A7D4F;     /* badges, errors, success */
+  --coral:#E5432A;--violet:#6A4DF4;--teal:#00867E; /* category colours: motorbikes, vans & SUVs, extras */
+  --coral-soft:#FFEDE8;--blue-soft:#E7EFFF;--violet-soft:#EFEBFF;
+  --tile1:#EEF1F5;--tile2:#E1E6EE;--win:#DCEBFA;
+  --t-bike1:#FFF1EC;--t-bike2:#FFDFD4;--t-car1:#EAF2FF;--t-car2:#D3E3FF;--t-van1:#F2EEFF;--t-van2:#E0D8FF;
+  --on-color:#FFFFFF;--sh1:0 2px 12px rgba(11,15,25,.10);
+  --f-display:'Inter Tight','Inter',system-ui,sans-serif;--f-body:'Inter',system-ui,sans-serif;
+  --ease:cubic-bezier(.22,1,.36,1);--spring:cubic-bezier(.34,1.56,.64,1)}
+/* dark */
+@media(prefers-color-scheme:dark){html.lagoon:not([data-theme=light]){
+  --bg:#0B0D12;--surface:#14171E;--ink:#F3F4F6;--muted:#A3AAB7;--line:#262B35;--accent:#6B97FF;--accent-ink:#06122E;
+  --on-color:#06122E;--bad:#FF8A7A;--good:#34D399;--coral:#FF7A62;--violet:#9D87FF;--teal:#2DD4C4;
+  --coral-soft:#2A1914;--blue-soft:#131F3A;--violet-soft:#1D1838;--tile1:#1C2029;--tile2:#161A22;--win:#2A3140;
+  --t-bike1:#2B1B16;--t-bike2:#22150F;--t-car1:#16233F;--t-car2:#101A30;--t-van1:#211B3D;--t-van2:#171230}}
+html.lagoon[data-theme=dark]{
+  --bg:#0B0D12;--surface:#14171E;--ink:#F3F4F6;--muted:#A3AAB7;--line:#262B35;--accent:#6B97FF;--accent-ink:#06122E;
+  --on-color:#06122E;--bad:#FF8A7A;--good:#34D399;--coral:#FF7A62;--violet:#9D87FF;--teal:#2DD4C4;
+  --coral-soft:#2A1914;--blue-soft:#131F3A;--violet-soft:#1D1838;--tile1:#1C2029;--tile2:#161A22;--win:#2A3140;
+  --t-bike1:#2B1B16;--t-bike2:#22150F;--t-car1:#16233F;--t-car2:#101A30;--t-van1:#211B3D;--t-van2:#171230}
